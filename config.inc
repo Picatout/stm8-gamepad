@@ -10,8 +10,8 @@
 	MINOR=1
 	REV=0
 
-; master clock frequency in Mhz 
-	FMSTR=16 
+; master clock frequency in hz 
+	FMSTR=16000000 
 
 DEBUG=1 ; set to 0 for final version 
 
@@ -21,49 +21,28 @@ RX_QUEUE_SIZE=16
 TIB_SIZE=40
 
 SOUND_PORT=PD_BASE 
-SOUND_BIT=4 
-
-LED_PORT=PD_BASE 
-LED_BIT=2
+SOUND_BIT=2 
 
 
-BTN_PORT=PC_BASE 
-BTN_IDR=PC_IDR
-BTN_A=1
-BTN_B=2
-BTN_UP=3 
+; navigation buttons 
+BTN_CROSS_PORT=PD_BASE 
+BTN_CROSS_IDR=PD_IDR
+BTN_LEFT=3
 BTN_RIGHT=4
 BTN_DOWN=5
-BTN_LEFT=7
+BTN_UP=6 
+; selection buttons 
+BTN_SEL_PORT=PB_BASE 
+BTN_SEL_IDR=PB_IDR 
+BTN_SEL_A=4
+BTN_SEL_B=5
 
-ALL_KEY_UP=(1<<BTN_A)|(1<<BTN_B)|(1<<BTN_UP)|(1<<BTN_DOWN)|(1<<BTN_LEFT)|(1<<BTN_RIGHT)
 
-;------------------------
-; beep on pin CN3:13 
-; use TIM2_CH1 
-;-------------------------
 
-; I2C port on pin 11,12 
-	I2C_PORT=PB 
-	SCL_BIT=4
-	SDA_BIT=5
 
-; ss1306 device ID 
-	OLED_DEVID = 0x78 
 	.include "inc/ascii.inc"
-
-S207=0
-.if S207
-S103=0	
-    .include "inc/stm8s207.inc"
-	.include "inc/nucleo_8s207.inc" 
-.else 
-S103=1
-.endif
-.if S103 
 	.include "inc/stm8s103f3.inc"
 	.include "inc/stm8s103f3_config.inc" 
-.endif 
 	.include "inc/gen_macros.inc" 
 	.include "app_macros.inc" 
 

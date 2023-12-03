@@ -22,19 +22,22 @@ DTR_CR1=PC_CR1
 DTR_CR2=PC_CR2 
 DTR_PIN=3 ; DTR_PIN on PC:3 
 
-CHAR_PER_LINE==62
-LINE_PER_SCREEN==25 
-VISIBLE_SCAN_LINES=200 
+; display resolution in pixels 
+HRES=96
+VRES=64 
+BYTES_PER_LINE=12
 
-; values based on 20 Mhz crystal
+VISIBLE_SCAN_LINES=192 
+
+; values based on 16 Mhz crystal
 
 FR_HORZ=15734
-HLINE=(FMSTR*1000/FR_HORZ-1); horizontal line duration 
+HLINE=(FMSTR/FR_HORZ); horizontal line duration 
 HALF_LINE=HLINE/2 ; half-line during sync. 
-EPULSE=47 ; pulse width during pre and post equalization
-VPULSE=546 ; pulse width during vertical sync. 
-HPULSE=94 ; 4.7µSec horizontal line sync pulse width. 
-LINE_DELAY=(140) 
+EPULSE=37 ; pulse width during pre and post equalization
+VPULSE=436 ; pulse width during vertical sync. 
+HPULSE=75 ; 4.7µSec horizontal line sync pulse width. 
+LINE_DELAY=(112) 
 
 ; ntsc synchro phases 
 PH_VSYNC=0 
@@ -70,41 +73,30 @@ ntsc_init:
     bres PC_ODR,#6
     bset PC_CR1,#6
     bset PC_CR2,#6
-; set PC:3 as DTR output 
-    bset DTR_CR1,#DTR_PIN ; push-pull output 
-    bset DTR_DDR,#DTR_PIN 
-    bres DTR_ODR,#DTR_PIN      
 .if 1 
     clr SPI_SR 
     clr SPI_DR 
     mov SPI_CR1,#(1<<SPI_CR1_SPE)|(1<<SPI_CR1_MSTR)
 .endif 
 ; initialize timer1 for pwm
-; generate NTSC sync signal  
+; generate NTSC sync signal  on CH3 
     mov TIM1_IER,#1 ; UIE set 
     bset TIM1_CR1,#TIM1_CR1_ARPE ; auto preload enabled 
-    mov TIM1_CCMR1,#(7<<TIM1_CCMR1_OCMODE)  |(1<<TIM1_CCMR1_OC1PE)
-    bset TIM1_CCER1,#0
+    mov TIM1_CCMR3,#(7<<TIM1_CCMR3_OCMODE)  |(1<<TIM1_CCMR3_OC3PE)
+    bset TIM1_CCER2,#0
     bset TIM1_BKR,#7
 ; use channel 2 for video stream trigger 
 ; set pixel out delay   
     mov TIM1_CCMR2,#(6<<TIM1_CCMR2_OCMODE) 
     mov TIM1_CCR2H,#LINE_DELAY>>8 
     mov TIM1_CCR2L,#LINE_DELAY&0xFF
-;    bset TIM1_CCER1,#0      
 ; begin with PH_PRE_EQU odd field 
     _clrz ntsc_phase 
     mov TIM1_ARRH,#HLINE>>8
     mov TIM1_ARRL,#HLINE&0XFF
-    mov TIM1_CCR1H,#HPULSE>>8 
-    mov TIM1_CCR1L,#HPULSE&0XFF
-    call copy_font
-; test for local echo option
-    btjf OPT_ECHO_PORT,#OPT_ECHO_BIT,1$
-    bset ntsc_flags,#F_LECHO
-1$:    
+    mov TIM1_CCR3H,#HPULSE>>8 
+    mov TIM1_CCR3L,#HPULSE&0XFF
     call tv_cls 
-    call tv_enable_cursor
     bset TIM1_CR1,#TIM1_CR1_CEN 
     ld a,#1
     call video_on_off 
@@ -131,22 +123,6 @@ video_on_off:
     ret 
 
 
-;----------------------------------
-; copying font table to RAM 
-; save 2µsec per scan line display 
-; in ntsc_video_interrupt
-;----------------------------------
-copy_font:
-	ldw x,#font_end 
-	subw x,#font_6x8 
-	_strxz acc16 
-	ldw x,#256 
-	ldw y,#font_6x8 
-	call move 
-	ldw x,#256 
-	_strxz font_addr 
-    ret 
-
 ;-------------------------------
 ; TIMER1 update interrupt handler 
 ; interrupt happend at end 
@@ -165,19 +141,19 @@ ntsc_sync_interrupt:
     jrne  1$ 
     mov TIM1_ARRH,#HALF_LINE>>8 
     mov TIM1_ARRL,#HALF_LINE & 0xff 
-    mov TIM1_CCR1H,#EPULSE>>8 
-    mov TIM1_CCR1L,#EPULSE&0xff 
+    mov TIM1_CCR3H,#EPULSE>>8 
+    mov TIM1_CCR3L,#EPULSE&0xff 
     jp sync_exit 
 1$: cpw x,#7 
     jrne 2$ 
-    mov TIM1_CCR1H,#VPULSE>>8 
-    mov TIM1_CCR1L,#VPULSE&0xff 
+    mov TIM1_CCR3H,#VPULSE>>8 
+    mov TIM1_CCR3L,#VPULSE&0xff 
     jp sync_exit 
 2$:
     cpw x,#13 
     jrne 3$ 
-    mov TIM1_CCR1H,#EPULSE>>8 
-    mov TIM1_CCR1L,#EPULSE&0xff 
+    mov TIM1_CCR3H,#EPULSE>>8 
+    mov TIM1_CCR3L,#EPULSE&0xff 
     jp sync_exit 
 3$: 
     cpw x,#18 
@@ -186,8 +162,8 @@ ntsc_sync_interrupt:
 4$:
     mov TIM1_ARRH,#HLINE>>8 
     mov TIM1_ARRL,#HLINE & 0xff 
-    mov TIM1_CCR1H,#HPULSE>>8 
-    mov TIM1_CCR1L,#HPULSE&0xff 
+    mov TIM1_CCR3H,#HPULSE>>8 
+    mov TIM1_CCR3L,#HPULSE&0xff 
     inc a 
     jp sync_exit 
 5$: 
@@ -231,24 +207,16 @@ sync_exit:
     .macro _shift_out_scan_line
         n=0
 
-        .rept CHAR_PER_LINE
-            ldw y,x  ; 1cy 
-            ldw y,(n,y)  ; 2 cy 
-            addw y,(FONT_ROW,sp) ; 2 cy 
-            ld a,(y) ; 1 cy 
-             btjf SPI_SR,#SPI_SR_TXE,. ; 2 cy 
-             ld SPI_DR,a ; 1 cy 
-            n=n+2 
-        .endm ;
-    .endm  8 cy
+        .rept BYTES_PER_LINE
+             ld a,(n,x) 
+             btjf SPI_SR,#SPI_SR_TXE,. 
+             ld SPI_DR,a
+             n=n+1 
+        .endm 
+    .endm 
 
-    FONT_ROW=1 ; font_char_row  
-    VSIZE=2  
 ntsc_video_interrupt:
-    _vars VSIZE
-    clr (FONT_ROW,sp) 
     clr TIM1_SR1
-    bset DTR_ODR,#DTR_PIN 
     ld a,TIM1_CNTRL 
     and a,#7 
     push a 
@@ -267,14 +235,13 @@ jitter_cancel:
     nop 
     nop 
 ; compute postion in buffer 
-; X=scan_line/16*CHAR_PER_LINE+video_buffer  
-; FONT_ROW=scan_line%8     
+; 3 scan line/video buffer line 
+; ofs=scan_line/3+video_buffer       
     _ldxz scan_line 
     subw x,#FIRST_VIDEO_LINE
-    ld a,#8 
+    ld a,#3 
     div x,a
-    ld (FONT_ROW+1,sp),a    
-    ld a,#2*CHAR_PER_LINE  
+    ld a,#BYTES_PER_LINE  
     mul x,a  ; video_buffer line  
     addw x,#video_buffer
     bset SPI_CR1,#SPI_CR1_SPE  
@@ -292,6 +259,5 @@ jitter_cancel:
 3$: btjt ntsc_flags,#F_NO_DTR,4$
     bres DTR_ODR,#DTR_PIN  
 4$:
-    _drop VSIZE 
     iret 
 

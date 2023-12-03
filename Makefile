@@ -16,7 +16,7 @@ OBJCPY=objcpy
 CFLAGS=-mstm8 -lstm8 -L$(LIB_PATH) -I../inc
 INC=inc/
 INCLUDES=$(BOARD_INC) $(INC)gen_macros.inc $(INC)app_macros.inc config.inc 
-SRC=hardware_init.asm font_6x8.asm ntsc.asm monitor.asm $(NAME).asm
+SRC=hardware_init.asm font_6x8.asm tvout.asm display.asm monitor.asm $(NAME).asm
 OBJECT=$(BUILD_DIR)$(NAME).rel
 OBJECTS=$(BUILD_DIR)$(SRC:.asm=.rel)
 LIST=$(BUILD_DIR)$(NAME).lst
@@ -36,6 +36,12 @@ all: clean
 	@ls -l  $(BUILD_DIR)$(NAME).bin 
 	# 
 
+alt_func: alt_func.asm 
+	$(SDAS) -g -l -o $(BUILD_DIR)alt_func.rel alt_func.asm 
+	$(SDCC) $(CFLAGS) -Wl-u -o $(BUILD_DIR)alt_func.ihx $(BUILD_DIR)alt_func.rel
+	objcopy -Iihex -Obinary  $(BUILD_DIR)alt_func.ihx $(BUILD_DIR)alt_func.bin 
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s opt -w $(BUILD_DIR)alt_func.bin  
+
 .PHONY: clean 
 clean:
 	#
@@ -49,7 +55,7 @@ flash: $(LIB)
 	# "******************"
 	# "flashing $(MCU) "
 	# "******************"
-	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s flash -w $(BUILD_DIR)$(NAME).ihx 
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s flash -w $(BUILD_DIR)$(NAME).bin 
 
 # read flash memory 
 read: 

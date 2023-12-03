@@ -17,6 +17,8 @@
 ;;
 
 main:
-
-    jra . 
+    call beep
+    ld a,#255
+    call pause  
+    jra main 
 

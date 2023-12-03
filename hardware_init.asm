@@ -1,19 +1,19 @@
 ;;
 ; Copyright Jacques Deschênes 2023  
-; This file is part of stm8_terminal 
+; This file is part of ntsc_tuto 
 ;
-;     stm8_terminal is free software: you can redistribute it and/or modify
+;     ntsc_tuto is free software: you can redistribute it and/or modify
 ;     it under the terms of the GNU General Public License as published by
 ;     the Free Software Foundation, either version 3 of the License, or
 ;     (at your option) any later version.
 ;
-;     stm8_terminal is distributed in the hope that it will be useful,
+;     ntsc_tuto is distributed in the hope that it will be useful,
 ;     but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;     GNU General Public License for more details.
 ;
 ;     You should have received a copy of the GNU General Public License
-;     along with stm8_terminal.  If not, see <http://www.gnu.org/licenses/>.
+;     along with ntsc_tuto.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -29,6 +29,7 @@
 
     .include "config.inc"
 
+STACK_EMPTY=RAM_SIZE-1 
 STACK_SIZE=128   
 ;;-----------------------------------
     .area SSEG (ABS)
@@ -50,7 +51,7 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int1 AWU   auto wake up from halt
 	int NonHandledInterrupt ;int2 CLK   clock controller
 	int NonHandledInterrupt ;int3 EXTI0 gpio A external interrupts
-	int ps2_intr_handler    ;int4 EXTI1 gpio B external interrupts
+	int NonHandledInterrupt ;int4 EXTI1 gpio B external interrupts
 	int NonHandledInterrupt ;int5 EXTI2 gpio C external interrupts
 	int NonHandledInterrupt ;int6 EXTI3 gpio D external interrupts
 	int NonHandledInterrupt ;int7 EXTI4 gpio E external interrupts
@@ -64,12 +65,16 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int15 TIM3 Update/overflow
 	int NonHandledInterrupt ;int16 TIM3 Capture/compare
 	int NonHandledInterrupt ;int17 UART1 TX completed
+.if DEBUG 
 	int UartRxHandler		;int18 UART1 RX full 
+.else
+	int NonHandledInterrupt ;int18 UART1 RX full  
+.endif 
 	int NonHandledInterrupt ;int19 I2C 
 	int NonHandledInterrupt ;int20 UART3 TX completed
 	int NonHandledInterrupt ;int21 UART3 RX full
 	int NonHandledInterrupt ;int22 ADC2 end of conversion
-	int timer4_update_handler	;int23 TIM4 update/overflow ; use to blink tv cursor 
+	int Timer4UpdateHandler ;int23 TIM4 update/overflow ; use to blink tv cursor 
 	int NonHandledInterrupt ;int24 flash writing EOP/WR_PG_DIS
 	int NonHandledInterrupt ;int25  not used
 	int NonHandledInterrupt ;int26  not used
@@ -84,6 +89,9 @@ KERNEL_VAR_ORG=4
 	.org KERNEL_VAR_ORG 
 ;--------------------------------------	
 
+ticks: .blkw 1 ; millisecond counter
+delay_timer: .blkb 1 
+sound_timer: .blkb 1 
 ; keep the following 3 variables in this order 
 acc16:: .blkb 1 ; 16 bits accumulator, acc24 high-byte
 acc8::  .blkb 1 ;  8 bits accumulator, acc24 low-byte  
@@ -107,18 +115,19 @@ char_cursor: .blkb 1 ; character used for cursor
 saved_cx: .blkb 1 ; saved cursor position
 saved_cy: .blkb 1 ; restored cursor position 
 
+.if DEBUG 
 ; uart variable 
 RX_QUEUE_SIZE=64
 rx1_queue: .ds RX_QUEUE_SIZE ; UART1 receive circular queue 
 rx1_head:  .blkb 1 ; rx1_queue head pointer
 rx1_tail:   .blkb 1 ; rx1_queue tail pointer  
+tib: .blkb 40 ; 
+.endif 
+app_variables:
 
-; free ram for user font 
-	.org 256 
-user_font:
-
-	.org RAM_SIZE-STACK_SIZE-(2*CHAR_PER_LINE*LINE_PER_SCREEN)
-video_buffer: .blkw CHAR_PER_LINE*LINE_PER_SCREEN
+; video buffer size=768 bytes 
+	.org 0x80 
+video_buffer: .blkb HRES/8*VRES 
 
 
 	.area CODE 
@@ -130,36 +139,81 @@ video_buffer: .blkw CHAR_PER_LINE*LINE_PER_SCREEN
 NonHandledInterrupt:
 	_swreset ; see "inc/gen_macros.inc"
 
+;------------------------------
+; TIMER 4 is used to maintain 
+; timers and ticks 
+; interrupt interval is 1.664 msec 
+;--------------------------------
+Timer4UpdateHandler:
+	clr TIM4_SR 
+	_ldxz ticks
+	incw x 
+	_strxz ticks
+; decrement delay_timer and sound_timer on ticks mod 10==0
+	ld a,#10
+	div x,a 
+	tnz a
+	jrne 9$
+1$:	 
+	btjf flags,#F_GAME_TMR,2$  
+	dec delay_timer 
+	jrne 2$ 
+	bres flags,#F_GAME_TMR  
+2$:
+	btjf flags,#F_SOUND_TMR,9$
+	dec sound_timer 
+	jrne 9$ 
+	bres flags,#F_SOUND_TMR
+9$:
+	iret 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    peripherals initialization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;----------------------------------------
 ; inialize MCU clock 
-; input:
-;   A      CLK_CKDIVR , clock divisor
-;   X       Fmaster in Khz 
-;   YL     HSI|HSE   
-; output:
-;   none 
+; select HSE 
+; no CPU divisor 
 ;----------------------------------------
 clock_init:	
-; cpu clock divisor 
-	push a   
-	_strxz fmstr
-	ld a,yl ; clock source HSI|HSE 
+.if 0
 	bres CLK_SWCR,#CLK_SWCR_SWIF 
-	cp a,CLK_CMSR 
-	jreq 2$ ; no switching required 
-; select clock source 
-	ld CLK_SWR,a
+	mov CLK_SWR,#CLK_SWR_HSE  
 	btjf CLK_SWCR,#CLK_SWCR_SWIF,. 
 	bset CLK_SWCR,#CLK_SWCR_SWEN
+.endif 
 2$: 
-	pop CLK_CKDIVR   	
+	clr CLK_CKDIVR   	
 	ret
 
-	
+;---------------------------------
+; TIM4 is configured to generate an 
+; interrupt every 1.66 millisecond 
+;----------------------------------
+timer4_init:
+	bset CLK_PCKENR1,#CLK_PCKENR1_TIM4
+	bres TIM4_CR1,#TIM4_CR1_CEN 
+	mov TIM4_PSCR,#7 ; Fmstr/128=125000 hertz  
+	mov TIM4_ARR,#(256-125) ; 125000/125=1 msec 
+	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
+	bset TIM4_IER,#TIM4_IER_UIE
+	ret
+
+;----------------------------------
+; TIMER2 used as audio tone output 
+; on port D:2. pin 19 
+; channel 3 configured as PWM mode 1 
+;-----------------------------------  
+timer2_init:
+	bset CLK_PCKENR1,#CLK_PCKENR1_TIM2 ; enable TIMER2 clock 
+ 	mov TIM2_CCMR3,#(6<<TIM2_CCMR3_OCM) ; PWM mode 1 
+	mov TIM2_PSCR,#8 ; Ft2clk=fmstr/256=62500 hertz 
+	bres TIM2_CR1,#TIM2_CR1_CEN
+	bres TIM2_CCER2,#TIM2_CCER2_CC3E
+	ret 
+ 
+.if 0
 ;--------------------------
 ; set software interrupt 
 ; priority 
@@ -209,43 +263,93 @@ set_int_priority::
 	ld (x),a 
 	_drop VSIZE 
 	ret 
+.endif 
+
+;------------------------
+; suspend execution 
+; input:
+;   A     n/60 seconds  
+;-------------------------
+pause:
+	_straz delay_timer 
+	bset flags,#F_GAME_TMR 
+1$: wfi 	
+	btjt flags,#F_GAME_TMR,1$ 
+	ret 
+
+;-----------------------
+; tone generator 
+; Ft2clk=62500 hertz 
+; input:
+;   A   duration n*10 msec    
+;   X   frequency 
+;------------------------
+FR_T2_CLK=62500
+tone:
+	pushw y 
+	push a 
+	ldw y,x 
+	ldw x,#FR_T2_CLK 
+	divw x,y 
+	ld a,xh 
+	ld TIM2_ARRH,a 
+	ld a,xl 
+	ld TIM2_ARRL,a 
+	srlw x 
+	ld a,xh 
+	ld TIM2_CCR3H,a 
+	ld a,xl 
+	ld TIM2_CCR3L,a 
+	bset TIM2_CCER2,#TIM2_CCER2_CC3E
+	bset TIM2_CR1,#TIM2_CR1_CEN 
+	bset TIM2_EGR,#TIM2_EGR_UG
+	pop a 
+	_straz sound_timer  
+	bset flags,#F_SOUND_TMR 
+1$: wfi 
+	btjt flags,#F_SOUND_TMR,1$
+	bres TIM2_CR1,#TIM2_CR1_CEN 
+	bres TIM2_CCER2,#TIM2_CCER2_CC3E
+	popw y 
+	ret 
+
+;-----------------
+; 1Khz beep 
+;-----------------
+beep:
+	ldw x,#1000 ; hertz 
+	ld a,#20
+	call tone  
+	ret 
 
 ;-------------------------------------
 ;  initialization entry point 
 ;-------------------------------------
 cold_start:
 ;set stack 
+	sim
 	ldw x,#STACK_EMPTY
 	ldw sp,x
 ; clear all ram 
 0$: clr (x)
 	decw x 
 	jrne 0$
+; disable ADC1, not used
+	bres CLK_PCKENR2,#CLK_PCKENR2_ADC1 
 ; activate pull up on all inputs 
+; or push pull on output 
 	ld a,#255 
 	ld PA_CR1,a 
 	ld PB_CR1,a 
 	ld PC_CR1,a 
 	ld PD_CR1,a 
-	ld PE_CR1,a 
-	ld PF_CR1,a 
-    bres PD_CR1,#3 ; connected to PC6 
-    bres PE_CR1,#5 ; connected to PD4 
-; set user LED pin as output 
-    bset LED_PORT+GPIO_CR1,#LED_BIT
-    bset LED_PORT+GPIO_CR2,#LED_BIT
-    bset LED_PORT+ GPIO_DDR,#LED_BIT
-	_led_off 
-; disable schmitt triggers on Arduino CN4 analog inputs
-	mov ADC_TDRL,0x3f
-; select external clock no divisor	
-	clr a  
-	ldw x,#FMSTR   ; 14,318 Mhz  4 * NTSC chroma frequency   
-    ldw y,#CLK_SWR_HSE 
 	call clock_init	
-	call uart_init
-	call ps2_init    
-	rim ; enable interrupts 
-	call ntsc_init ;
 	call timer4_init
+	call timer2_init
+	call ntsc_init ;
+.if DEBUG 
+	call uart_init
+.endif 
+	rim ; enable interrupts 
 	jp main ; in tv_term.asm 
+

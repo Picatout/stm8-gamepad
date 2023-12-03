@@ -185,20 +185,6 @@ GPIO_CR2 = (4)
  PD_CR1  = (0x5012)
  PD_CR2  = (0x5013)
 
- PE_BASE = (0x5014)
- PE_ODR  = (0x5014)
- PE_IDR  = (0x5015)
- PE_DDR  = (0x5016)
- PE_CR1  = (0x5017)
- PE_CR2  = (0x5018)
-
- PF_BASE = (0x5019)
- PF_ODR  = (0x5019)
- PF_IDR  = (0x501A)
- PF_DDR  = (0x501B)
- PF_CR1  = (0x501C)
- PF_CR2  = (0x501D)
-
  ; input modes CR1
  INPUT_FLOAT = (0)
  INPUT_PULLUP = (1)
@@ -341,6 +327,32 @@ GPIO_CR2 = (4)
  SPI_CRCPR  = (0x5205)
  SPI_RXCRCR  = (0x5206)
  SPI_TXCRCR  = (0x5207)
+
+; SPI_CR1 bit fields 
+  SPI_CR1_CPHA=0
+  SPI_CR1_CPOL=1
+  SPI_CR1_MSTR=2
+  SPI_CR1_BR=3
+  SPI_CR1_SPE=6
+  SPI_CR1_LSBFIRST=7
+  
+; SPI_CR2 bit fields 
+  SPI_CR2_SSI=0
+  SPI_CR2_SSM=1
+  SPI_CR2_RXONLY=2
+  SPI_CR2_CRCNEXT=4
+  SPI_CR2_CRCEN=5
+  SPI_CR2_BDOE=6
+  SPI_CR2_BDM=7  
+
+; SPI_SR bit fields 
+  SPI_SR_RXNE=0
+  SPI_SR_TXE=1
+  SPI_SR_WKUP=3
+  SPI_SR_CRCERR=4
+  SPI_SR_MODF=5
+  SPI_SR_OVR=6
+  SPI_SR_BSY=7
 
 ; I2C
  I2C_CR1  = (0x5210)
@@ -561,14 +573,14 @@ UART1 = 0x5230
  TIM1_OISR  = (0x526F)
 
 ; Timer Control Register bits
- TIM_CR1_ARPE = (7)
- TIM_CR1_CMSH = (6)
- TIM_CR1_CMSL = (5)
- TIM_CR1_DIR = (4)
- TIM_CR1_OPM = (3)
- TIM_CR1_URS = (2)
- TIM_CR1_UDIS = (1)
- TIM_CR1_CEN = (0)
+ TIM1_CR1_ARPE = (7)
+ TIM1_CR1_CMSH = (6)
+ TIM1_CR1_CMSL = (5)
+ TIM1_CR1_DIR = (4)
+ TIM1_CR1_OPM = (3)
+ TIM1_CR1_URS = (2)
+ TIM1_CR1_UDIS = (1)
+ TIM1_CR1_CEN = (0)
 
  TIM1_CR2_MMS2 = (6)
  TIM1_CR2_MMS1 = (5)
@@ -673,10 +685,12 @@ TIM_CCER2_CC4P=5
  TIM1_CCMR2_OC2M2 = (6)
  TIM1_CCMR2_OC2M1 = (5)
  TIM1_CCMR2_OC2M0 = (4)
+ TIM1_CCMR2_OCMODE = (4)
  TIM1_CCMR2_OC2PE = (3)
  TIM1_CCMR2_OC2FE = (2)
  TIM1_CCMR2_CC2S1 = (1)
  TIM1_CCMR2_CC2S0 = (0)
+ TIM1_CCMR2_CC2S = (0)
 
 ; Capture/Compare Mode Register 2 - channel configured in input
  TIM1_CCMR2_IC2F3 = (7)
@@ -685,18 +699,20 @@ TIM_CCER2_CC4P=5
  TIM1_CCMR2_IC2F0 = (4)
  TIM1_CCMR2_IC2PSC1 = (3)
  TIM1_CCMR2_IC2PSC0 = (2)
-;  TIM1_CCMR2_CC2S1 = (1)
- TIM1_CCMR2_CC2S0 = (0)
+;TIM1_CCMR2_CC2S1 = (1)
+;TIM1_CCMR2_CC2S0 = (0)
 
 ; Capture/Compare Mode Register 3 - channel configured in output
  TIM1_CCMR3_OC3CE = (7)
  TIM1_CCMR3_OC3M2 = (6)
  TIM1_CCMR3_OC3M1 = (5)
  TIM1_CCMR3_OC3M0 = (4)
+ TIM1_CCMR3_OCMODE= (4)
  TIM1_CCMR3_OC3PE = (3)
  TIM1_CCMR3_OC3FE = (2)
  TIM1_CCMR3_CC3S1 = (1)
  TIM1_CCMR3_CC3S0 = (0)
+ TIM1_CCMR3_CC3S = (0)
 
 ; Capture/Compare Mode Register 3 - channel configured in input
  TIM1_CCMR3_IC3F3 = (7)
@@ -747,17 +763,70 @@ TIM1_OISR_OSN3=5
 TIM1_OISR_OS4=6 
 TIM1_OISR_OSN4=7
 
+;------------------------
 ; Timer 2 - 16-bit timer
+;------------------------
+
+; TIMER 2 control register 1 
  TIM2_CR1  = (0x5300)
+; TIM2_CR1 bitfields
+ TIM2_CR1_CEN=(0) ; Counter enable
+ TIM2_CR1_UDIS=(1) ; Update disable
+ TIM2_CR1_URS=(2) ; Update request source
+ TIM2_CR1_OPM=(3) ; One-pulse mode
+ TIM2_CR1_ARPE=(7) ; Auto-reload preload enable
+
+; TIMER 2 interrupt enable register 
  TIM2_IER  = (0x5303)
+ 
+ ;
  TIM2_SR1  = (0x5304)
+ 
+ ;
  TIM2_SR2  = (0x5305)
+ 
+ ; event generation register 
  TIM2_EGR  = (0x5306)
+ ; TIMER2_EGR bitfields
+ TIM2_EGR_UG=(0) ; update generation
+ TIM2_EGR_CC1G=(1) ; Capture/compare 1 generation
+ TIM2_EGR_CC2G=(2) ; Capture/compare 2 generation
+ TIM2_EGR_CC3G=(3) ; Capture/compare 3 generation
+ TIM2_EGR_TG=(6); Trigger generation
+
+ ; capture/compare mode register 1
  TIM2_CCMR1  = (0x5307)
+; TIMER2_CCMR bitfields 
+ TIM2_CCMR1_CCS=(0) ; input/output select
+ TIM2_CCMR1_OCPE=(3) ; preload enable
+ TIM2_CCMR1_OCM=(4)  ; output compare mode 
+ 
+ ; capture/compare mode register 1
  TIM2_CCMR2  = (0x5308)
+ TIM2_CCMR2_CCS=(0) ; input/output select
+ TIM2_CCMR2_OCPE=(3) ; preload enable
+ TIM2_CCMR2_OCM=(4)  ; output compare mode 
+ 
+ ; capture/compare mode register 1
  TIM2_CCMR3  = (0x5309)
+ TIM2_CCMR3_CCS=(0) ; input/output select
+ TIM2_CCMR3_OCPE=(3) ; preload enable
+ TIM2_CCMR3_OCM=(4)  ; output compare mode 
+
+ ; Capture/compare enable register 1
  TIM2_CCER1  = (0x530A)
+; TIMER2_CCER1 bitfields
+ TIM2_CCER1_CC1E=(0)
+ TIM2_CCER1_CC1P=(1)
+ TIM2_CCER1_CC2E=(4)
+ TIM2_CCER1_CC2P=(5)
+
+; Capture/compare enable register 2
  TIM2_CCER2  = (0x530B)
+; TIMER2_CCER2 bitfields
+ TIM2_CCER2_CC3E=(0)
+ TIM2_CCER2_CC3P=(1)
+
  TIM2_CNTRH  = (0x530C)
  TIM2_CNTRL  = (0x530D)
  TIM2_PSCR  = (0x530E)
@@ -770,30 +839,9 @@ TIM1_OISR_OSN4=7
  TIM2_CCR3H  = (0x5315)
  TIM2_CCR3L  = (0x5316)
 
-; TIM2_CR1 bitfields
- TIM2_CR1_CEN=(0) ; Counter enable
- TIM2_CR1_UDIS=(1) ; Update disable
- TIM2_CR1_URS=(2) ; Update request source
- TIM2_CR1_OPM=(3) ; One-pulse mode
- TIM2_CR1_ARPE=(7) ; Auto-reload preload enable
 
-; TIMER2_CCMR bitfields 
- TIM2_CCMR_CCS=(0) ; input/output select
- TIM2_CCMR_OCPE=(3) ; preload enable
- TIM2_CCMR_OCM=(4)  ; output compare mode 
 
-; TIMER2_CCER1 bitfields
- TIM2_CCER1_CC1E=(0)
- TIM2_CCER1_CC1P=(1)
- TIM2_CCER1_CC2E=(4)
- TIM2_CCER1_CC2P=(5)
 
-; TIMER2_EGR bitfields
- TIM2_EGR_UG=(0) ; update generation
- TIM2_EGR_CC1G=(1) ; Capture/compare 1 generation
- TIM2_EGR_CC2G=(2) ; Capture/compare 2 generation
- TIM2_EGR_CC3G=(3) ; Capture/compare 3 generation
- TIM2_EGR_TG=(6); Trigger generation
 
 ; Timer 4
  TIM4_CR1  = (0x5340)
