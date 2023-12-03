@@ -37,7 +37,7 @@ HALF_LINE=HLINE/2 ; half-line during sync.
 EPULSE=37 ; pulse width during pre and post equalization
 VPULSE=436 ; pulse width during vertical sync. 
 HPULSE=75 ; 4.7µSec horizontal line sync pulse width. 
-LINE_DELAY=(112) 
+LINE_DELAY=(140) 
 
 ; ntsc synchro phases 
 PH_VSYNC=0 
@@ -45,7 +45,7 @@ PH_PRE_VIDEO=1
 PH_VIDEO=2 
 PH_POST_VIDEO=3 
 
-FIRST_VIDEO_LINE=50 
+FIRST_VIDEO_LINE=55 
 VIDEO_LINES=200 
 
 ;ntsc flags 
@@ -76,7 +76,7 @@ ntsc_init:
 .if 1 
     clr SPI_SR 
     clr SPI_DR 
-    mov SPI_CR1,#(1<<SPI_CR1_SPE)|(1<<SPI_CR1_MSTR)
+    mov SPI_CR1,#(1<<SPI_CR1_SPE)|(1<<SPI_CR1_MSTR)|(2<<SPI_CR1_BR)
 .endif 
 ; initialize timer1 for pwm
 ; generate NTSC sync signal  on CH3 
@@ -214,8 +214,10 @@ sync_exit:
              n=n+1 
         .endm 
     .endm 
-
+    BPL=1 
+    VAR_SIZE=1
 ntsc_video_interrupt:
+    _vars VAR_SIZE
     clr TIM1_SR1
     ld a,TIM1_CNTRL 
     and a,#7 
@@ -244,8 +246,16 @@ jitter_cancel:
     ld a,#BYTES_PER_LINE  
     mul x,a  ; video_buffer line  
     addw x,#video_buffer
+    ld a,#BYTES_PER_LINE
+    ld (BPL,sp),a 
     bset SPI_CR1,#SPI_CR1_SPE  
-    _shift_out_scan_line
+;    _shift_out_scan_line
+1$: ld a,(x)
+    incw x 
+    ld SPI_DR,a 
+    btjf SPI_SR,#SPI_SR_TXE,. 
+    dec (BPL,sp)
+    jrne 1$ 
     btjf SPI_SR,#SPI_SR_TXE,.
     clr SPI_DR
     bres SPI_CR1,#SPI_CR1_SPE  
@@ -258,6 +268,6 @@ jitter_cancel:
     bset TIM1_IER,#TIM1_IER_UIE
 3$: btjt ntsc_flags,#F_NO_DTR,4$
     bres DTR_ODR,#DTR_PIN  
-4$:
+4$: _drop VAR_SIZE
     iret 
 

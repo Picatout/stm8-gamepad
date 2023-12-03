@@ -99,6 +99,8 @@ fmstr:: .blkw 1 ; frequency in Mhz of Fmaster
 ptr16::  .blkb 1 ; 16 bits pointer , farptr high-byte 
 ptr8:   .blkb 1 ; 8 bits pointer, farptr low-byte  
 flags:: .blkb 1 ; various boolean flags
+seedx: .blkw 1  ; prng seed bits 0..15
+seedy: .blkw 1  ; prng seed bits 16..31
 
 ; tvout variables 
 ntsc_flags: .blkb 1 
@@ -127,7 +129,8 @@ app_variables:
 
 ; video buffer size=768 bytes 
 	.org 0x80 
-video_buffer: .blkb HRES/8*VRES 
+VBUFF_SIZE=HRES/8*VRES
+video_buffer: .blkb  VBUFF_SIZE
 
 
 	.area CODE 
@@ -177,12 +180,10 @@ Timer4UpdateHandler:
 ; no CPU divisor 
 ;----------------------------------------
 clock_init:	
-.if 0
 	bres CLK_SWCR,#CLK_SWCR_SWIF 
 	mov CLK_SWR,#CLK_SWR_HSE  
 	btjf CLK_SWCR,#CLK_SWCR_SWIF,. 
 	bset CLK_SWCR,#CLK_SWCR_SWEN
-.endif 
 2$: 
 	clr CLK_CKDIVR   	
 	ret
@@ -351,5 +352,9 @@ cold_start:
 	call uart_init
 .endif 
 	rim ; enable interrupts 
+.if WANT_PRNG
+	clrw x 
+	call set_seed
+.endif 	
 	jp main ; in tv_term.asm 
 

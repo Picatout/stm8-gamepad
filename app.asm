@@ -18,7 +18,21 @@
 
 main:
     call beep
-    ld a,#255
-    call pause  
-    jra main 
+    call tv_cls
+    clrw x 
+    call set_seed  
+1$:  
+    call prng 
+    ld a,#HRES 
+    div x,a 
+    push a 
+    call prng 
+    ld a,#VRES 
+    div x,a 
+    ld xh,a 
+    pop a 
+    ld xl,a 
+    call invert_pixel 
+    jra 1$ 
+
 
