@@ -213,4 +213,63 @@ tv_puts:
     call tv_putc 
     jra tv_puts 
 9$:
+    ret
+
+
+;-------------------------------
+; line drawing 
+;  X0<=X1 
+;  Y0<=Y1 
+; input:
+;     XH  x0 
+;     XL  x1 
+;     YH  y0 
+;     YL  y1 
+;--------------------------------
+    X0=1  ; int8 
+    X1=2  ; int8 
+    Y0=3  ; int8 
+    Y1=4  ; int8 
+    DX=5   ; int16 
+    DY=7   ; int16 
+    DELTA=9 ; int16 
+    VAR_SIZE=10
+line:
+    _vars VAR_SIZE 
+    ldw (X0,sp),x 
+    ldw (Y0,sp),y
+    ld a,(X1,sp)
+    sub a,(X0,sp)
+    clrw x 
+    ld xl,a 
+    ldw (DX,sp),x 
+    ld a,(Y1,sp)
+    sub a,(Y0,sp)
+    ld xl,a 
+    ldw (DY,sp),x 
+    sllw x 
+    subw x,(DX,sp)
+    ldw (DELTA,sp),x 
+1$:  
+    ld a,(X0,sp)
+    cp a,(X1,sp)
+    jreq 9$ 
+    ld xl,a 
+    ld a,(Y0,sp)
+    ld xh,a
+    call set_pixel 
+    ldw x,(DELTA,sp)
+    tnzw x
+    jrmi 2$
+    inc (Y0,sp)
+    subw x,(DX,sp)
+    subw x,(DX,sp)
+2$: 
+    addw x,(DY,sp)
+    addw x,(DY,sp)
+    ldw (DELTA,sp),x  
+    inc (X0,sp)
+    jra 1$
+9$:
+    _drop VAR_SIZE 
     ret 

@@ -19,12 +19,8 @@
 main:
     call beep
     call tv_cls
-    push #SPACE 
-1$:  
-    ld a,(1,SP)
-    call tv_putc 
-    inc (1,sp)
-    ld a,#127
-    cp a,(1,sp)
-    jrpl 1$
+    ldw y,#qbf
+    call tv_puts 
     jra . 
+
+qbf: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG."
