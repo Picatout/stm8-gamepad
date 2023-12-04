@@ -79,6 +79,8 @@ pixel_addr:
     ld xl,a 
     ld a,#8 
     div x,a 
+    sub a,#7 
+    neg a 
     ld (BPOS,sp),a
     ld a,xl 
     ld (BOFSL,sp),a 
@@ -175,8 +177,6 @@ tv_putc:
     jra 2$ 
 1$: call set_pixel 
 2$: 
-ld a,#10 
-call pause 
     inc (XCOOR,sp)
     dec (BITCNT,sp)
     jrne 0$

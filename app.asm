@@ -19,14 +19,6 @@
 main:
     call beep
     call tv_cls
-ld a,#0xff 
-ld tv_buffer,a 
-jra . 
-ld a,#'E 
-call tv_putc
-ld a,#'F 
-call tv_putc 
-jra .    
     push #SPACE 
 1$:  
     ld a,(1,SP)
