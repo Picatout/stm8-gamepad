@@ -20,14 +20,28 @@ main:
     call beep
     call tv_cls
     ldw y,#qbf
-    call tv_puts 
-1$:
-    call crlf 
-    _ldxz ticks 
-    _strxz acc16 
-    call put_uint16 
-    ld a,#139
-    call pause
+    call tv_puts
+1$: _clrz cx 
+    ld a,#4 
+    _straz cy  
+    ld a,#SPACE 
+    call tv_putc 
+    ldw x,#0x3030
+    ldw y,#check_board 
+    ld a,#8 
+    call put_sprite 
+    tnz a 
+    jreq 2$
+    _clrz cx 
+    ld a,#4 
+    _straz cy 
+    ld a,#'C 
+    call tv_putc
+2$:
+    ld a,#50 
+    call pause 
     jra 1$ 
 
 qbf: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG."
+
+check_board: .byte 0xAA,0x55,0xAA,0x55,0xAA,0x55,0xAA,0x55

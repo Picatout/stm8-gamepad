@@ -357,3 +357,62 @@ put_uint16:
     _drop VAR_SIZE 
     popw y 
     ret 
+
+
+;--------------------------------------
+; use invert_pixel 
+; to put sprite on screen 
+; normal sprite are 8 bits wide 
+; n rows 
+; input:
+;     A     row count 
+;     XH    ycoord 
+;     XL    xcoord
+;     Y     sprite address  
+; output:
+;     A     collision if not null 
+;-------------------------------------
+;    YCOOR=1
+;    XCOOR=YCOOR+1
+    ROWS=1 ; XCOOR+1
+    SPRITE=ROWS+1
+    SHIFT=SPRITE+2
+    COLL=SHIFT+1
+    VAR_SIZE=COLL
+put_sprite:
+    _vars VAR_SIZE 
+    clr (COLL,sp) 
+    ld (ROWS,sp),a 
+    call pixel_addr 
+    ld (SHIFT,sp),a 
+1$:
+    clr (SPRITE+1,sp)
+    ld a,(y)
+    incw y 
+    ld (SPRITE,sp),a 
+    ld a,(SHIFT,sp)
+2$: jrmi 4$
+3$:
+    srl (SPRITE,sp)
+    rrc (SPRITE+1,sp)
+    sll a
+    jrpl 3$ 
+4$: 
+    ld a,(SPRITE,sp)
+    xor a,(x)
+    ld (x),a 
+    cp a,(SPRITE,sp)
+    jreq 5$
+    inc (COLL,sp)
+5$: ld a,(SPRITE+1,sp)
+    xor a,(1,x)
+    ld (1,x),a 
+    cp a,(SPRITE+1,sp)
+    jreq 6$
+    inc (COLL,sp)
+6$: addw x,#BYTES_PER_LINE 
+    dec (ROWS,sp)
+    jrne 1$
+    ld a,(COLL,sp)
+    _drop VAR_SIZE 
+    ret 

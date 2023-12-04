@@ -13,7 +13,6 @@
 ; master clock frequency in hz 
 	FMSTR=16000000 
 
-DEBUG=1 ; set to 0 for final version 
 
 WANT_PRNG=1 ; to have prng generator 
 

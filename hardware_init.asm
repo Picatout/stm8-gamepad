@@ -108,14 +108,6 @@ font_addr: .blkw 1 ; font table address
 cx: .blkb 1 ; text cursor x coord {0..15} 
 cy: .blkb 1 ; text cursor y coord {0..7}
 
-.if DEBUG 
-; uart variable 
-RX_QUEUE_SIZE=64
-rx1_queue: .ds RX_QUEUE_SIZE ; UART1 receive circular queue 
-rx1_head:  .blkb 1 ; rx1_queue head pointer
-rx1_tail:   .blkb 1 ; rx1_queue tail pointer  
-tib: .blkb 40 ; 
-.endif 
 app_variables:
 
 ; video buffer size=768 bytes 
