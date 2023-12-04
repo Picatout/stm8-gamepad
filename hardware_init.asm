@@ -108,14 +108,9 @@ ntsc_phase: .blkb 1 ;
 scan_line: .blkw 1 ; video lines {0..262} 
 font_addr: .blkw 1 ; font table address 
 
-; tv terminal variables 
-cursor_x: .blkb 1 
-cursor_y: .blkb 1 
-cursor_delay: .blkw 1 ;  333 msec  delay 
-char_under: .blkb 1 ; character under cursor 
-char_cursor: .blkb 1 ; character used for cursor 
-saved_cx: .blkb 1 ; saved cursor position
-saved_cy: .blkb 1 ; restored cursor position 
+; display variables 
+cx: .blkb 1 ; text cursor x coord {0..15} 
+cy: .blkb 1 ; text cursor y coord {0..7}
 
 .if DEBUG 
 ; uart variable 
@@ -130,7 +125,7 @@ app_variables:
 ; video buffer size=768 bytes 
 	.org 0x80 
 VBUFF_SIZE=HRES/8*VRES
-video_buffer: .blkb  VBUFF_SIZE
+tv_buffer: .blkb  VBUFF_SIZE
 
 
 	.area CODE 
@@ -335,8 +330,9 @@ cold_start:
 0$: clr (x)
 	decw x 
 	jrne 0$
-; disable ADC1, not used
-	bres CLK_PCKENR2,#CLK_PCKENR2_ADC1 
+; disable all peripherals clock 
+	clr CLK_PCKENR1 
+	clr CLK_PCKENR2 
 ; activate pull up on all inputs 
 ; or push pull on output 
 	ld a,#255 
@@ -344,6 +340,10 @@ cold_start:
 	ld PB_CR1,a 
 	ld PC_CR1,a 
 	ld PD_CR1,a 
+	ld a,#(1<<4)|(1<<5)|(1<<7)
+	or a,PC_DDR 
+	ld PC_DDR,A 
+	clr PC_ODR
 	call clock_init	
 	call timer4_init
 	call timer2_init

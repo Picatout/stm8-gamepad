@@ -16,11 +16,6 @@
 ;     along with ntsc_tuto.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 
-DTR_ODR=PC_ODR 
-DTR_DDR=PC_DDR 
-DTR_CR1=PC_CR1 
-DTR_CR2=PC_CR2 
-DTR_PIN=3 ; DTR_PIN on PC:3 
 
 ; display resolution in pixels 
 HRES=96
@@ -68,16 +63,17 @@ F_NO_DTR=5 ; forbid DTR during some operation
 ntsc_init:
     _clrz ntsc_flags 
     _clrz ntsc_phase 
+; enable TIMER1 and SPI clock 
+    bset CLK_PCKENR1,#CLK_PCKENR1_TIM1
+    bset CLK_PCKENR1,#CLK_PCKENR1_SPI
 ; set MOSI pin as output high-speed push-pull 
     bset PC_DDR,#6 
     bres PC_ODR,#6
     bset PC_CR1,#6
     bset PC_CR2,#6
-.if 1 
     clr SPI_SR 
     clr SPI_DR 
     mov SPI_CR1,#(1<<SPI_CR1_SPE)|(1<<SPI_CR1_MSTR)|(2<<SPI_CR1_BR)
-.endif 
 ; initialize timer1 for pwm
 ; generate NTSC sync signal  on CH3 
     mov TIM1_IER,#1 ; UIE set 
@@ -238,14 +234,14 @@ jitter_cancel:
     nop 
 ; compute postion in buffer 
 ; 3 scan line/video buffer line 
-; ofs=scan_line/3+video_buffer       
+; ofs=scan_line/3+tv_buffer       
     _ldxz scan_line 
     subw x,#FIRST_VIDEO_LINE
     ld a,#3 
     div x,a
     ld a,#BYTES_PER_LINE  
-    mul x,a  ; video_buffer line  
-    addw x,#video_buffer
+    mul x,a  ; tv_buffer line  
+    addw x,#tv_buffer
     ld a,#BYTES_PER_LINE
     ld (BPL,sp),a 
     bset SPI_CR1,#SPI_CR1_SPE  
@@ -267,7 +263,6 @@ jitter_cancel:
     bres TIM1_IER,#TIM1_IER_CC2IE
     bset TIM1_IER,#TIM1_IER_UIE
 3$: btjt ntsc_flags,#F_NO_DTR,4$
-    bres DTR_ODR,#DTR_PIN  
 4$: _drop VAR_SIZE
     iret 
 

@@ -19,20 +19,17 @@
 main:
     call beep
     call tv_cls
-    clrw x 
-    call set_seed  
+ld a,#'E 
+call tv_putc
+ld a,#'F 
+call tv_putc 
+jra .    
+    push #SPACE 
 1$:  
-    call prng 
-    ld a,#HRES 
-    div x,a 
-    push a 
-    call prng 
-    ld a,#VRES 
-    div x,a 
-    ld xh,a 
-    pop a 
-    ld xl,a 
-    call invert_pixel 
-    jra 1$ 
-
-
+    ld a,(1,SP)
+    call tv_putc 
+    inc (1,sp)
+    ld a,#127
+    cp a,(1,sp)
+    jrpl 1$
+    jra . 
