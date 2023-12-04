@@ -21,6 +21,13 @@ main:
     call tv_cls
     ldw y,#qbf
     call tv_puts 
-    jra . 
+1$:
+    call crlf 
+    _ldxz ticks 
+    _strxz acc16 
+    call put_uint16 
+    ld a,#139
+    call pause
+    jra 1$ 
 
 qbf: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG."

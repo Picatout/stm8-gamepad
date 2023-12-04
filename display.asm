@@ -21,18 +21,14 @@
 ; clear tv display 
 ;--------------------------
 tv_cls:
-    ldw x,#VBUFF_SIZE
-    pushw x 
-    ldw x,#tv_buffer
-1$: clr (x)
-    incw x 
-    dec (2,sp)
-    jrne 1$ 
-    dec (1,sp)
-    jrne 1$
-    _clrz cx 
-    _clrz cy 
-    _drop 2
+    pushw y 
+    ldw x,#VBUFF_SIZE 
+    ldw y,#tv_buffer
+1$: clr (y)
+    incw y 
+    decw x 
+    jrne 1$  
+    popw y 
     ret 
 
 ;------------------------
@@ -131,6 +127,74 @@ invert_pixel:
     ld (x),a 
     ret 
 
+;-----------------------------
+; move text 1 line up 
+; clear bottom line 
+;-----------------------------
+scroll_up:
+    push a 
+    pushw x 
+    pushw y 
+; count bytes to copy     
+    ldw x,#(VRES-FONT_HEIGHT)*BYTES_PER_LINE
+    pushw x 
+; destination address     
+    ldw x,#tv_buffer 
+    ldw y,x 
+; source address     
+    addw y,#BYTES_PER_LINE*FONT_HEIGHT 
+1$: ld a,(y)
+    incw y 
+    ld (x),a
+    incw x
+    pushw x 
+    ldw x,(3,sp)
+    decw x
+    ldw (3,sp),x 
+    popw x 
+    jrne 1$     
+; clear bottom text line 
+    ldw x,#(FONT_HEIGHT*BYTES_PER_LINE) 
+    ldw (1,sp),x 
+    subw y,(1,sp)
+2$: clr (y)
+    incw y 
+    decw x 
+    jrne 2$    
+    _drop 2     
+    popw y 
+    popw x 
+    pop a 
+    ret 
+
+;----------------------------
+; move text cursor to 
+; next line 
+;----------------------------
+crlf:
+    _clrz cx 
+    _ldaz cy 
+    inc a
+    cp a,#8
+    jrmi 1$
+    call scroll_up
+    ret  
+1$: 
+    _straz cy 
+    ret 
+
+;------------------------------
+; move text cursor right 
+;------------------------------
+cursor_right:
+    _ldaz cx 
+    inc a 
+    _straz cx 
+    cp a,#16 
+    jrmi 2$ 
+    call crlf  
+2$:
+    ret 
 
 ;-------------------------
 ; put character on tv 
@@ -186,17 +250,7 @@ tv_putc:
     inc (YCOOR,sp)
     dec (BYTECNT,sp)
     jrne 10$
-    _ldaz cx 
-    inc a 
-    _straz cx 
-    cp a,#16
-    jrmi 3$
-    _clrz cx 
-    _ldaz cy 
-    inc a 
-    and a,#7 
-    _straz cy 
-3$:    
+    call cursor_right
     _drop VAR_SIZE 
     popw y 
     ret 
@@ -272,4 +326,34 @@ line:
     jra 1$
 9$:
     _drop VAR_SIZE 
+    ret 
+
+
+;----------------------------
+; print unsigned integer 
+; input:
+;    X uint16_t 
+;-----------------------------
+    UINT=1
+    ISTR=UINT+2 
+    VAR_SIZE=ISTR+5
+put_uint16:
+    pushw y 
+    _vars VAR_SIZE 
+    ldw (UINT,sp),x 
+    ldw x,sp 
+    addw x,#ISTR+5
+    ldw y,x 
+    clr (y)
+    ldw x,(UINT,sp) 
+1$: decw y 
+    ld a,#10 
+    div x,a 
+    add a,#'0 
+    ld (y),a
+    tnzw x 
+    jrne 1$ 
+    call tv_puts 
+    _drop VAR_SIZE 
+    popw y 
     ret 
