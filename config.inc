@@ -17,8 +17,6 @@ DEBUG=1 ; set to 0 for final version
 
 WANT_PRNG=1 ; to have prng generator 
 
-WANT_TERMINAL=1 ; to have support for usart terminal  
-
 RX_QUEUE_SIZE=16
 TIB_SIZE=40
 

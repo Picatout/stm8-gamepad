@@ -65,11 +65,7 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int15 TIM3 Update/overflow
 	int NonHandledInterrupt ;int16 TIM3 Capture/compare
 	int NonHandledInterrupt ;int17 UART1 TX completed
-.if DEBUG 
-	int UartRxHandler		;int18 UART1 RX full 
-.else
 	int NonHandledInterrupt ;int18 UART1 RX full  
-.endif 
 	int NonHandledInterrupt ;int19 I2C 
 	int NonHandledInterrupt ;int20 UART3 TX completed
 	int NonHandledInterrupt ;int21 UART3 RX full
@@ -348,9 +344,6 @@ cold_start:
 	call timer4_init
 	call timer2_init
 	call ntsc_init ;
-.if DEBUG 
-	call uart_init
-.endif 
 	rim ; enable interrupts 
 .if WANT_PRNG
 	clrw x 

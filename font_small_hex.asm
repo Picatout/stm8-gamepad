@@ -1,6 +1,6 @@
 
 	.area CODE 
-SMALL_FONT_WIDTH=5
+SMALL_FONT_WIDTH=4
 SMALL_FONT_HEIGHT=6
 font_hex_5x6:
 .byte	0xe0,0xa0,0xa0,0xa0,0xe0,0x00 ;0
