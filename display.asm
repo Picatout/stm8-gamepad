@@ -39,11 +39,11 @@ tv_cls:
 ;------------------------
 bit_mask:
     push a 
-    ld a,#1 
+    ld a,#128 
 1$: tnz (1,sp)
     jreq 9$ 
 2$:
-    sll a 
+    srl a 
     dec (1,sp)
     jrne 2$
 9$: _drop 1 
@@ -75,8 +75,8 @@ pixel_addr:
     ld xl,a 
     ld a,#8 
     div x,a 
-    sub a,#7 
-    neg a 
+;    sub a,#7 
+;    neg a 
     ld (BPOS,sp),a
     ld a,xl 
     ld (BOFSL,sp),a 
