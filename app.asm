@@ -20,6 +20,7 @@ main:
     call beep
     call tv_cls
     ldw y,#qbf
+    call tv_puts
 1$: _clrz cx 
     ld a,#4 
     _straz cy  

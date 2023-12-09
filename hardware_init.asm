@@ -102,7 +102,6 @@ seedy: .blkw 1  ; prng seed bits 16..31
 ntsc_flags: .blkb 1 
 ntsc_phase: .blkb 1 ; 
 scan_line: .blkw 1 ; video lines {0..262} 
-font_addr: .blkw 1 ; font table address 
 
 ; display variables 
 cx: .blkb 1 ; text cursor x coord {0..15} 
