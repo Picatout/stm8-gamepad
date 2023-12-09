@@ -201,12 +201,13 @@ cursor_right:
 ; input:
 ;    A    character 
 ;------------------------
-    YCOOR=1
-    XCOOR=YCOOR+1
+    XCOORH=1
+    XCOOR=XCOORH+1
     BYTECNT=XCOOR+1
-    BITCNT=BYTECNT+1
-    BYTE=BITCNT+1
-    VAR_SIZE=BYTE  
+    SHIFT=BYTECNT+1
+    MASK=SHIFT+1
+    ROW=MASK+2
+    VAR_SIZE=ROW+1  
 tv_putc:
     pushw y 
     _vars VAR_SIZE 
@@ -215,41 +216,58 @@ tv_putc:
     mul x,a 
     addw x,#font_6x8
     ldw y,x 
+    ldw x,#0x03ff
+    ldw (MASK,sp),x 
+    ld a,#FONT_HEIGHT
+    ld (BYTECNT,sp),a 
     _ldaz cx 
     ldw x,#FONT_WIDTH  
     mul x,a
-    ld a,xl     
-    ld (XCOOR,sp),a 
+    ld a,#8 
+    div x,a 
+    ld (SHIFT,sp),a 
+    ldw (XCOORH,sp),x     
     _ldaz cy 
-    ld xl,a 
-    ld a,#FONT_HEIGHT
-    ld (BYTECNT,sp),a 
-    mul x,a
-    ld a,xl 
-    ld (YCOOR,sp),a 
-10$:
-    ld a,#FONT_WIDTH
-    ld (BITCNT,sp),a 
+    ldw x,#FONT_HEIGHT
+    mul x,a 
+    ld a,#BYTES_PER_LINE
+    mul x,a 
+    addw x,(XCOORH,sp)
+    addw x,#tv_buffer 
+; shift MASK 
+    ld a,(SHIFT,sp)
+    jreq 4$
+    scf 
+3$: rrc (MASK,sp)
+    rrc (MASK+1,sp)
+    dec a 
+    jrne 3$
+; get font row 
+; and shift it 
+4$:     
     ld a,(y)
     incw y 
-    ld (BYTE,sp),a
-0$:
-    ldw x,(YCOOR,sp)
-    sll (BYTE,sp)    
-    jrc 1$ 
-    call reset_pixel
-    jra 2$ 
-1$: call set_pixel 
-2$: 
-    inc (XCOOR,sp)
-    dec (BITCNT,sp)
-    jrne 0$
-    ld a,(XCOOR,sp)
-    sub a,#FONT_WIDTH
-    ld (XCOOR,sp),a 
-    inc (YCOOR,sp)
+    ld (ROW,sp),a 
+    clr (ROW+1,sp)
+    ld a,(SHIFT,sp)
+    jreq 6$ 
+5$:  
+    srl (ROW,sp)
+    rrc (ROW+1,sp)
+    dec a 
+    jrne 5$ 
+6$: 
+    ld a,(MASK,sp)
+    and a,(x)
+    or a,(ROW,sp)
+    ld (x),a 
+    ld a,(1,x)
+    and a,(MASK+1,sp)
+    or a,(ROW+1,sp)
+    ld (1,x),a 
+    addw x,#BYTES_PER_LINE
     dec (BYTECNT,sp)
-    jrne 10$
+    jrne 4$ 
     call cursor_right
     _drop VAR_SIZE 
     popw y 
