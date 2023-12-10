@@ -305,6 +305,29 @@ beep:
 	call tone  
 	ret 
 
+;-------------------------
+; read keypad
+; ouput:
+;    A 
+;       BTN_A -> bit 0 
+;       BTN_B -> bit 1 
+;       BTN_LEFT -> bit 2 
+;       BTN_RIGHT -> bit 3 
+;       BTN_DOWN -> bit 4 
+;       BNT_UP -> bit 5 
+;-------------------------
+read_keypad:
+	ld a,BTN_CROSS_IDR 
+	srl a 
+	and a,#0x3C 
+	push a 
+	ld a,BTN_SEL_IDR 
+	swap a 
+	and a,#3 
+	or a,(1,sp)
+	_drop 1 
+	ret 
+
 ;-------------------------------------
 ;  initialization entry point 
 ;-------------------------------------
@@ -327,9 +350,7 @@ cold_start:
 	ld PB_CR1,a 
 	ld PC_CR1,a 
 	ld PD_CR1,a 
-	ld a,#(1<<4)|(1<<5)|(1<<7)
-	or a,PC_DDR 
-	ld PC_DDR,A 
+	bset PC_DDR,#7 
 	clr PC_ODR
 	call clock_init	
 	call timer4_init

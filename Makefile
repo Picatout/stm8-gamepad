@@ -61,4 +61,6 @@ flash: $(LIB)
 read: 
 	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s flash -b 16384 -r flash.dat 
 
- 
+# read option bytes 
+opt:
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s opt -b 11 -r opt.bin

@@ -21,6 +21,15 @@ main:
     call tv_cls
     ldw y,#qbf
     call tv_puts
+0$:  
+    call read_keypad 
+    clrw x 
+    ld xl,a 
+    call put_uint16
+    call crlf
+    ld a,#10
+    call pause 
+    jra 0$ 
 1$: _clrz cx 
     ld a,#4 
     _straz cy  
