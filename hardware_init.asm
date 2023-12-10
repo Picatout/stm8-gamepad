@@ -325,6 +325,7 @@ read_keypad:
 	swap a 
 	and a,#3 
 	or a,(1,sp)
+	xor a,#0x3f 
 	_drop 1 
 	ret 
 
