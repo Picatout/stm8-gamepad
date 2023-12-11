@@ -213,24 +213,6 @@ sync_exit:
 ntsc_video_interrupt:
     _vars VAR_SIZE
     clr TIM1_SR1
-.if 0
-    ld a,TIM1_CNTRL 
-    and a,#7 
-    push a 
-    push #0 
-    ldw x,#jitter_cancel 
-    addw x,(1,sp)
-    _drop 2 
-    jp (x)
-jitter_cancel:
-    nop 
-    nop 
-    nop 
-    nop 
-    nop 
-    nop 
-    nop 
-.endif     
 ; compute postion in buffer 
 ; 3 scan line/video buffer line 
 ; ofs=scan_line/3+tv_buffer       

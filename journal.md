@@ -2,6 +2,7 @@
 
 * Test keypad complété.
 * Modification à tvout.asm
+* Retravaillé certains caractères de la police font_6x8.asm
 
 ### 2023-12-09
 

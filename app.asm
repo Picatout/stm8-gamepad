@@ -29,14 +29,14 @@ main:
     ldw (OLDY,sp),x 
     call beep
     call tv_cls
-.if 0    
+.if 1    
     ldw y,#qbf 
     call tv_puts     
 ldw x,#0
-ldw y,#63
+ldw y,#(24<<8)+63
 call line 
 ldw x,#(2<<8)+2
-ldw y,#63 
+ldw y,#(24<<8)+63 
 call line 
 jra .    
 .endif 
