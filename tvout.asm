@@ -47,9 +47,7 @@ VIDEO_LINES=200
 F_EVEN=0 ; odd/even field flag 
 F_CURSOR=1 ; tv cursor active 
 F_CUR_VISI=2 ; tv cursor state, 1 visible 
-F_LECHO=3 ; local echo 
 F_VIDEO=4 ; enable video output 
-F_NO_DTR=5 ; forbid DTR during some operation
 
 ;-------------------------------
     .area CODE 
@@ -215,6 +213,7 @@ sync_exit:
 ntsc_video_interrupt:
     _vars VAR_SIZE
     clr TIM1_SR1
+.if 0
     ld a,TIM1_CNTRL 
     and a,#7 
     push a 
@@ -231,7 +230,7 @@ jitter_cancel:
     nop 
     nop 
     nop 
-    nop 
+.endif     
 ; compute postion in buffer 
 ; 3 scan line/video buffer line 
 ; ofs=scan_line/3+tv_buffer       
@@ -252,17 +251,17 @@ jitter_cancel:
     btjf SPI_SR,#SPI_SR_TXE,. 
     dec (BPL,sp)
     jrne 1$ 
-    btjf SPI_SR,#SPI_SR_TXE,.
     clr SPI_DR
+    btjf SPI_SR,#SPI_SR_TXE,. 
+    btjt SPI_SR,#SPI_SR_BSY,.
     bres SPI_CR1,#SPI_CR1_SPE  
     _ldxz scan_line 
     incw x 
     _strxz scan_line 
     cpw x,#FIRST_VIDEO_LINE+VIDEO_LINES
-    jrmi 3$ 
+    jrmi 4$ 
     bres TIM1_IER,#TIM1_IER_CC2IE
     bset TIM1_IER,#TIM1_IER_UIE
-3$: btjt ntsc_flags,#F_NO_DTR,4$
 4$: _drop VAR_SIZE
     iret 
 

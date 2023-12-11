@@ -308,8 +308,14 @@ tv_puts:
     VAR_SIZE=10
 line:
     _vars VAR_SIZE 
-    ldw (X0,sp),x 
+    ldw (X0,sp),x
     ldw (Y0,sp),y
+    ld a,xh 
+    cp a,(X1,sp)
+    jreq 3$ 
+    ld a,yh 
+    cp a,(Y1,sp)
+    jreq 4$ 
     ld a,(X1,sp)
     sub a,(X0,sp)
     clrw x 
@@ -342,6 +348,28 @@ line:
     ldw (DELTA,sp),x  
     inc (X0,sp)
     jra 1$
+3$: ; vertical line 
+    ld a,(X0,sp)
+    ld xl,a 
+    ld a,(Y0,sp)
+    ld xh,a 
+    call set_pixel 
+    inc (Y0,sp)
+    ld a,(Y0,sp)
+    cp a,(Y1,sp)
+    jrpl 9$ 
+    jra 3$ 
+4$: ; horizontal line 
+    ld a,(X0,sp)
+    ld xl, a 
+    ld a,(Y0,sp)
+    ld xh,a 
+    call set_pixel
+    inc (X0,sp)
+    ld a,(X0,sp)
+    cp a,(X1,sp)
+    jrpl 9$ 
+    jra 4$ 
 9$:
     _drop VAR_SIZE 
     ret 
