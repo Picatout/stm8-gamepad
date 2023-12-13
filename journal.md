@@ -1,3 +1,13 @@
+### 2023-12-12
+
+* Travail sur snake.asm. 
+    * Mécanique de déplacement du serpent déboguée.
+    * Lecture du keypad déboguée.
+
+### 2023-12-11
+
+* Travail sur snake.asm
+
 ### 2023-12-10
 
 * Test keypad complété.

@@ -22,7 +22,6 @@ HRES=96
 VRES=64 
 BYTES_PER_LINE=12
 
-VISIBLE_SCAN_LINES=192 
 
 ; values based on 16 Mhz crystal
 
@@ -41,7 +40,7 @@ PH_VIDEO=2
 PH_POST_VIDEO=3 
 
 FIRST_VIDEO_LINE=55 
-VIDEO_LINES=200 
+VIDEO_LINES=192
 
 ;ntsc flags 
 F_EVEN=0 ; odd/even field flag 

@@ -108,6 +108,9 @@ cx: .blkb 1 ; text cursor x coord {0..15}
 cy: .blkb 1 ; text cursor y coord {0..7}
 
 app_variables:
+snake_len: .blkb 1 ; snake length 
+snake_dir: .blkb 1 ; head direction 
+snake_body: .blkw 32 ;  snake rings coords 
 
 ; video buffer size=768 bytes 
 	.org 0x80 
@@ -256,7 +259,7 @@ set_int_priority::
 pause:
 	_straz delay_timer 
 	bset flags,#F_GAME_TMR 
-1$: wfi 	
+1$: 	
 	btjt flags,#F_GAME_TMR,1$ 
 	ret 
 
@@ -305,18 +308,15 @@ beep:
 	call tone  
 	ret 
 
-;-------------------------
-; read keypad
-; ouput:
-;    A 
-;       BTN_A -> bit 0 
-;       BTN_B -> bit 1 
-;       BTN_LEFT -> bit 2 
-;       BTN_RIGHT -> bit 3 
-;       BTN_DOWN -> bit 4 
-;       BNT_UP -> bit 5 
-;-------------------------
-read_keypad:
+
+
+;------------------------
+; reading keypad 
+; without debouncing 
+; output:
+;     A   reading 
+;-----------------------
+kpad_input:
 	ld a,BTN_CROSS_IDR 
 	srl a 
 	and a,#0x3C 
@@ -327,6 +327,39 @@ read_keypad:
 	or a,(1,sp)
 	xor a,#0x3f 
 	_drop 1 
+	ret 
+
+
+;-------------------------
+; read keypad
+; ouput:
+;    A 
+;       BTN_A -> bit 0 (1)
+;       BTN_B -> bit 1 (2)
+;       BTN_LEFT -> bit 2 (4)
+;       BTN_RIGHT -> bit 3 (8)
+;       BTN_DOWN -> bit 4 (16)
+;       BNT_UP -> bit 5  (32)
+;-------------------------
+	DEBOUNCE=1
+	BUTTONS=DEBOUNCE+2
+	VAR_SIZE=BUTTONS 
+read_keypad:
+	pushw x 
+	_vars VAR_SIZE
+	call kpad_input 
+1$:	ld (BUTTONS,sp),a  
+    ldw x,ticks 
+	addw x,#10 
+	ldw (DEBOUNCE,sp),x 	
+2$: call kpad_input 
+	cp a,(BUTTONS,sp)
+	jrne 1$
+	ldw x,ticks 
+	cpw x,(DEBOUNCE,sp)
+	jrne 2$
+	_drop VAR_SIZE  
+	popw x 
 	ret 
 
 ;-------------------------------------

@@ -27,7 +27,9 @@ tv_cls:
 1$: clr (y)
     incw y 
     decw x 
-    jrne 1$  
+    jrne 1$
+    _clrz cx 
+    _clrz cy   
     popw y 
     ret 
 
@@ -418,10 +420,8 @@ put_uint16:
 ; output:
 ;     A     collision if not null 
 ;-------------------------------------
-;    YCOOR=1
-;    XCOOR=YCOOR+1
-    ROWS=1 ; XCOOR+1
-    SPRITE=ROWS+1
+    ROWS=1
+    SPRITE=ROWS+1 
     SHIFT=SPRITE+2
     COLL=SHIFT+1
     VAR_SIZE=COLL
@@ -430,15 +430,15 @@ put_sprite:
     clr (COLL,sp) 
     ld (ROWS,sp),a 
     call pixel_addr 
-    ld (SHIFT,sp),a 
-1$:
+    ld (SHIFT,sp),a
+1$:    
     clr (SPRITE+1,sp)
     ld a,(y)
     incw y 
     ld (SPRITE,sp),a 
     ld a,(SHIFT,sp)
 2$: jrmi 4$
-3$:
+3$: ; shift sprite and mask
     srl (SPRITE,sp)
     rrc (SPRITE+1,sp)
     sll a
@@ -446,13 +446,15 @@ put_sprite:
 4$: 
     ld a,(SPRITE,sp)
     xor a,(x)
-    ld (x),a 
+    ld (x),a
+    and a,(SPRITE,sp)
     cp a,(SPRITE,sp)
     jreq 5$
     inc (COLL,sp)
 5$: ld a,(SPRITE+1,sp)
     xor a,(1,x)
     ld (1,x),a 
+    and a,(SPRITE+1,sp) 
     cp a,(SPRITE+1,sp)
     jreq 6$
     inc (COLL,sp)

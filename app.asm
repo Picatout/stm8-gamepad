@@ -23,13 +23,16 @@
     KPAD=OLDX+1
     VAR_SIZE=KPAD
 main:
+.if 0
     _vars VAR_SIZE 
     ldw x,#0x1C2C  
     ldw (CY,sp),x 
     ldw (OLDY,sp),x 
+.endif 
     call beep
+    call snake 
     call tv_cls
-.if 1    
+.if 0    
     ldw y,#qbf 
     call tv_puts     
 ldw x,#0
@@ -38,7 +41,10 @@ call line
 ldw x,#(2<<8)+2
 ldw y,#(24<<8)+63 
 call line 
-jra .    
+jra .
+inf_loop:
+wfi 
+jra inf_loop     
 .endif 
     ldw x,(CY,sp)
     ldw y,#check_board 
