@@ -79,7 +79,7 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int29  not used
 
 
-KERNEL_VAR_ORG=4
+KERNEL_VAR_ORG=0x60
 ;--------------------------------------
     .area DATA (ABS)
 	.org KERNEL_VAR_ORG 
@@ -104,16 +104,9 @@ ntsc_phase: .blkb 1 ;
 scan_line: .blkw 1 ; video lines {0..262} 
 
 ; display variables 
-cx: .blkb 1 ; text cursor x coord {0..15} 
-cy: .blkb 1 ; text cursor y coord {0..7}
+cy: .blkb 1 ; text cursor y coord {0..7} 
+cx: .blkb 1 ; text cursor y coord {0..15}
 
-app_variables:
-score: .blkw 1 ; game score 
-game_flags: .blkb 1 ; game boolean flags 
-snake_len: .blkb 1 ; snake length 
-snake_dir: .blkb 1 ; head direction 
-food_coord: .blkw 1 ; food coordinates
-snake_body: .blkw 32 ;  snake rings coords 
 
 ; video buffer size=768 bytes 
 	.org 0x80 
@@ -343,6 +336,7 @@ kpad_input:
 ;       BTN_RIGHT -> bit 3 (8)
 ;       BTN_DOWN -> bit 4 (16)
 ;       BNT_UP -> bit 5  (32)
+;    Z   set no key 
 ;-------------------------
 	DEBOUNCE=1
 	BUTTONS=DEBOUNCE+2
@@ -362,8 +356,42 @@ read_keypad:
 	cpw x,(DEBOUNCE,sp)
 	jrne 2$
 	_drop VAR_SIZE  
-	popw x 
+	popw x
+	tnz a 
 	ret 
+
+;----------------------------
+; wait until key pressed 
+; output:
+;    A    key
+;----------------------------
+wait_key:
+	call read_keypad 
+	jreq wait_key
+	ret 
+
+;--------------------------
+; wait for buttons released 
+; but no more than 100msec
+; input:
+;    X   maximum delay msec
+;--------------------------
+    DLY=1
+    VAR_SIZE=2
+wait_key_release:
+    _vars VAR_SIZE
+    addw x,ticks
+    ldw (DLY,sp),x 
+1$: 
+    ldw x,ticks 
+    cpw x,(DLY,sp)
+    jreq 9$     
+    call read_keypad
+    tnz a 
+    jrne 1$ 
+9$:
+    _drop VAR_SIZE 
+    ret 
 
 ;-------------------------------------
 ;  initialization entry point 

@@ -7,6 +7,16 @@
 ; and boulder end game
 ;------------------------
 
+    .area G_DATA (ABS)
+    .org 4 
+app_variables:
+score: .blkw 1 ; game score 
+max_score: .blkw 1 ; maximum score 
+game_flags: .blkb 1 ; game boolean flags 
+snake_len: .blkb 1 ; snake length 
+snake_dir: .blkb 1 ; head direction 
+food_coord: .blkw 1 ; food coordinates
+snake_body: .blkw 32 ;  snake rings coords 
 
     .area CODE 
 
@@ -157,12 +167,27 @@ food_collision:
     call draw_sprite
     bset game_flags,#F_NO_FOOD 
     bset game_flags,#F_FOOD_COLL
+    _incz snake_len 
     _ldxz score 
     incw x 
+    ld a,food_coord ; mouse y coord 
+    cp a,#9 
+    jrne 5$
+    incw x      
+5$: cp a,#VRES-MOUSE_HEIGHT-1
+    jrne 6$ 
+    incw  x 
+6$: ld a,food_coord+1 ; mouse x coord
+    cp a,#1 
+    jrne 7$ 
+    incw x  
+7$: cp a,#HRES-MOUSE_WIDTH-1
+    jrne 8$
+    incw x
+8$:
     _strxz score
     _clrz food_coord 
     _clrz food_coord+1     
-    _incz snake_len 
 9$:
     _drop 1 
     popw x 
@@ -284,28 +309,6 @@ move_snake:
 
 
 ;--------------------------
-; wait for buttons released 
-; but no more than 100msec
-;--------------------------
-    DLY=1
-    VAR_SIZE=2
-wait_btn_release:
-    _vars VAR_SIZE
-    ldw x,ticks 
-    addw x,#100 
-    ldw (DLY,sp),x 
-1$: 
-    ldw x,ticks 
-    cpw x,(DLY,sp)
-    jreq 9$     
-    call read_keypad
-    tnz a 
-    jrne 1$ 
-9$:
-    _drop VAR_SIZE 
-    ret 
-
-;--------------------------
 ; rotate snake head 
 ; input
 ;     A   {LEFT,RIGHT}
@@ -333,7 +336,8 @@ rotate_head:
     addw y,#HEAD_UP 
     ldw x,snake_body 
     call draw_sprite 
-    call wait_btn_release
+    ldw x,#100
+    call wait_key_release
     ret 
 
 ;--------------------------
@@ -408,6 +412,7 @@ snake_init:
     clrw x 
     _strxz score 
     _strxz food_coord
+    call set_seed  ; using ticks 
     ld a,#3
     _straz snake_len 
     ld a,#EAST
@@ -443,11 +448,39 @@ snake:
     call pause 
     jra 1$
 game_over:
+    _ldxz score 
+    cpw x,max_score 
+    jrmi 4$ 
+    _strxz max_score
+4$:
+    ldw x,#0xffff 
+    call wait_key_release
+    call tv_cls 
     ldw y,#gover 
     call tv_puts 
-    ld a,#100
-    call pause 
-    jra snake 
+    ldw y,#score_str
+    call tv_puts 
+    _ldxz score 
+    call put_uint16
+    call crlf 
+    ldw y,#max_score_str
+    call tv_puts 
+    _ldxz max_score 
+    call put_uint16
+    call crlf
+    ldw y,#prompt 
+    call tv_puts 
+6$:
+    call wait_key 
+    cp a,#BTN_A 
+    jreq snake 
+    cp a,#BTN_B 
+    jreq 9$
+    jra 6$
+9$:     
     ret 
 
-gover: .asciz " game over"
+gover: .asciz "game over\r"
+score_str: .asciz "score: "
+max_score_str: .asciz "max score: "
+prompt: .asciz "A new game\rB exit"

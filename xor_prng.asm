@@ -105,8 +105,8 @@ prng::
 ;---------------------------------
 ; initialize seedx:seedy 
 ; input:
-;    X    0 -> seedx=ticks, seedy=0x6000 
-;    X    !0 -> seedx=X, seedy=[0x60<<8|XL]
+;    X    0 -> seedx=ticks, seedy=[0x6000] 
+;    X    !0 -> seedx=X, y=[0x6000], seedy=swapw(y)
 ;-------------------------------------------
 set_seed:
     tnzw x 
@@ -118,8 +118,9 @@ set_seed:
     ret 
 1$:  
     _strxz seedx
-    _clrz seedy 
-    _clrz seedy+1
+    ldw y,0x6000
+    swapw y 
+    _stryz seedy 
     ret 
 
 .endif ; WANT_PRNG 

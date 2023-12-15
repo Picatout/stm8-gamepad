@@ -1,6 +1,8 @@
 ### 2023-12-15
 
 * Complété mécanique des collisions.
+* Ajout message de fin de partie avec pointage et pointage maximum et prompt pour nouvelle partie ou quitter.
+* Ajout du menu jeux.
 
 ### 2023-12-13
 

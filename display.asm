@@ -17,6 +17,14 @@
 ;;
 
 
+CHAR_PER_LINE=16
+LINE_PER_SCREEN=8
+
+    .macro _curpos x,y 
+    ldw x,#(y<<8)+x 
+    _strxz cy 
+    .endm 
+    
 ;--------------------------
 ; clear tv display 
 ;--------------------------
@@ -169,6 +177,8 @@ scroll_up:
     pop a 
     ret 
 
+
+
 ;----------------------------
 ; move text cursor to 
 ; next line 
@@ -177,7 +187,7 @@ crlf:
     _clrz cx 
     _ldaz cy 
     inc a
-    cp a,#8
+    cp a,#LINE_PER_SCREEN
     jrmi 1$
     call scroll_up
     ret  
@@ -189,13 +199,10 @@ crlf:
 ; move text cursor right 
 ;------------------------------
 cursor_right:
+    _incz cx 
     _ldaz cx 
-    inc a 
-    _straz cx 
-    cp a,#16 
-    jrmi 2$ 
-    call crlf  
-2$:
+    cp a,#CHAR_PER_LINE  
+    jrpl crlf 
     ret 
 
 ;-------------------------
@@ -213,6 +220,11 @@ cursor_right:
 tv_putc:
     pushw y 
     _vars VAR_SIZE 
+    cp a,#CR 
+    jrne 1$ 
+    call crlf 
+    jp 9$
+ 1$:
     sub a,#SPACE 
     ldw x,#FONT_HEIGHT
     mul x,a 
@@ -271,6 +283,7 @@ tv_putc:
     dec (BYTECNT,sp)
     jrne 4$ 
     call cursor_right
+9$:
     _drop VAR_SIZE 
     popw y 
     ret 
