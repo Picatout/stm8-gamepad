@@ -418,7 +418,8 @@ put_uint16:
 ;     XL    xcoord
 ;     Y     sprite address  
 ; output:
-;     A     collision if not null 
+;     A     collision if not null
+;     Z     if not zero the collision  
 ;-------------------------------------
     ROWS=1
     SPRITE=ROWS+1 

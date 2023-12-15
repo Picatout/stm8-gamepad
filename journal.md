@@ -1,3 +1,13 @@
+### 2023-12-15
+
+* Complété mécanique des collisions.
+
+### 2023-12-13
+
+* Travail sur snake.asm.
+    * AJout de la nourriture
+    * Travail sur les collisions
+
 ### 2023-12-12
 
 * Travail sur snake.asm. 

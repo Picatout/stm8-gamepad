@@ -108,8 +108,11 @@ cx: .blkb 1 ; text cursor x coord {0..15}
 cy: .blkb 1 ; text cursor y coord {0..7}
 
 app_variables:
+score: .blkw 1 ; game score 
+game_flags: .blkb 1 ; game boolean flags 
 snake_len: .blkb 1 ; snake length 
 snake_dir: .blkb 1 ; head direction 
+food_coord: .blkw 1 ; food coordinates
 snake_body: .blkw 32 ;  snake rings coords 
 
 ; video buffer size=768 bytes 
