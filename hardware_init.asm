@@ -347,7 +347,7 @@ read_keypad:
 	call kpad_input 
 1$:	ld (BUTTONS,sp),a  
     ldw x,ticks 
-	addw x,#10 
+	addw x,#8
 	ldw (DEBOUNCE,sp),x 	
 2$: call kpad_input 
 	cp a,(BUTTONS,sp)
@@ -385,9 +385,8 @@ wait_key_release:
 1$: 
     ldw x,ticks 
     cpw x,(DLY,sp)
-    jreq 9$     
-    call read_keypad
-    tnz a 
+    jrpl 9$     
+    call kpad_input
     jrne 1$ 
 9$:
     _drop VAR_SIZE 
@@ -426,5 +425,6 @@ cold_start:
 	clrw x 
 	call set_seed
 .endif 	
+	call beep
 	jp main ; in tv_term.asm 
 

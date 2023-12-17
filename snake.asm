@@ -336,8 +336,6 @@ rotate_head:
     addw y,#HEAD_UP 
     ldw x,snake_body 
     call draw_sprite 
-    ldw x,#100
-    call wait_key_release
     ret 
 
 ;--------------------------
@@ -349,6 +347,7 @@ rotate_head:
 user_input:
     push #0 
     call read_keypad
+    jreq 4$ 
     ld (KPAD,sp),a  
     ld a,#BTN_LEFT 
     and a,(KPAD,sp)
@@ -360,6 +359,9 @@ user_input:
     jreq 3$ 
     call rotate_head 
 3$:
+    ldw x,#90
+    call wait_key_release
+4$:
     _drop 1 
     ret 
 

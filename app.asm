@@ -16,6 +16,23 @@
 ;     along with ntsc_tuto.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 
+    CURPOS=1 
+    VAR_SIZE=2
+dbg_print:
+    pushw x 
+    _vars VAR_SIZE 
+    _ldxz cy 
+    ldw (CURPOS,sp),x 
+    ldw x,#(7<<8)+8
+    _strxz cy 
+    _ldxz acc16 
+    call put_uint16
+    ldw x,(CURPOS,sp)
+    _strxz cy 
+    _drop VAR_SIZE 
+    popw x 
+    ret 
+
 main:
     call menu 
     call (x)
@@ -64,7 +81,7 @@ menu:
 ; display selection cursor and 
 ; wait for user input    
 user_select:
-    ldw x,#0xffff 
+    ldw x,#0x200 
 	call wait_key_release
 	ld a,(SEL,sp)
 	ld xh,a 
@@ -129,6 +146,8 @@ select_mark:
 prog_list:
 .asciz "SNAKE"
 .word snake
+.asciz "FALL"
+.word fall
 .asciz "QUICK BROWN FOX"
 .word quick   
 .word 0 
