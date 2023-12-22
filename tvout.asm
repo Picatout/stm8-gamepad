@@ -18,9 +18,9 @@
 
 
 ; display resolution in pixels 
-HRES=96
-VRES=64 
-BYTES_PER_LINE=12
+HRES=200
+VRES=192
+BYTES_PER_LINE=25
 
 
 ; values based on 16 Mhz crystal
@@ -70,17 +70,17 @@ ntsc_init:
     bset PC_CR2,#6
     clr SPI_SR 
     clr SPI_DR 
-    mov SPI_CR1,#(1<<SPI_CR1_SPE)|(1<<SPI_CR1_MSTR)|(2<<SPI_CR1_BR)
+    mov SPI_CR1,#(1<<SPI_CR1_SPE)|(1<<SPI_CR1_MSTR)|(1<<SPI_CR1_BR)
 ; initialize timer1 for pwm
 ; generate NTSC sync signal  on CH3 
     mov TIM1_IER,#1 ; UIE set 
     bset TIM1_CR1,#TIM1_CR1_ARPE ; auto preload enabled 
-    mov TIM1_CCMR3,#(7<<TIM1_CCMR3_OCMODE)  |(1<<TIM1_CCMR3_OC3PE)
+    mov TIM1_CCMR3,#(7<<TIM1_CCMR3_OC3MODE)  |(1<<TIM1_CCMR3_OC3PE)
     bset TIM1_CCER2,#0
     bset TIM1_BKR,#7
 ; use channel 2 for video stream trigger 
 ; set pixel out delay   
-    mov TIM1_CCMR2,#(6<<TIM1_CCMR2_OCMODE) 
+    mov TIM1_CCMR2,#(6<<TIM1_CCMR2_OC2MODE) 
     mov TIM1_CCR2H,#LINE_DELAY>>8 
     mov TIM1_CCR2L,#LINE_DELAY&0xFF
 ; begin with PH_PRE_EQU odd field 
@@ -212,13 +212,28 @@ sync_exit:
 ntsc_video_interrupt:
     _vars VAR_SIZE
     clr TIM1_SR1
+    ld a,TIM1_CNTRL 
+    and a,#7 
+    push a 
+    push #0 
+    ldw x,#jitter_cancel 
+    addw x,(1,sp)
+    _drop 2 
+    jp (x)
+jitter_cancel:
+    nop 
+    nop 
+    nop 
+    nop 
+    nop 
+    nop 
+    nop 
+    nop 
 ; compute postion in buffer 
 ; 3 scan line/video buffer line 
 ; ofs=scan_line/3+tv_buffer       
     _ldxz scan_line 
     subw x,#FIRST_VIDEO_LINE
-    ld a,#3 
-    div x,a
     ld a,#BYTES_PER_LINE  
     mul x,a  ; tv_buffer line  
     addw x,#tv_buffer

@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 # usage:
-# ./build.sh  [flash]
+# ./build.sh  [flash||opt]
 
 if [ ! -d "build" ] 
 then 
@@ -9,11 +9,11 @@ then
 fi 
 if [[ ! -z $1 && ($1 == "flash") ]]; then 
 # flash application 
-    make -fstm8s103.mk flash 
+    make -fstm8s207.mk flash 
 elif [[ ! -z $1 && ($1 == "opt") ]]; then
 # modify options registers 
-    make -fstm8s103.mk alt_func
+    make -fstm8s207.mk alt_func
 else
 # build project 
-    make -fstm8s103.mk
+    make -fstm8s207.mk
 fi 

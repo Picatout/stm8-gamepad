@@ -24,30 +24,26 @@ SOUND_BIT=2
 
 
 ; navigation buttons 
-BTN_CROSS_PORT=PD_BASE 
-BTN_CROSS_IDR=PD_IDR
-BIT_LEFT=3
-BIT_RIGHT=4
-BIT_DOWN=5
-BIT_UP=6 
-; selection buttons 
-BTN_SEL_PORT=PC_BASE 
-BTN_SEL_IDR=PC_IDR 
-BIT_A=4
-BIT_B=5
+KPAD_PORT=PD_BASE 
+KPAD_IDR=PD_IDR
+BIT_A=0
+BIT_B=3
+BIT_LEFT=4
+BIT_RIGHT=5
+BIT_DOWN=6
+BIT_UP=7 
 
-BTN_A=1 
-BTN_B=2
-BTN_LEFT=4 
-BTN_RIGHT=8
-BTN_DOWN=16 
-BTN_UP=32
-
+BTN_A=(1<<BIT_A) 
+BTN_B=(1<<BIT_B)
+BTN_LEFT=(1<<BIT_LEFT) 
+BTN_RIGHT=(1<<BIT_RIGHT)
+BTN_DOWN=(1<<BIT_DOWN) 
+BTN_UP=(1<<BIT_UP)
+BTN_MASK=0xF9
 
 
 	.include "inc/ascii.inc"
-	.include "inc/stm8s103f3.inc"
-	.include "inc/stm8s103f3_config.inc" 
+	.include "inc/stm8s207.inc"
 	.include "inc/gen_macros.inc" 
 	.include "app_macros.inc" 
 

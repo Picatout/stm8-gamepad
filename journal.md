@@ -1,3 +1,11 @@
+### 2023-12-21
+
+* Assemblage du nouveau circuit et test préliminiaires.
+
+### 2023-12-20
+
+* Création d'un nouveau circuit pour le mcu **STM8S207K8T**. Résolution vidéo augmenté à 200x192 pixels.
+
 ### 2023-12-17
 
 * Début travail sur fall.asm 

@@ -17,8 +17,8 @@
 ;;
 
 
-CHAR_PER_LINE=16
-LINE_PER_SCREEN=8
+CHAR_PER_LINE=33
+LINE_PER_SCREEN=24
 
     .macro _curpos x,y 
     ldw x,#(y<<8)+x 

@@ -183,16 +183,16 @@ timer4_init:
 	ret
 
 ;----------------------------------
-; TIMER2 used as audio tone output 
-; on port D:2. pin 19 
+; TIMER3 used as audio tone output 
+; on port D:2. pin 27
 ; channel 3 configured as PWM mode 1 
 ;-----------------------------------  
-timer2_init:
-	bset CLK_PCKENR1,#CLK_PCKENR1_TIM2 ; enable TIMER2 clock 
- 	mov TIM2_CCMR3,#(6<<TIM2_CCMR3_OCM) ; PWM mode 1 
-	mov TIM2_PSCR,#8 ; Ft2clk=fmstr/256=62500 hertz 
-	bres TIM2_CR1,#TIM2_CR1_CEN
-	bres TIM2_CCER2,#TIM2_CCER2_CC3E
+timer3_init:
+	bset CLK_PCKENR1,#CLK_PCKENR1_TIM3 ; enable TIMER3 clock 
+ 	mov TIM3_CCMR1,#(6<<TIM3_CCMR1_OC1M) ; PWM mode 1 
+	mov TIM3_PSCR,#8 ; Ft2clk=fmstr/256=62500 hertz 
+	bres TIM3_CR1,#TIM3_CR1_CEN
+	bres TIM3_CCER1,#TIM3_CCER1_CC1E
 	ret 
  
 .if 0
@@ -274,24 +274,24 @@ tone:
 	ldw x,#FR_T2_CLK 
 	divw x,y 
 	ld a,xh 
-	ld TIM2_ARRH,a 
+	ld TIM3_ARRH,a 
 	ld a,xl 
-	ld TIM2_ARRL,a 
+	ld TIM3_ARRL,a 
 	srlw x 
 	ld a,xh 
-	ld TIM2_CCR3H,a 
+	ld TIM3_CCR1H,a 
 	ld a,xl 
-	ld TIM2_CCR3L,a 
-	bset TIM2_CCER2,#TIM2_CCER2_CC3E
-	bset TIM2_CR1,#TIM2_CR1_CEN 
-	bset TIM2_EGR,#TIM2_EGR_UG
+	ld TIM2_CCR1L,a 
+	bset TIM3_CCER1,#TIM3_CCER1_CC1E
+	bset TIM3_CR1,#TIM3_CR1_CEN 
+	bset TIM3_EGR,#TIM3_EGR_UG
 	pop a 
 	_straz sound_timer  
 	bset flags,#F_SOUND_TMR 
 1$: wfi 
 	btjt flags,#F_SOUND_TMR,1$
-	bres TIM2_CR1,#TIM2_CR1_CEN 
-	bres TIM2_CCER2,#TIM2_CCER2_CC3E
+	bres TIM3_CR1,#TIM3_CR1_CEN 
+	bres TIM3_CCER1,#TIM3_CCER1_CC1E
 	popw y 
 	ret 
 
@@ -313,16 +313,9 @@ beep:
 ;     A   reading 
 ;-----------------------
 kpad_input:
-	ld a,BTN_CROSS_IDR 
-	srl a 
-	and a,#0x3C 
-	push a 
-	ld a,BTN_SEL_IDR 
-	swap a 
-	and a,#3 
-	or a,(1,sp)
-	xor a,#0x3f 
-	_drop 1 
+	ld a,KPAD_IDR 
+	and a,#BTN_MASK 
+	xor a,#BTN_MASK  
 	ret 
 
 
@@ -418,7 +411,7 @@ cold_start:
 	clr PC_ODR
 	call clock_init	
 	call timer4_init
-	call timer2_init
+	call timer3_init
 	call ntsc_init ;
 	rim ; enable interrupts 
 .if WANT_PRNG
