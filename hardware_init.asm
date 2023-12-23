@@ -189,10 +189,11 @@ timer4_init:
 ;-----------------------------------  
 timer3_init:
 	bset CLK_PCKENR1,#CLK_PCKENR1_TIM3 ; enable TIMER3 clock 
- 	mov TIM3_CCMR1,#(6<<TIM3_CCMR1_OC1M) ; PWM mode 1 
+ 	bset SOUND_PORT+GPIO_DDR,#SOUND_BIT
+	mov TIM3_CCMR2,#(6<<TIM3_CCMR2_OC2M) ; PWM mode 1 
 	mov TIM3_PSCR,#8 ; Ft2clk=fmstr/256=62500 hertz 
 	bres TIM3_CR1,#TIM3_CR1_CEN
-	bres TIM3_CCER1,#TIM3_CCER1_CC1E
+	bres TIM3_CCER1,#TIM3_CCER1_CC2E
 	ret 
  
 .if 0
@@ -266,12 +267,12 @@ pause:
 ;   A   duration n*10 msec    
 ;   X   frequency 
 ;------------------------
-FR_T2_CLK=62500
+FR_T3_CLK=62500
 tone:
 	pushw y 
 	push a 
 	ldw y,x 
-	ldw x,#FR_T2_CLK 
+	ldw x,#FR_T3_CLK 
 	divw x,y 
 	ld a,xh 
 	ld TIM3_ARRH,a 
@@ -279,19 +280,19 @@ tone:
 	ld TIM3_ARRL,a 
 	srlw x 
 	ld a,xh 
-	ld TIM3_CCR1H,a 
+	ld TIM3_CCR2H,a 
 	ld a,xl 
-	ld TIM2_CCR1L,a 
-	bset TIM3_CCER1,#TIM3_CCER1_CC1E
+	ld TIM3_CCR2L,a 
+	bset TIM3_CCER1,#TIM3_CCER1_CC2E
 	bset TIM3_CR1,#TIM3_CR1_CEN 
 	bset TIM3_EGR,#TIM3_EGR_UG
 	pop a 
 	_straz sound_timer  
 	bset flags,#F_SOUND_TMR 
-1$: wfi 
+1$:  
 	btjt flags,#F_SOUND_TMR,1$
 	bres TIM3_CR1,#TIM3_CR1_CEN 
-	bres TIM3_CCER1,#TIM3_CCER1_CC1E
+	bres TIM3_CCER1,#TIM3_CCER1_CC2E
 	popw y 
 	ret 
 
@@ -299,12 +300,39 @@ tone:
 ; 1Khz beep 
 ;-----------------
 beep:
+	push a 
+	pushw x 
 	ldw x,#1000 ; hertz 
 	ld a,#20
-	call tone  
+	call tone
+	popw x 
+	pop a   
 	ret 
 
-
+;------------------------
+; generate white noise 
+; input:
+;    A  duration 10*A msec.
+;-------------------------- 
+noise:
+	pushw x
+	_straz sound_timer 
+	push #0  
+	bset flags,#F_SOUND_TMR
+1$: call prng
+	ld a,#16 
+	ld (1,sp),a  
+2$:	sllw x 
+	bccm SOUND_PORT,#SOUND_BIT
+	ld a,#10 
+4$:	dec a 
+	jrne 4$
+	dec (1,sp)
+	jrne 2$  
+	btjt flags,#F_SOUND_TMR,1$
+	_drop 1 
+	popw x 
+	ret 
 
 ;------------------------
 ; reading keypad 
@@ -324,11 +352,11 @@ kpad_input:
 ; ouput:
 ;    A 
 ;       BTN_A -> bit 0 (1)
-;       BTN_B -> bit 1 (2)
-;       BTN_LEFT -> bit 2 (4)
-;       BTN_RIGHT -> bit 3 (8)
-;       BTN_DOWN -> bit 4 (16)
-;       BNT_UP -> bit 5  (32)
+;       BTN_B -> bit 3 (8)
+;       BTN_LEFT -> bit 4 (16)
+;       BTN_RIGHT -> bit 5 (32)
+;       BTN_DOWN -> bit 6 (64)
+;       BNT_UP -> bit 7  (128)
 ;    Z   set no key 
 ;-------------------------
 	DEBOUNCE=1
@@ -406,18 +434,20 @@ cold_start:
 	ld PA_CR1,a 
 	ld PB_CR1,a 
 	ld PC_CR1,a 
-	ld PD_CR1,a 
-	bset PC_DDR,#7 
-	clr PC_ODR
+	ld PD_CR1,a
+	ld PE_CR1,a 
+	ld PF_CR1,a 
+	ld PG_CR1,a 
+	ld PH_CR1,a 
+	ld PI_CR1,a 
 	call clock_init	
 	call timer4_init
 	call timer3_init
 	call ntsc_init ;
 	rim ; enable interrupts 
-.if WANT_PRNG
 	clrw x 
 	call set_seed
-.endif 	
+4$:
 	call beep
 	jp main ; in tv_term.asm 
 

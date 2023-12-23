@@ -1,3 +1,9 @@
+### 2023-12-22
+
+* Modification du circuit video output.
+* Commutation audio_out et BTN_A. Bouton maintenant sur PD3 et audio_out sur PD0 TIM3_CH2.
+* Débogué tone. 
+
 ### 2023-12-21
 
 * Assemblage du nouveau circuit et test préliminiaires.

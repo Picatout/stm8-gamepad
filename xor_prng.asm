@@ -17,7 +17,7 @@
 ;;
 
 
-.if WANT_PRNG 
+
 ;---------------------------------
 ; Pseudo Random Number Generator 
 ; XORShift algorithm.
@@ -123,4 +123,4 @@ set_seed:
     _stryz seedy 
     ret 
 
-.endif ; WANT_PRNG 
+

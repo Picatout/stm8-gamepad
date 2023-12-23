@@ -16,8 +16,7 @@
 ;     along with ntsc_tuto.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 
-    TIM2_CLK_FREQ=62500
-
+ 
 ; boolean flags 
     F_GAME_TMR=7 ; game timer expired reset 
     F_SOUND_TMR=6 ; sound timer expired reset  

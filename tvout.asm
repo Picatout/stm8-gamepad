@@ -197,16 +197,6 @@ sync_exit:
 ;----------------------------------
 ; TIMER1 compare interrupt handler
 ;----------------------------------
-    .macro _shift_out_scan_line
-        n=0
-
-        .rept BYTES_PER_LINE
-             ld a,(n,x) 
-             btjf SPI_SR,#SPI_SR_TXE,. 
-             ld SPI_DR,a
-             n=n+1 
-        .endm 
-    .endm 
     BPL=1 
     VAR_SIZE=1
 ntsc_video_interrupt:
@@ -239,7 +229,7 @@ jitter_cancel:
     addw x,#tv_buffer
     ld a,#BYTES_PER_LINE
     ld (BPL,sp),a 
-    bset SPI_CR1,#SPI_CR1_SPE  
+;    bset SPI_CR1,#SPI_CR1_SPE  
 ;    _shift_out_scan_line
 1$: ld a,(x)
     incw x 
@@ -250,7 +240,7 @@ jitter_cancel:
     clr SPI_DR
     btjf SPI_SR,#SPI_SR_TXE,. 
     btjt SPI_SR,#SPI_SR_BSY,.
-    bres SPI_CR1,#SPI_CR1_SPE  
+;    bres SPI_CR1,#SPI_CR1_SPE  
     _ldxz scan_line 
     incw x 
     _strxz scan_line 
