@@ -16,6 +16,7 @@
 ;     along with ntsc_tuto.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 
+.if DEBUG 
     CURPOS=1 
     VAR_SIZE=2
 dbg_print:
@@ -32,7 +33,78 @@ dbg_print:
     _drop VAR_SIZE 
     popw x 
     ret 
+.endif 
 
+;---------------------------------------
+; move memory block 
+; input:
+;   X 		destination 
+;   Y 	    source 
+;   acc16	bytes count 
+; output:
+;   X       destination 
+;--------------------------------------
+	INCR=1 ; incrament high byte 
+	LB=2 ; increment low byte 
+	VSIZE=2
+move::
+	push a 
+	pushw x 
+	_vars VSIZE 
+	clr (INCR,sp)
+	clr (LB,sp)
+	pushw y 
+	cpw x,(1,sp) ; compare DEST to SRC 
+	popw y 
+	jreq move_exit ; x==y 
+	jrmi move_down
+move_up: ; start from top address with incr=-1
+	addw x,acc16
+	addw y,acc16
+	cpl (INCR,sp)
+	cpl (LB,sp)   ; increment = -1 
+	jra move_loop  
+move_down: ; start from bottom address with incr=1 
+    decw x 
+	decw y
+	inc (LB,sp) ; incr=1 
+move_loop:	
+    _ldaz acc16 
+	or a, acc8
+	jreq move_exit 
+	addw x,(INCR,sp)
+	addw y,(INCR,sp) 
+	ld a,(y)
+	ld (x),a 
+	pushw x 
+	_ldxz acc16 
+	decw x 
+	ldw acc16,x 
+	popw x 
+	jra move_loop
+move_exit:
+	_drop VSIZE
+	popw x 
+	pop a 
+	ret 	
+
+;--------------------
+; fill memory block 
+; input: 
+;     A   fill value 
+;     X   count 
+;     Y   addr (incr)
+;---------------------
+fill:
+	ld (y),a 
+	incw y 
+	decw x 
+	jrne fill
+	ret 
+
+;--------------------------
+; application entry point 
+;--------------------------
 main:
     call menu 
     call (x)
@@ -160,4 +232,4 @@ quick:
     call wait_key_release 
     ret 
 
-qbf: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG."
+qbf: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\r"

@@ -1,8 +1,23 @@
+### 2023-12-24
+
+* Travail sur display.asm 
+    * Ajout de scroll_up 
+    * Ajout de scroll_down 
+    * Ajout de scroll_left 
+    * Ajout de scroll_right 
+    * Renommé move_up en move_text_up 
+    * Ajout des sous-routines move_up et fill dans app.asm 
+    
+### 2023-12-23
+
+* Travail sur jeu snake.asm 
+
 ### 2023-12-22
 
 * Modification du circuit video output.
 * Commutation audio_out et BTN_A. Bouton maintenant sur PD3 et audio_out sur PD0 TIM3_CH2.
 * Débogué tone. 
+* Corrigé draw_wall dans snake.asm
 
 ### 2023-12-21
 

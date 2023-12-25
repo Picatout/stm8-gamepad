@@ -31,7 +31,7 @@ HALF_LINE=HLINE/2 ; half-line during sync.
 EPULSE=37 ; pulse width during pre and post equalization
 VPULSE=436 ; pulse width during vertical sync. 
 HPULSE=75 ; 4.7µSec horizontal line sync pulse width. 
-LINE_DELAY=(140) 
+LINE_DELAY=(130) 
 
 ; ntsc synchro phases 
 PH_VSYNC=0 
@@ -228,9 +228,8 @@ jitter_cancel:
     mul x,a  ; tv_buffer line  
     addw x,#tv_buffer
     ld a,#BYTES_PER_LINE
-    ld (BPL,sp),a 
-;    bset SPI_CR1,#SPI_CR1_SPE  
-;    _shift_out_scan_line
+    ld (BPL,sp),a
+    clr SPI_DR  
 1$: ld a,(x)
     incw x 
     ld SPI_DR,a 

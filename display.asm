@@ -137,47 +137,31 @@ invert_pixel:
     ld (x),a 
     ret 
 
+
 ;-----------------------------
 ; move text 1 line up 
 ; clear bottom line 
 ;-----------------------------
-scroll_up:
+scroll_text_up:
     push a 
     pushw x 
     pushw y 
 ; count bytes to copy     
     ldw x,#(VRES-FONT_HEIGHT)*BYTES_PER_LINE
-    pushw x 
+    _strxz acc16  
 ; destination address     
     ldw x,#tv_buffer 
     ldw y,x 
 ; source address     
     addw y,#BYTES_PER_LINE*FONT_HEIGHT 
-1$: ld a,(y)
-    incw y 
-    ld (x),a
-    incw x
-    pushw x 
-    ldw x,(3,sp)
-    decw x
-    ldw (3,sp),x 
-    popw x 
-    jrne 1$     
+    call move 
 ; clear bottom text line 
+    clr a 
     ldw x,#(FONT_HEIGHT*BYTES_PER_LINE) 
-    ldw (1,sp),x 
-    subw y,(1,sp)
-2$: clr (y)
-    incw y 
-    decw x 
-    jrne 2$    
-    _drop 2     
-    popw y 
-    popw x 
-    pop a 
+    ldw y,#tv_buffer 
+    subw y,#VBUFF_SIZE-(FONT_HEIGHT*BYTES_PER_LINE)
+    call fill 
     ret 
-
-
 
 ;----------------------------
 ; move text cursor to 
@@ -189,7 +173,7 @@ crlf:
     inc a
     cp a,#LINE_PER_SCREEN
     jrmi 1$
-    call scroll_up
+    call scroll_text_up
     ret  
 1$: 
     _straz cy 
@@ -327,10 +311,10 @@ line:
     ldw (Y0,sp),y
     ld a,xh 
     cp a,(X1,sp)
-    jreq 3$ 
+    jreq 3$ ; vertical line 
     ld a,yh 
     cp a,(Y1,sp)
-    jreq 4$ 
+    jreq 4$ ; horizontal line
     ld a,(X1,sp)
     sub a,(X0,sp)
     clrw x 
@@ -372,8 +356,8 @@ line:
     inc (Y0,sp)
     ld a,(Y0,sp)
     cp a,(Y1,sp)
-    jrpl 9$ 
-    jra 3$ 
+    jrult 3$ 
+    jra 9$ 
 4$: ; horizontal line 
     ld a,(X0,sp)
     ld xl, a 
@@ -383,8 +367,7 @@ line:
     inc (X0,sp)
     ld a,(X0,sp)
     cp a,(X1,sp)
-    jrpl 9$ 
-    jra 4$ 
+    jrult 4$  
 9$:
     _drop VAR_SIZE 
     ret 
@@ -478,3 +461,195 @@ put_sprite:
     ld a,(COLL,sp)
     _drop VAR_SIZE 
     ret 
+
+
+;---------------------
+; scroll up 1 line 
+; from [XL..XH[
+; input: 
+;   XL  first line 
+;   XH  last line 
+;---------------------
+scroll_up:
+    push a 
+    pushw y 
+    pushw x 
+; move bytes count     
+    ld a,xh 
+    sub a,(2,sp)
+    ldw x,#BYTES_PER_LINE
+    mul x,a 
+    subw x,#BYTES_PER_LINE 
+    _strxz acc16 
+; dest addr 
+    ld a,(2,sp)
+    ldw x,#BYTES_PER_LINE
+    mul x, a 
+    addw x,#tv_buffer
+; source addr 
+    ldw y,x 
+    addw y,#BYTES_PER_LINE
+    call move 
+; clear line XH-1 
+    ld a,(1,sp)
+    dec a 
+    ldw x,#BYTES_PER_LINE
+    ldw y,x 
+    mul y,a 
+    addw y,#tv_buffer
+    clr a 
+    call fill  
+    popw x  
+    popw y 
+    pop a 
+    ret 
+
+;----------------------
+; scroll down 1 line 
+; from [XL..XH[
+; input:
+;    XL   first line 
+;    XH   last line 
+;----------------------
+scroll_down: 
+    push a 
+    pushw y 
+    pushw x 
+; move bytes count 
+    ld a,xh 
+    sub a,(2,sp) ; XL 
+    ldw x,#BYTES_PER_LINE
+    mul x,a
+    subw x,#BYTES_PER_LINE  
+    _strxz acc16 
+; source addr 
+    ld a,(2,sp) ; XL 
+    ldw y,#BYTES_PER_LINE
+    mul y,a 
+    addw Y,#tv_buffer
+; destinaton addr     
+    ldw x,y 
+    addw x,#BYTES_PER_LINE 
+    call move 
+; clear line XL 
+    ld a,(2,sp) ; XL  
+    ldw x,#BYTES_PER_LINE
+    ldw y,x 
+    mul y,a 
+    addw y,#tv_buffer
+    clr a 
+    call fill  
+    popw x  
+    popw y 
+    pop a 
+    ret 
+
+;------------------------------
+; shift video line 
+; 4 pixels left 
+; input:
+;    A   video line {0..VRES-1}
+;-------------------------------
+
+left_4pixels:
+    pushw x 
+    pushw y 
+    ldw x,#BYTES_PER_LINE
+    ldw y,x 
+    mul x,a 
+    addw x,#tv_buffer
+1$:
+    ld a,(x)
+    swap a 
+    and a,#0xf0 
+    push a 
+    ld a,(1,x)
+    swap a 
+    and a,#0xf 
+    or a,(1,sp)
+    _drop 1 
+    decw y 
+    jreq 2$
+    ld (x),a 
+    incw x
+    jra 1$
+2$: and a,#0xf0
+    ld (x),a 
+    popw y 
+    popw x 
+    ret 
+
+;-------------------
+; scroll left  4 pixels
+; from [XL..XH[ 
+; input:
+;   XL   first line 
+;   XH   last line 
+;-------------------
+scroll_left:
+    pushw x 
+    ld a,(2,sp)
+1$:
+    call left_4pixels 
+    inc (2,sp)
+    ld a,(2,sp)
+    cp a,(1,sp)
+    jrmi 1$
+    popw x 
+    ret 
+
+;-------------------
+; shift video line 
+; 4 pixels right 
+; input:
+;     A   line 
+;-------------------
+right_4pixels:
+    pushw y 
+    pushw x 
+    inc a 
+    ldw x,#BYTES_PER_LINE
+    ldw y,x 
+    mul x,a
+    subw x,#2  
+    addw x,#tv_buffer 
+1$: ld a,(1,x)
+    and a,#0xf0
+    swap a 
+    push a
+    ld a,(x)
+    and a,#0xf 
+    swap a 
+    or a,(1,sp)
+    ld (1,x),a
+    _drop 1
+    decw y 
+    jreq 2$ 
+    decw x 
+    jra 1$
+2$: ld a,#0xf 
+    and a,(1,x)
+    ld (1,x),a 
+    popw x 
+    popw y 
+    ret 
+
+;-------------------
+; scroll right 
+; 4 pixels 
+; input:
+;   XL   first line 
+;   XH   last line 
+;-------------------
+scroll_right:
+    pushw x 
+    ld a,(2,sp)
+1$: 
+    call right_4pixels 
+    inc (2,sp)
+    ld a,(2,sp)
+    cp a,(1,sp)
+    jrmi 1$
+    popw x 
+    ret 
+

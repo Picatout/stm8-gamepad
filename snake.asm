@@ -53,16 +53,20 @@ BOULDER:    .byte BOULDER_WIDTH,BOULDER_HEIGHT,0x28,0x54,0xaa,0x54,0xaa
 ; game area 
 ;---------------------
 draw_walls:
-    ldw x,#96
+; top wall 
+    ldw x,#HRES 
     ldw y,#8*256+8  
     call line
-    ldw x,#96 
+; bottom wall 
+    ldw x,#HRES 
     ldw y,#(VRES-1)*256+(VRES-1)
     call line 
+; left wall     
     ldw x,#0 
     ldw y,#8*256+(VRES-1)
     call line 
-    ldw x,#(95*256)+95
+; right wall     
+    ldw x,#((HRES-1)*256)+(HRES-1)
     ldw y,#8*256+(VRES-1)
     call line 
     ret 
@@ -235,7 +239,7 @@ next_head_pos:
 ;    X   destination 
 ;    Y   source 
 ;-------------------------------
-move_up:
+move_array_up:
     push a 
 1$: ld a,(y)
     decw y 
@@ -292,7 +296,7 @@ move_snake:
     _ldaz snake_len 
     dec a 
     sll a     
-    call move_up 
+    call move_array_up 
 ; set 1 element as new head position 
     ldw x,(POS,sp)
     ldw snake_body,x    
@@ -371,12 +375,12 @@ user_input:
 ;-------------------------
 new_food:
     call prng
-    ld a,#54-MOUSE_HEIGHT 
+    ld a,#VRES-MOUSE_HEIGHT-FONT_HEIGHT-2 
     div x,a 
     add a,#FONT_HEIGHT+1
     _straz food_coord 
     call prng 
-    ld a,#62-MOUSE_WIDTH 
+    ld a,#HRES-MOUSE_WIDTH-2 
     div x,a 
     inc a 
     _straz food_coord+1

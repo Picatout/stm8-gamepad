@@ -10,6 +10,9 @@
 	MINOR=1
 	REV=0
 
+; set to 1 to add dbg_print code 
+DEBUG=0
+
 ; master clock frequency in hz 
 	FMSTR=16000000 
 
