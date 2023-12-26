@@ -11,7 +11,10 @@
 	REV=0
 
 ; set to 1 to add dbg_print code 
-DEBUG=0
+DEBUG=1
+
+; set to 1 to use NUCLEO-8S207K8 board 
+NUCLEO=1
 
 ; master clock frequency in hz 
 	FMSTR=16000000 
@@ -21,6 +24,17 @@ SOUND_BIT=(0)
 
 
 ; navigation buttons 
+.if NUCLEO 
+KPAD_PORT=PB_BASE 
+KPAD_IDR=PB_IDR
+BIT_A=(5)
+BIT_B=(4)
+BIT_LEFT=(0)
+BIT_RIGHT=(2)
+BIT_DOWN=(1)
+BIT_UP=(3)
+BTN_MASK=0x3f
+.else 
 KPAD_PORT=PD_BASE 
 KPAD_IDR=PD_IDR
 BIT_A=(2)
@@ -29,6 +43,8 @@ BIT_LEFT=(4)
 BIT_RIGHT=(5)
 BIT_DOWN=(6)
 BIT_UP=(7) 
+BTN_MASK=0xFC
+.endif 
 
 BTN_A=(1<<BIT_A) 
 BTN_B=(1<<BIT_B)
@@ -36,7 +52,6 @@ BTN_LEFT=(1<<BIT_LEFT)
 BTN_RIGHT=(1<<BIT_RIGHT)
 BTN_DOWN=(1<<BIT_DOWN) 
 BTN_UP=(1<<BIT_UP)
-BTN_MASK=0xFC
 
 
 	.include "inc/ascii.inc"

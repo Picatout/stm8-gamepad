@@ -239,7 +239,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "ntsc_tuto.kicad_pro",
+    "filename": "stm8-gamepad.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -320,6 +320,10 @@
     [
       "f49d1254-34d3-4ad9-8418-f19799788474",
       ""
+    ],
+    [
+      "3f423e78-9a93-4158-a149-1324034fba40",
+      "nucleo-8s207k8"
     ]
   ],
   "text_variables": {}

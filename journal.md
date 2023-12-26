@@ -1,3 +1,9 @@
+### 2023-12-25
+
+* Fabrication d'un nouveau prototype du gamepad utilisant une carte NUCLEO-8S207K8
+* Ajout de tas de merde au jeu snake.asm 
+* Ajout feuille dans projet KiCAD pour version NUCLEO-8S207K8.
+
 ### 2023-12-24
 
 * Travail sur display.asm 

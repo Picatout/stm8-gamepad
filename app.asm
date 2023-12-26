@@ -33,6 +33,21 @@ dbg_print:
     _drop VAR_SIZE 
     popw x 
     ret 
+
+print_hex:
+	push a 
+	swap a 
+	call hex_digit 
+	pop a 
+hex_digit:
+	and a,#15
+	add a,#'0 
+	cp a,#'9+1
+	jrmi 1$
+	add a,#7 
+1$: call tv_putc 
+	ret 
+
 .endif 
 
 ;---------------------------------------
@@ -106,9 +121,20 @@ fill:
 ; application entry point 
 ;--------------------------
 main:
+.if 0
+; kpad test 
+	call tv_cls 
+1$:	call wait_key 
+	call print_hex 
+	call wait_key_release
+	clrw x 
+	_strxz cy 
+	jra 1$ 
+.endif  
     call menu 
     call (x)
     jra main 
+
 
 
 ;---------------------------

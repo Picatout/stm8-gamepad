@@ -43,9 +43,9 @@ RING:       .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0x60,0x90,0X90,0X60
 MOUSE_WIDTH=5 
 MOUSE_HEIGHT=4
 MOUSE:      .byte MOUSE_WIDTH,MOUSE_HEIGHT,0X00,0X70,0XF8,0XA0 
-BOULDER_WIDTH=7
-BOULDER_HEIGHT=5
-BOULDER:    .byte BOULDER_WIDTH,BOULDER_HEIGHT,0x28,0x54,0xaa,0x54,0xaa
+POO_WIDTH=7
+POO_HEIGHT=4
+POO:    .byte POO_WIDTH,POO_HEIGHT,0x10,0x38,0x7c,0xfe
 
 
 ;----------------------
@@ -126,6 +126,23 @@ draw_snake:
     _drop VAR_SIZE 
     ret 
 
+;---------------------
+; shit happen 
+;---------------------
+snake_poo:
+    push a 
+    pushw x 
+    _ldaz snake_len 
+    dec a 
+    clrw x 
+    ld xl,a 
+    addw x,#snake_body
+    ldw x,(x)
+    ldw y,#POO 
+    call draw_sprite 
+    popw x 
+    pop a 
+    ret 
 
 ;-----------------------------
 ; check for collision object
@@ -161,7 +178,7 @@ food_collision:
 2$:
     cp a,(1,sp)
     jrmi 4$ 
-3$: ; collision object not mose 
+3$: ; collision object not mouse 
     bset game_flags,#F_GAME_OVER
     jrpl 9$ 
 4$:  ; collision with mouse
@@ -189,6 +206,11 @@ food_collision:
     jrne 8$
     incw x
 8$:
+    ld a,xl 
+    and a,#3 
+    jrne 81$ 
+    call snake_poo
+81$:
     _strxz score
     _clrz food_coord 
     _clrz food_coord+1     
@@ -450,7 +472,7 @@ snake:
     call move_snake 
     btjt game_flags,#F_GAME_OVER,game_over  
     call user_input
-    ld a,#7
+    ld a,#5
     call pause 
     jra 1$
 game_over:
