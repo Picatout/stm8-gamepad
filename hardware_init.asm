@@ -85,7 +85,7 @@ KERNEL_VAR_ORG=0x60
 	.org KERNEL_VAR_ORG 
 ;--------------------------------------	
 
-ticks: .blkw 1 ; millisecond counter
+ticks: .blkw 1 ; 2 millisecond counter
 delay_timer: .blkb 1 
 sound_timer: .blkb 1 
 ; keep the following 3 variables in this order 
@@ -133,12 +133,6 @@ Timer4UpdateHandler:
 	_ldxz ticks
 	incw x 
 	_strxz ticks
-; decrement delay_timer and sound_timer on ticks mod 10==0
-	ld a,#10
-	div x,a 
-	tnz a
-	jrne 9$
-1$:	 
 	btjf flags,#F_GAME_TMR,2$  
 	dec delay_timer 
 	jrne 2$ 
@@ -171,13 +165,13 @@ clock_init:
 
 ;---------------------------------
 ; TIM4 is configured to generate an 
-; interrupt every 1.66 millisecond 
+; interrupt every 2 millisecond 
 ;----------------------------------
 timer4_init:
 	bset CLK_PCKENR1,#CLK_PCKENR1_TIM4
 	bres TIM4_CR1,#TIM4_CR1_CEN 
-	mov TIM4_PSCR,#7 ; Fmstr/128=125000 hertz  
-	mov TIM4_ARR,#(256-125) ; 125000/125=1 msec 
+	mov TIM4_PSCR,#7 ; Fmstr/128=125000 hertz  	
+	mov TIM4_ARR,#255 ; 125000/256=244hertz
 	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
 	bset TIM4_IER,#TIM4_IER_UIE
 	ret
@@ -202,7 +196,7 @@ timer3_init:
 ; priority 
 ; input:
 ;   A    priority 1,2,3 
-;   X    vector 
+;   X    vector# 
 ;---------------------------
 	SPR_ADDR=1 
 	PRIORITY=3
@@ -213,6 +207,7 @@ set_int_priority::
 	_vars VSIZE
 	and a,#3  
 	ld (PRIORITY,sp),a 
+; select ITC_SPRX register 
 	ld a,#4 
 	div x,a 
 	sll a  ; slot*2 
@@ -220,7 +215,7 @@ set_int_priority::
 	addw x,#ITC_SPR1 
 	ldw (SPR_ADDR,sp),x 
 ; build mask
-	ldw x,#0xfffc 	
+	ldw x,#0xfffc ; slot 0 mask 	
 	ld a,(SLOT,sp)
 	jreq 2$ 
 	scf 
@@ -234,13 +229,12 @@ set_int_priority::
 	ld (MASKED,sp),a 
 ; shift priority to slot 
 	ld a,(PRIORITY,sp)
-	ld xl,a 
-	ld a,(SLOT,sp)
+	tnz (SLOT,sp)
 	jreq 4$
-3$:	sllw x 
-	dec a 
+3$:	sll a  
+	dec (SLOT,sp) 
 	jrne 3$
-4$:	ld a,xl 
+4$:	 
 	or a,(MASKED,sp)
 	ldw x,(SPR_ADDR,sp)
 	ld (x),a 
@@ -251,7 +245,7 @@ set_int_priority::
 ;------------------------
 ; suspend execution 
 ; input:
-;   A     n/60 seconds  
+;   A     2*n msec   
 ;-------------------------
 pause:
 	_straz delay_timer 
@@ -264,7 +258,7 @@ pause:
 ; tone generator 
 ; Ft2clk=62500 hertz 
 ; input:
-;   A   duration n*10 msec    
+;   A   duration n*4.1 msec    
 ;   X   frequency 
 ;------------------------
 FR_T3_CLK=62500
@@ -303,7 +297,7 @@ beep:
 	push a 
 	pushw x 
 	ldw x,#1000 ; hertz 
-	ld a,#20
+	ld a,#100
 	call tone
 	popw x 
 	pop a   

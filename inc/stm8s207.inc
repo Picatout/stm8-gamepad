@@ -852,6 +852,15 @@ UART3_PORT=PD
 ;  TIM1_CCMR4_CC4S1 = (1)
  TIM1_CCMR4_CC4S0 = (0)
 
+; TIM1_BKR bit fields 
+  TIM1_BKR_MOE=(7) ; main output enable
+  TIM1_BKR_AOE=(6) ; automatici output enable 
+  TIM1_BKR_BKP=(5) ; break polarity 
+  TIM1_BKR_BKE=(4) ; break enable   
+  TIM1_BKR_OSSR=(3) ; off state selection for Run mode 
+  TIM1_BKR_OSSI=(2) ; Off state selection for idle mode
+  TIM1_BKR_LOCK=(0) ; lock configuration
+
 ; Timer 2 - 16-bit timer
  TIM2_CR1  = (0x5300)
  TIM2_IER  = (0x5301)

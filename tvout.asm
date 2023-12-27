@@ -77,7 +77,7 @@ ntsc_init:
     bset TIM1_CR1,#TIM1_CR1_ARPE ; auto preload enabled 
     mov TIM1_CCMR3,#(7<<TIM1_CCMR3_OC3MODE)  |(1<<TIM1_CCMR3_OC3PE)
     bset TIM1_CCER2,#0
-    bset TIM1_BKR,#7
+    bset TIM1_BKR,#TIM1_BKR_MOE
 ; use channel 2 for video stream trigger 
 ; set pixel out delay   
     mov TIM1_CCMR2,#(6<<TIM1_CCMR2_OC2MODE) 
@@ -197,7 +197,7 @@ sync_exit:
 ;----------------------------------
 ; TIMER1 compare interrupt handler
 ;----------------------------------
-    BPL=1 
+    BPL=1 ; bytes per scan line 
     VAR_SIZE=1
 ntsc_video_interrupt:
     _vars VAR_SIZE
@@ -220,8 +220,8 @@ jitter_cancel:
     nop 
     nop 
 ; compute postion in buffer 
-; 3 scan line/video buffer line 
-; ofs=scan_line/3+tv_buffer       
+; 1 scan line/video buffer line 
+; ofs=scan_line-FIRST_VIDEO_LINE*BYTES_PER_LINE+tv_buffer       
     _ldxz scan_line 
     subw x,#FIRST_VIDEO_LINE
     ld a,#BYTES_PER_LINE  

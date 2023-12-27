@@ -1,3 +1,7 @@
+### 2023-12-27
+
+* Augmenté delais pour TIMER4 à 2msec. Supprimé modulo 10 pour game_timer et sound_timer.
+
 ### 2023-12-26
 
 * Modification prototype 1 pour que les boutons du keypad sur le même port que pour le prototype 2.
