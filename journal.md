@@ -1,3 +1,7 @@
+### 2023-12-26
+
+* Modification prototype 1 pour que les boutons du keypad sur le même port que pour le prototype 2.
+
 ### 2023-12-25
 
 * Fabrication d'un nouveau prototype du gamepad utilisant une carte NUCLEO-8S207K8
