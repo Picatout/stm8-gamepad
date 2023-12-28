@@ -1,5 +1,7 @@
 ### 2023-12-27
 
+* Éliminer TIMER4 pour les délais utilise à la place l'interruption de TIMER1. La granularité tombe à 1/60 de seconde mais la sortie vidéo est plus propre.
+
 * Augmenté delais pour TIMER4 à 2msec. Supprimé modulo 10 pour game_timer et sound_timer.
 
 ### 2023-12-26

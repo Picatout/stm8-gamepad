@@ -151,13 +151,14 @@ ntsc_sync_interrupt:
 3$: 
     cpw x,#18 
     jrne 5$ 
-    btjt ntsc_flags,#F_EVEN,sync_exit 
+    btjt ntsc_flags,#F_EVEN,44$ 
 4$:
     mov TIM1_ARRH,#HLINE>>8 
     mov TIM1_ARRL,#HLINE & 0xff 
     mov TIM1_CCR3H,#HPULSE>>8 
     mov TIM1_CCR3L,#HPULSE&0xff 
     inc a 
+44$:
     jp sync_exit 
 5$: 
     cpw x,#19 
@@ -166,6 +167,27 @@ ntsc_sync_interrupt:
 test_pre_video:
     cp a,#PH_PRE_VIDEO 
     jrne post_video  
+    cpw x,#20 
+    jrne 1$ 
+    _ldxz ticks 
+    incw x 
+    _strxz ticks 
+    jra sync_exit 
+1$: cpw x,#21 
+    jrne 2$ 
+    btjf flags,#F_GAME_TMR,sync_exit 
+    _decz delay_timer 
+    jrne sync_exit 
+    bres flags,#F_GAME_TMR
+    jra sync_exit 
+2$: cpw x,#22 
+    jrne 3$ 
+    btjf flags,#F_SOUND_TMR,sync_exit 
+    _decz sound_timer
+    jrne sync_exit 
+    bres flags,#F_SOUND_TMR
+    jra sync_exit 
+3$:
     cpw x,#FIRST_VIDEO_LINE
     jrne sync_exit 
     inc a 

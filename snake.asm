@@ -462,7 +462,7 @@ snake_init:
 ;-------------------------
 snake:
     call snake_init
-    ld a,#255
+    ld a,#60
     call pause
 1$: 
     btjf game_flags,#F_NO_FOOD,2$
@@ -472,7 +472,7 @@ snake:
     call move_snake 
     btjt game_flags,#F_GAME_OVER,game_over  
     call user_input
-    ld a,#24
+    ld a,#6
     call pause 
     jra 1$
 game_over:

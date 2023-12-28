@@ -70,7 +70,7 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int20 UART3 TX completed
 	int NonHandledInterrupt ;int21 UART3 RX full
 	int NonHandledInterrupt ;int22 ADC2 end of conversion
-	int Timer4UpdateHandler ;int23 TIM4 update/overflow ; use to blink tv cursor 
+	int NonHandledInterrupt ;int23 TIM4 update$overflow 
 	int NonHandledInterrupt ;int24 flash writing EOP/WR_PG_DIS
 	int NonHandledInterrupt ;int25  not used
 	int NonHandledInterrupt ;int26  not used
@@ -123,28 +123,6 @@ tv_buffer: .blkb  VBUFF_SIZE
 NonHandledInterrupt:
 	_swreset ; see "inc/gen_macros.inc"
 
-;------------------------------
-; TIMER 4 is used to maintain 
-; timers and ticks 
-; interrupt interval is 1.664 msec 
-;--------------------------------
-Timer4UpdateHandler:
-	clr TIM4_SR 
-	_ldxz ticks
-	incw x 
-	_strxz ticks
-	btjf flags,#F_GAME_TMR,2$  
-	dec delay_timer 
-	jrne 2$ 
-	bres flags,#F_GAME_TMR  
-2$:
-	btjf flags,#F_SOUND_TMR,9$
-	dec sound_timer 
-	jrne 9$ 
-	bres flags,#F_SOUND_TMR
-9$:
-	iret 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    peripherals initialization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -161,19 +139,6 @@ clock_init:
 	bset CLK_SWCR,#CLK_SWCR_SWEN
 2$: 
 	clr CLK_CKDIVR   	
-	ret
-
-;---------------------------------
-; TIM4 is configured to generate an 
-; interrupt every 2 millisecond 
-;----------------------------------
-timer4_init:
-	bset CLK_PCKENR1,#CLK_PCKENR1_TIM4
-	bres TIM4_CR1,#TIM4_CR1_CEN 
-	mov TIM4_PSCR,#7 ; Fmstr/128=125000 hertz  	
-	mov TIM4_ARR,#255 ; 125000/256=244hertz
-	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
-	bset TIM4_IER,#TIM4_IER_UIE
 	ret
 
 ;----------------------------------
@@ -245,7 +210,7 @@ set_int_priority::
 ;------------------------
 ; suspend execution 
 ; input:
-;   A     2*n msec   
+;   A     16.7*n msec   
 ;-------------------------
 pause:
 	_straz delay_timer 
@@ -258,7 +223,7 @@ pause:
 ; tone generator 
 ; Ft2clk=62500 hertz 
 ; input:
-;   A   duration n*4.1 msec    
+;   A   duration 16.7*n msec    
 ;   X   frequency 
 ;------------------------
 FR_T3_CLK=62500
@@ -297,7 +262,7 @@ beep:
 	push a 
 	pushw x 
 	ldw x,#1000 ; hertz 
-	ld a,#100
+	ld a,#12
 	call tone
 	popw x 
 	pop a   
@@ -362,7 +327,7 @@ read_keypad:
 	call kpad_input 
 1$:	ld (BUTTONS,sp),a  
     ldw x,ticks 
-	addw x,#8
+	addw x,#1
 	ldw (DEBOUNCE,sp),x 	
 2$: call kpad_input 
 	cp a,(BUTTONS,sp)
@@ -435,7 +400,6 @@ cold_start:
 	ld PH_CR1,a 
 	ld PI_CR1,a 
 	call clock_init	
-	call timer4_init
 	call timer3_init
 	call ntsc_init ;
 	rim ; enable interrupts 
