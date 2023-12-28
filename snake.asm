@@ -385,7 +385,7 @@ user_input:
     jreq 3$ 
     call rotate_head 
 3$:
-    ldw x,#90
+    ldw x,#10
     call wait_key_release
 4$:
     _drop 1 

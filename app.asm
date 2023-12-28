@@ -248,22 +248,7 @@ prog_list:
 .word fall
 .asciz "QUICK BROWN FOX"
 .word quick
-.asciz "TV NOISE TEST"
-.word noise_test    
 .word 0 
-
-noise_test:
-	call tv_cls 
-	push #23
-1$:	ldw y,#h 
-	call tv_puts 
-	dec (1,sp)
-	jrne 1$
-	_drop 1 
-	call wait_key 
-	call wait_key_release 
-	ret 
-h: .asciz "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"	
 
 quick:
     call tv_cls 
