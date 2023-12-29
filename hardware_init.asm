@@ -262,7 +262,7 @@ beep:
 	push a 
 	pushw x 
 	ldw x,#1000 ; hertz 
-	ld a,#12
+	ld a,#8
 	call tone
 	popw x 
 	pop a   
@@ -271,7 +271,7 @@ beep:
 ;------------------------
 ; generate white noise 
 ; input:
-;    A  duration 10*A msec.
+;    A  duration 60*A msec.
 ;-------------------------- 
 noise:
 	pushw x

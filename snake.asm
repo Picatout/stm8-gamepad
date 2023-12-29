@@ -11,6 +11,7 @@
     .org 4 
 app_variables:
 score: .blkw 1 ; game score 
+speed: .blkb 1 ; snake speed delay
 max_score: .blkw 1 ; maximum score 
 game_flags: .blkb 1 ; game boolean flags 
 snake_len: .blkb 1 ; snake length 
@@ -20,10 +21,14 @@ snake_body: .blkw 32 ;  snake rings coords
 
     .area CODE 
 
+MIN_SPEED=1 
+MAX_SPEED=9 
+
 ; game boolean flags 
 F_FOOD_COLL=0  ; collision with food, earn point
 F_NO_FOOD=1    ; no food available 
 F_GAME_OVER=2  ; game ended
+F_POO=3        ; snake poo 
 
 ; snake heading 
 NORTH=0 
@@ -141,7 +146,8 @@ snake_poo:
     ldw y,#POO 
     call draw_sprite 
     popw x 
-    pop a 
+    pop a
+    bres game_flags,#F_POO 
     ret 
 
 ;-----------------------------
@@ -155,30 +161,35 @@ snake_poo:
 ;    game_flags:F_FOOD_COLL
 ;    X   unchanged 
 ;-------------------------------
+    POS=1
+    GAIN=2
+    VAR_SIZE=2 
 food_collision:
-    pushw x 
+    pushw x
+    _vars VAR_SIZE 
+    clr (GAIN,sp)  
     _clrz game_flags 
     ld a,#MOUSE_WIDTH
     add a,#SNAKE_SPRITE_WIDTH
-    push a
+    ld (POS,sp),a 
     ld a,xl ; snake head x coord 
     sub a,food_coord+1 ; food x coord 
     jrpl 1$ 
     neg a  ; abs(delta)
-1$: 
-    cp a,(1,sp) 
-    jrpl 3$ ; if >= 0 collision object not mouse 
+1$: ; delta X 
+    cp a,(POS,sp) 
+    jrpl 3$ ; if delta X >= 0 collision object not mouse 
     ld a,#MOUSE_HEIGHT
     add a,#SNAKE_SPRITE_HEIGHT
-    ld (1,sp),a 
+    ld (POS,sp),a 
     ld a,xh   ; head y coord 
     sub a,food_coord ; food y coord 
     jrpl 2$
     neg a 
-2$:
-    cp a,(1,sp)
+2$: ; delta Y 
+    cp a,(POS,sp)
     jrmi 4$ 
-3$: ; collision object not mouse 
+3$: ; if delta Y >= 0 collision object not mouse 
     bset game_flags,#F_GAME_OVER
     jrpl 9$ 
 4$:  ; collision with mouse
@@ -189,33 +200,40 @@ food_collision:
     bset game_flags,#F_NO_FOOD 
     bset game_flags,#F_FOOD_COLL
     _incz snake_len 
-    _ldxz score 
-    incw x 
+    inc (GAIN,sp)
     ld a,food_coord ; mouse y coord 
     cp a,#9 
     jrne 5$
-    incw x      
+    inc (GAIN,sp) ; food at top border     
 5$: cp a,#VRES-MOUSE_HEIGHT-1
     jrne 6$ 
-    incw  x 
+    inc (GAIN,sp) ; food at bottom border 
 6$: ld a,food_coord+1 ; mouse x coord
     cp a,#1 
     jrne 7$ 
-    incw x  
+    inc (GAIN,sp) ; food at left border 
 7$: cp a,#HRES-MOUSE_WIDTH-1
     jrne 8$
-    incw x
-8$:
+    inc (GAIN,sp) ; food at right border 
+8$: ; score+=(MAX_SPEED+1-speed)*(GAIN,sp)
+    ld a,#MAX_SPEED+1
+    sub a,speed 
+    clrw x 
+    ld xl,a 
+    ld a,(GAIN,sp)
+    mul x,a ; gain 
     ld a,xl 
-    and a,#3 
-    jrne 81$ 
-    call snake_poo
-81$:
+    addw x,score
     _strxz score
+    cp a,#6
+    jrmi 81$ 
+    bset game_flags,#F_POO 
+81$:
     _clrz food_coord 
     _clrz food_coord+1     
+    call beep 
 9$:
-    _drop 1 
+    _drop VAR_SIZE
     popw x 
     ret 
 
@@ -322,11 +340,15 @@ move_snake:
 ; set 1 element as new head position 
     ldw x,(POS,sp)
     ldw snake_body,x    
-    btjt game_flags,#F_FOOD_COLL,9$
+    btjt game_flags,#F_FOOD_COLL,8$
 ; erase last ring 
     ldw x,(TAIL,sp)
     ldw y,#RING
     call draw_sprite
+    jra 9$ 
+8$:
+    btjf game_flags,#F_POO,9$ 
+    call snake_poo 
 9$:
     _drop VAR_SIZE 
     popw y 
@@ -373,21 +395,40 @@ rotate_head:
 user_input:
     push #0 
     call read_keypad
-    jreq 4$ 
+    jreq 8$ 
     ld (KPAD,sp),a  
     ld a,#BTN_LEFT 
     and a,(KPAD,sp)
     jreq 2$ 
     call rotate_head
-    jra 3$
+    jra 6$
 2$: ld a,#BTN_RIGHT 
     and a,(KPAD,sp)
     jreq 3$ 
-    call rotate_head 
+    call rotate_head
+    jra 6$ 
 3$:
+    ld a,#BTN_UP 
+    and a,(KPAD,sp)
+    jreq 4$
+    ld a,#MIN_SPEED 
+    cp a,speed 
+    jreq 6$  
+    _decz speed
+    call prt_info 
+    jra 6$ 
+4$: ld a,#BTN_DOWN 
+    and a,(KPAD,sp)
+    jreq 6$
+    ld a,#MAX_SPEED 
+    cp a,speed 
+    jreq 6$
+    _incz speed
+    call prt_info  
+6$:
     ldw x,#10
     call wait_key_release
-4$:
+8$:
     _drop 1 
     ret 
 
@@ -422,14 +463,34 @@ new_food:
 ; print score top left 
 ; corner 
 ;----------------------
-prt_score:
+prt_info:
     pushw x 
     _clrz cx 
     _clrz cy 
+    ldw y,#score_str
+    call tv_puts 
     _ldxz score 
+    call put_uint16
+    ld a,#12
+    _straz cx 
+    ldw y,#speed_str 
+    call tv_puts
+    ld a,#MAX_SPEED+1 
+    sub a,speed 
+    clrw x 
+    ld xl,a 
+    call put_uint16
+    ld a,#24
+    _straz cx 
+    ldw y,#max_str 
+    call tv_puts 
+    ldw x,max_score
     call put_uint16
     popw x
     ret 
+score_str: .asciz "SCORE:"
+speed_str: .asciz "SPEED:"  
+max_str: .asciz "max:"
 
 ;-------------------------
 ; game initialization
@@ -437,6 +498,8 @@ prt_score:
 snake_init:
     ld a,#(1<<F_NO_FOOD)
     _straz game_flags 
+    ld a,#5 
+    _straz speed
     clrw x 
     _strxz score 
     _strxz food_coord
@@ -462,20 +525,22 @@ snake_init:
 ;-------------------------
 snake:
     call snake_init
-    ld a,#60
+    ld a,#30
     call pause
 1$: 
     btjf game_flags,#F_NO_FOOD,2$
-    call prt_score 
+    call prt_info 
     call new_food 
 2$:
     call move_snake 
     btjt game_flags,#F_GAME_OVER,game_over  
     call user_input
-    ld a,#6
+    _ldaz speed 
     call pause 
     jra 1$
 game_over:
+    ld a,#5
+    call noise 
     _ldxz score 
     cpw x,max_score 
     jrmi 4$ 
@@ -491,11 +556,6 @@ game_over:
     _ldxz score 
     call put_uint16
     call crlf 
-    ldw y,#max_score_str
-    call tv_puts 
-    _ldxz max_score 
-    call put_uint16
-    call crlf
     ldw y,#prompt 
     call tv_puts 
 6$:
@@ -509,6 +569,4 @@ game_over:
     ret 
 
 gover: .asciz "game over\r"
-score_str: .asciz "score: "
-max_score_str: .asciz "max score: "
 prompt: .asciz "A new game\rB exit"

@@ -21,10 +21,10 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000000  s__CODE                         
      00000001  s_DATA                          
      00000015  l_DATA1                         
-     00000049  l_G_DATA3                       
+     0000004A  l_G_DATA3                       
      00000080  l_HOME                          
      00000080  l_SSEG0                         
-     00000EB1  l_CODE                          
+     00000F27  l_CODE                          
      000012C0  l_DATA2                         
      00008000  s_HOME                          
      00008080  s_CODE                          
@@ -77,7 +77,7 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    00000EB1 =        3761. bytes (REL,CON)
+CODE                                00008080    00000F27 =        3879. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
@@ -89,7 +89,7 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-G_DATA3                             00000000    00000049 =          73. bytes (ABS,CON)
+G_DATA3                             00000000    0000004A =          74. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------

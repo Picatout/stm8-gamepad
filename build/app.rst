@@ -2015,7 +2015,7 @@ Hexadecimal [24-Bits]
       0080FC 88               [ 1]  262 	push a 
       0080FD 89               [ 2]  263 	pushw x 
       0080FE AE 03 E8         [ 2]  264 	ldw x,#1000 ; hertz 
-      008101 A6 0C            [ 1]  265 	ld a,#12
+      008101 A6 08            [ 1]  265 	ld a,#8
       008103 CD 80 BF         [ 4]  266 	call tone
       008106 85               [ 2]  267 	popw x 
       008107 84               [ 1]  268 	pop a   
@@ -2024,7 +2024,7 @@ Hexadecimal [24-Bits]
                                     271 ;------------------------
                                     272 ; generate white noise 
                                     273 ; input:
-                                    274 ;    A  duration 10*A msec.
+                                    274 ;    A  duration 60*A msec.
                                     275 ;-------------------------- 
       008109                        276 noise:
       008109 89               [ 2]  277 	pushw x
@@ -3947,9 +3947,9 @@ Hexadecimal [24-Bits]
                                     243 
       008B17                        244 prog_list:
       008B17 53 4E 41 4B 45 00      245 .asciz "SNAKE"
-      008B1D 8D E2                  246 .word snake
+      008B1D 8E 76                  246 .word snake
       008B1F 46 41 4C 4C 00         247 .asciz "FALL"
-      008B24 8F 2B                  248 .word fall
+      008B24 8F A1                  248 .word fall
       008B26 51 55 49 43 4B 20 42   249 .asciz "QUICK BROWN FOX"
              52 4F 57 4E 20 46 4F
              58 00
@@ -3994,601 +3994,667 @@ Hexadecimal [24-Bits]
       000004                         11     .org 4 
       000004                         12 app_variables:
       000004                         13 score: .blkw 1 ; game score 
-      000006                         14 max_score: .blkw 1 ; maximum score 
-      000008                         15 game_flags: .blkb 1 ; game boolean flags 
-      000009                         16 snake_len: .blkb 1 ; snake length 
-      00000A                         17 snake_dir: .blkb 1 ; head direction 
-      00000B                         18 food_coord: .blkw 1 ; food coordinates
-      00000D                         19 snake_body: .blkw 32 ;  snake rings coords 
-                                     20 
-                                     21     .area CODE 
-                                     22 
-                                     23 ; game boolean flags 
-                           000000    24 F_FOOD_COLL=0  ; collision with food, earn point
-                           000001    25 F_NO_FOOD=1    ; no food available 
-                           000002    26 F_GAME_OVER=2  ; game ended
-                                     27 
-                                     28 ; snake heading 
-                           000000    29 NORTH=0 
-                           000001    30 EAST=1
-                           000002    31 SOUTH=2 
-                           000004    32 WEST=4 
-                                     33 
-                                     34 ; game sprites 
-                                     35 ; first 2 numbers: width,height 
-                           000004    36 SNAKE_SPRITE_WIDTH=4 
-                           000004    37 SNAKE_SPRITE_HEIGHT=4
-      008B78 04 04 60 60 90 60       38 HEAD_UP:    .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X60,0X60,0X90,0X60
-      008B7E 04 04 40 B0 B0 40       39 HEAD_RIGHT: .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X40,0XB0,0XB0,0X40 
-      008B84 04 04 60 90 60 60       40 HEAD_DOWN:  .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X60,0X90,0X60,0X60 
-      008B8A 04 04 20 D0 D0 20       41 HEAD_LEFT:  .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X20,0XD0,0XD0,0X20 
-      008B90 04 04 60 90 90 60       42 RING:       .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0x60,0x90,0X90,0X60 
-                           000005    43 MOUSE_WIDTH=5 
-                           000004    44 MOUSE_HEIGHT=4
-      008B96 05 04 00 70 F8 A0       45 MOUSE:      .byte MOUSE_WIDTH,MOUSE_HEIGHT,0X00,0X70,0XF8,0XA0 
-                           000007    46 POO_WIDTH=7
-                           000004    47 POO_HEIGHT=4
-      008B9C 07 04 10 38 7C FE       48 POO:    .byte POO_WIDTH,POO_HEIGHT,0x10,0x38,0x7c,0xfe
-                                     49 
-                                     50 
-                                     51 ;----------------------
-                                     52 ; draw walls around 
-                                     53 ; game area 
-                                     54 ;---------------------
-      008BA2                         55 draw_walls:
+      000006                         14 speed: .blkb 1 ; snake speed delay
+      000007                         15 max_score: .blkw 1 ; maximum score 
+      000009                         16 game_flags: .blkb 1 ; game boolean flags 
+      00000A                         17 snake_len: .blkb 1 ; snake length 
+      00000B                         18 snake_dir: .blkb 1 ; head direction 
+      00000C                         19 food_coord: .blkw 1 ; food coordinates
+      00000E                         20 snake_body: .blkw 32 ;  snake rings coords 
+                                     21 
+                                     22     .area CODE 
+                                     23 
+                           000001    24 MIN_SPEED=1 
+                           000009    25 MAX_SPEED=9 
+                                     26 
+                                     27 ; game boolean flags 
+                           000000    28 F_FOOD_COLL=0  ; collision with food, earn point
+                           000001    29 F_NO_FOOD=1    ; no food available 
+                           000002    30 F_GAME_OVER=2  ; game ended
+                           000003    31 F_POO=3        ; snake poo 
+                                     32 
+                                     33 ; snake heading 
+                           000000    34 NORTH=0 
+                           000001    35 EAST=1
+                           000002    36 SOUTH=2 
+                           000004    37 WEST=4 
+                                     38 
+                                     39 ; game sprites 
+                                     40 ; first 2 numbers: width,height 
+                           000004    41 SNAKE_SPRITE_WIDTH=4 
+                           000004    42 SNAKE_SPRITE_HEIGHT=4
+      008B78 04 04 60 60 90 60       43 HEAD_UP:    .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X60,0X60,0X90,0X60
+      008B7E 04 04 40 B0 B0 40       44 HEAD_RIGHT: .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X40,0XB0,0XB0,0X40 
+      008B84 04 04 60 90 60 60       45 HEAD_DOWN:  .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X60,0X90,0X60,0X60 
+      008B8A 04 04 20 D0 D0 20       46 HEAD_LEFT:  .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0X20,0XD0,0XD0,0X20 
+      008B90 04 04 60 90 90 60       47 RING:       .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0x60,0x90,0X90,0X60 
+                           000005    48 MOUSE_WIDTH=5 
+                           000004    49 MOUSE_HEIGHT=4
+      008B96 05 04 00 70 F8 A0       50 MOUSE:      .byte MOUSE_WIDTH,MOUSE_HEIGHT,0X00,0X70,0XF8,0XA0 
+                           000007    51 POO_WIDTH=7
+                           000004    52 POO_HEIGHT=4
+      008B9C 07 04 10 38 7C FE       53 POO:    .byte POO_WIDTH,POO_HEIGHT,0x10,0x38,0x7c,0xfe
+                                     54 
+                                     55 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 76.
 Hexadecimal [24-Bits]
 
 
 
-                                     56 ; top wall 
-      008BA2 AE 00 C8         [ 2]   57     ldw x,#HRES 
-      008BA5 90 AE 08 08      [ 2]   58     ldw y,#8*256+8  
-      008BA9 CD 88 3B         [ 4]   59     call line
-                                     60 ; bottom wall 
-      008BAC AE 00 C8         [ 2]   61     ldw x,#HRES 
-      008BAF 90 AE BF BF      [ 2]   62     ldw y,#(VRES-1)*256+(VRES-1)
-      008BB3 CD 88 3B         [ 4]   63     call line 
-                                     64 ; left wall     
-      008BB6 AE 00 00         [ 2]   65     ldw x,#0 
-      008BB9 90 AE 08 BF      [ 2]   66     ldw y,#8*256+(VRES-1)
-      008BBD CD 88 3B         [ 4]   67     call line 
-                                     68 ; right wall     
-      008BC0 AE C7 C7         [ 2]   69     ldw x,#((HRES-1)*256)+(HRES-1)
-      008BC3 90 AE 08 BF      [ 2]   70     ldw y,#8*256+(VRES-1)
-      008BC7 CD 88 3B         [ 4]   71     call line 
-      008BCA 81               [ 4]   72     ret 
-                                     73 
-                                     74 ;---------------------------
-                                     75 ; draw sprite 
-                                     76 ; input:
-                                     77 ;   XH   y coord 
-                                     78 ;   XL   x coord 
-                                     79 ;   Y    sprite data 
-                                     80 ;----------------------------
-      008BCB                         81 draw_sprite:
-      008BCB 90 E6 01         [ 1]   82     ld a,(1,y)
-      008BCE 72 A9 00 02      [ 2]   83     addw y,#2
-      008BD2 CC 88 D2         [ 2]   84     jp put_sprite
-                                     85 
-                                     86 ;---------------------------
-                                     87 ; select head sprite from 
-                                     88 ; value of snake_dir 
-                                     89 ; and draw it 
-                                     90 ; input:
-                                     91 ;    X    position 
-                                     92 ;---------------------------
-      008BD5                         93 draw_head:
-      008BD5 90 AE 00 06      [ 2]   94     ldw y,#6 
-      000B59                         95     _ldaz snake_dir 
-      008BD9 B6 0A                    1     .byte 0xb6,snake_dir 
-      008BDB 90 42            [ 4]   96     mul y,a 
-      008BDD 72 A9 8B 78      [ 2]   97     addw y,#HEAD_UP 
-      008BE1 20 E8            [ 2]   98     jra draw_sprite  
-                                     99 
-                                    100 
-                                    101 ;--------------------------
-                                    102 ; snake initial draw 
-                                    103 ;--------------------------
-                           000001   104     LEN=1
-                           000002   105     IDX=LEN+1 
-                           000003   106     VAR_SIZE=IDX+1
-      008BE3                        107 draw_snake:
-      000B63                        108     _vars VAR_SIZE
-      008BE3 52 03            [ 2]    1     sub sp,#VAR_SIZE 
+                                     56 ;----------------------
+                                     57 ; draw walls around 
+                                     58 ; game area 
+                                     59 ;---------------------
+      008BA2                         60 draw_walls:
+                                     61 ; top wall 
+      008BA2 AE 00 C8         [ 2]   62     ldw x,#HRES 
+      008BA5 90 AE 08 08      [ 2]   63     ldw y,#8*256+8  
+      008BA9 CD 88 3B         [ 4]   64     call line
+                                     65 ; bottom wall 
+      008BAC AE 00 C8         [ 2]   66     ldw x,#HRES 
+      008BAF 90 AE BF BF      [ 2]   67     ldw y,#(VRES-1)*256+(VRES-1)
+      008BB3 CD 88 3B         [ 4]   68     call line 
+                                     69 ; left wall     
+      008BB6 AE 00 00         [ 2]   70     ldw x,#0 
+      008BB9 90 AE 08 BF      [ 2]   71     ldw y,#8*256+(VRES-1)
+      008BBD CD 88 3B         [ 4]   72     call line 
+                                     73 ; right wall     
+      008BC0 AE C7 C7         [ 2]   74     ldw x,#((HRES-1)*256)+(HRES-1)
+      008BC3 90 AE 08 BF      [ 2]   75     ldw y,#8*256+(VRES-1)
+      008BC7 CD 88 3B         [ 4]   76     call line 
+      008BCA 81               [ 4]   77     ret 
+                                     78 
+                                     79 ;---------------------------
+                                     80 ; draw sprite 
+                                     81 ; input:
+                                     82 ;   XH   y coord 
+                                     83 ;   XL   x coord 
+                                     84 ;   Y    sprite data 
+                                     85 ;----------------------------
+      008BCB                         86 draw_sprite:
+      008BCB 90 E6 01         [ 1]   87     ld a,(1,y)
+      008BCE 72 A9 00 02      [ 2]   88     addw y,#2
+      008BD2 CC 88 D2         [ 2]   89     jp put_sprite
+                                     90 
+                                     91 ;---------------------------
+                                     92 ; select head sprite from 
+                                     93 ; value of snake_dir 
+                                     94 ; and draw it 
+                                     95 ; input:
+                                     96 ;    X    position 
+                                     97 ;---------------------------
+      008BD5                         98 draw_head:
+      008BD5 90 AE 00 06      [ 2]   99     ldw y,#6 
+      000B59                        100     _ldaz snake_dir 
+      008BD9 B6 0B                    1     .byte 0xb6,snake_dir 
+      008BDB 90 42            [ 4]  101     mul y,a 
+      008BDD 72 A9 8B 78      [ 2]  102     addw y,#HEAD_UP 
+      008BE1 20 E8            [ 2]  103     jra draw_sprite  
+                                    104 
+                                    105 
+                                    106 ;--------------------------
+                                    107 ; snake initial draw 
+                                    108 ;--------------------------
+                           000001   109     LEN=1
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 77.
 Hexadecimal [24-Bits]
 
 
 
-      008BE5 CE 00 0D         [ 2]  109     ldw x,snake_body  
-      008BE8 CD 8B D5         [ 4]  110     call draw_head 
-      000B6B                        111     _ldaz snake_len
-      008BEB B6 09                    1     .byte 0xb6,snake_len 
-      008BED 4A               [ 1]  112     dec a  
-      008BEE 6B 01            [ 1]  113     ld (LEN,sp),a  
-      008BF0 AE 00 0F         [ 2]  114     ldw x,#snake_body+2 
-      008BF3                        115 1$:
-      008BF3 1F 02            [ 2]  116     ldw (IDX,sp),x ; array index  
-      008BF5 90 AE 8B 90      [ 2]  117     ldw y,#RING 
-      008BF9 FE               [ 2]  118     ldw x,(x)
-      008BFA CD 8B CB         [ 4]  119     call draw_sprite
-      008BFD 0A 01            [ 1]  120     dec (LEN,sp) 
-      008BFF 27 07            [ 1]  121     jreq 9$
-      008C01 1E 02            [ 2]  122     ldw x,(IDX,sp)
-      008C03 1C 00 02         [ 2]  123     addw x,#2 ; next element  
-      008C06 20 EB            [ 2]  124     jra 1$
-      008C08                        125 9$:
-      000B88                        126     _drop VAR_SIZE 
+                           000002   110     IDX=LEN+1 
+                           000003   111     VAR_SIZE=IDX+1
+      008BE3                        112 draw_snake:
+      000B63                        113     _vars VAR_SIZE
+      008BE3 52 03            [ 2]    1     sub sp,#VAR_SIZE 
+      008BE5 CE 00 0E         [ 2]  114     ldw x,snake_body  
+      008BE8 CD 8B D5         [ 4]  115     call draw_head 
+      000B6B                        116     _ldaz snake_len
+      008BEB B6 0A                    1     .byte 0xb6,snake_len 
+      008BED 4A               [ 1]  117     dec a  
+      008BEE 6B 01            [ 1]  118     ld (LEN,sp),a  
+      008BF0 AE 00 10         [ 2]  119     ldw x,#snake_body+2 
+      008BF3                        120 1$:
+      008BF3 1F 02            [ 2]  121     ldw (IDX,sp),x ; array index  
+      008BF5 90 AE 8B 90      [ 2]  122     ldw y,#RING 
+      008BF9 FE               [ 2]  123     ldw x,(x)
+      008BFA CD 8B CB         [ 4]  124     call draw_sprite
+      008BFD 0A 01            [ 1]  125     dec (LEN,sp) 
+      008BFF 27 07            [ 1]  126     jreq 9$
+      008C01 1E 02            [ 2]  127     ldw x,(IDX,sp)
+      008C03 1C 00 02         [ 2]  128     addw x,#2 ; next element  
+      008C06 20 EB            [ 2]  129     jra 1$
+      008C08                        130 9$:
+      000B88                        131     _drop VAR_SIZE 
       008C08 5B 03            [ 2]    1     addw sp,#VAR_SIZE 
-      008C0A 81               [ 4]  127     ret 
-                                    128 
-                                    129 ;---------------------
-                                    130 ; shit happen 
-                                    131 ;---------------------
-      008C0B                        132 snake_poo:
-      008C0B 88               [ 1]  133     push a 
-      008C0C 89               [ 2]  134     pushw x 
-      000B8D                        135     _ldaz snake_len 
-      008C0D B6 09                    1     .byte 0xb6,snake_len 
-      008C0F 4A               [ 1]  136     dec a 
-      008C10 5F               [ 1]  137     clrw x 
-      008C11 97               [ 1]  138     ld xl,a 
-      008C12 1C 00 0D         [ 2]  139     addw x,#snake_body
-      008C15 FE               [ 2]  140     ldw x,(x)
-      008C16 90 AE 8B 9C      [ 2]  141     ldw y,#POO 
-      008C1A CD 8B CB         [ 4]  142     call draw_sprite 
-      008C1D 85               [ 2]  143     popw x 
-      008C1E 84               [ 1]  144     pop a 
-      008C1F 81               [ 4]  145     ret 
-                                    146 
-                                    147 ;-----------------------------
-                                    148 ; check for collision object
-                                    149 ; if not mouse then game over.
-                                    150 ; if MOUSE increase score and 
-                                    151 ; delete mouse. 
-                                    152 ; input:  
-                                    153 ;    X   position 
-                                    154 ; output:
-                                    155 ;    game_flags:F_FOOD_COLL
-                                    156 ;    X   unchanged 
-                                    157 ;-------------------------------
-      008C20                        158 food_collision:
-      008C20 89               [ 2]  159     pushw x 
-      000BA1                        160     _clrz game_flags 
+      008C0A 81               [ 4]  132     ret 
+                                    133 
+                                    134 ;---------------------
+                                    135 ; shit happen 
+                                    136 ;---------------------
+      008C0B                        137 snake_poo:
+      008C0B 88               [ 1]  138     push a 
+      008C0C 89               [ 2]  139     pushw x 
+      000B8D                        140     _ldaz snake_len 
+      008C0D B6 0A                    1     .byte 0xb6,snake_len 
+      008C0F 4A               [ 1]  141     dec a 
+      008C10 5F               [ 1]  142     clrw x 
+      008C11 97               [ 1]  143     ld xl,a 
+      008C12 1C 00 0E         [ 2]  144     addw x,#snake_body
+      008C15 FE               [ 2]  145     ldw x,(x)
+      008C16 90 AE 8B 9C      [ 2]  146     ldw y,#POO 
+      008C1A CD 8B CB         [ 4]  147     call draw_sprite 
+      008C1D 85               [ 2]  148     popw x 
+      008C1E 84               [ 1]  149     pop a
+      008C1F 72 17 00 09      [ 1]  150     bres game_flags,#F_POO 
+      008C23 81               [ 4]  151     ret 
+                                    152 
+                                    153 ;-----------------------------
+                                    154 ; check for collision object
+                                    155 ; if not mouse then game over.
+                                    156 ; if MOUSE increase score and 
+                                    157 ; delete mouse. 
+                                    158 ; input:  
+                                    159 ;    X   position 
+                                    160 ; output:
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 78.
 Hexadecimal [24-Bits]
 
 
 
-      008C21 3F 08                    1     .byte 0x3f, game_flags 
-      008C23 A6 05            [ 1]  161     ld a,#MOUSE_WIDTH
-      008C25 AB 04            [ 1]  162     add a,#SNAKE_SPRITE_WIDTH
-      008C27 88               [ 1]  163     push a
-      008C28 9F               [ 1]  164     ld a,xl ; snake head x coord 
-      008C29 C0 00 0C         [ 1]  165     sub a,food_coord+1 ; food x coord 
-      008C2C 2A 01            [ 1]  166     jrpl 1$ 
-      008C2E 40               [ 1]  167     neg a  ; abs(delta)
-      008C2F                        168 1$: 
-      008C2F 11 01            [ 1]  169     cp a,(1,sp) 
-      008C31 2A 11            [ 1]  170     jrpl 3$ ; if >= 0 collision object not mouse 
-      008C33 A6 04            [ 1]  171     ld a,#MOUSE_HEIGHT
-      008C35 AB 04            [ 1]  172     add a,#SNAKE_SPRITE_HEIGHT
-      008C37 6B 01            [ 1]  173     ld (1,sp),a 
-      008C39 9E               [ 1]  174     ld a,xh   ; head y coord 
-      008C3A C0 00 0B         [ 1]  175     sub a,food_coord ; food y coord 
-      008C3D 2A 01            [ 1]  176     jrpl 2$
-      008C3F 40               [ 1]  177     neg a 
-      008C40                        178 2$:
-      008C40 11 01            [ 1]  179     cp a,(1,sp)
-      008C42 2B 06            [ 1]  180     jrmi 4$ 
-      008C44                        181 3$: ; collision object not mouse 
-      008C44 72 14 00 08      [ 1]  182     bset game_flags,#F_GAME_OVER
-      008C48 2A 3F            [ 1]  183     jrpl 9$ 
-      008C4A                        184 4$:  ; collision with mouse
-                                    185 ; erase food 
-      008C4A CE 00 0B         [ 2]  186     ldw x,food_coord
-      008C4D 90 AE 8B 96      [ 2]  187     ldw y,#MOUSE 
-      008C51 CD 8B CB         [ 4]  188     call draw_sprite
-      008C54 72 12 00 08      [ 1]  189     bset game_flags,#F_NO_FOOD 
-      008C58 72 10 00 08      [ 1]  190     bset game_flags,#F_FOOD_COLL
-      000BDC                        191     _incz snake_len 
-      008C5C 3C 09                    1     .byte 0x3c, snake_len 
-      000BDE                        192     _ldxz score 
-      008C5E BE 04                    1     .byte 0xbe,score 
-      008C60 5C               [ 1]  193     incw x 
-      008C61 C6 00 0B         [ 1]  194     ld a,food_coord ; mouse y coord 
-      008C64 A1 09            [ 1]  195     cp a,#9 
-      008C66 26 01            [ 1]  196     jrne 5$
-      008C68 5C               [ 1]  197     incw x      
-      008C69 A1 BB            [ 1]  198 5$: cp a,#VRES-MOUSE_HEIGHT-1
-      008C6B 26 01            [ 1]  199     jrne 6$ 
-      008C6D 5C               [ 1]  200     incw  x 
-      008C6E C6 00 0C         [ 1]  201 6$: ld a,food_coord+1 ; mouse x coord
-      008C71 A1 01            [ 1]  202     cp a,#1 
-      008C73 26 01            [ 1]  203     jrne 7$ 
-      008C75 5C               [ 1]  204     incw x  
-      008C76 A1 C2            [ 1]  205 7$: cp a,#HRES-MOUSE_WIDTH-1
-      008C78 26 01            [ 1]  206     jrne 8$
-      008C7A 5C               [ 1]  207     incw x
-      008C7B                        208 8$:
-      008C7B 9F               [ 1]  209     ld a,xl 
-      008C7C A4 03            [ 1]  210     and a,#3 
-      008C7E 26 03            [ 1]  211     jrne 81$ 
-      008C80 CD 8C 0B         [ 4]  212     call snake_poo
+                                    161 ;    game_flags:F_FOOD_COLL
+                                    162 ;    X   unchanged 
+                                    163 ;-------------------------------
+                           000001   164     POS=1
+                           000002   165     GAIN=2
+                           000002   166     VAR_SIZE=2 
+      008C24                        167 food_collision:
+      008C24 89               [ 2]  168     pushw x
+      000BA5                        169     _vars VAR_SIZE 
+      008C25 52 02            [ 2]    1     sub sp,#VAR_SIZE 
+      008C27 0F 02            [ 1]  170     clr (GAIN,sp)  
+      000BA9                        171     _clrz game_flags 
+      008C29 3F 09                    1     .byte 0x3f, game_flags 
+      008C2B A6 05            [ 1]  172     ld a,#MOUSE_WIDTH
+      008C2D AB 04            [ 1]  173     add a,#SNAKE_SPRITE_WIDTH
+      008C2F 6B 01            [ 1]  174     ld (POS,sp),a 
+      008C31 9F               [ 1]  175     ld a,xl ; snake head x coord 
+      008C32 C0 00 0D         [ 1]  176     sub a,food_coord+1 ; food x coord 
+      008C35 2A 01            [ 1]  177     jrpl 1$ 
+      008C37 40               [ 1]  178     neg a  ; abs(delta)
+      008C38                        179 1$: ; delta X 
+      008C38 11 01            [ 1]  180     cp a,(POS,sp) 
+      008C3A 2A 11            [ 1]  181     jrpl 3$ ; if delta X >= 0 collision object not mouse 
+      008C3C A6 04            [ 1]  182     ld a,#MOUSE_HEIGHT
+      008C3E AB 04            [ 1]  183     add a,#SNAKE_SPRITE_HEIGHT
+      008C40 6B 01            [ 1]  184     ld (POS,sp),a 
+      008C42 9E               [ 1]  185     ld a,xh   ; head y coord 
+      008C43 C0 00 0C         [ 1]  186     sub a,food_coord ; food y coord 
+      008C46 2A 01            [ 1]  187     jrpl 2$
+      008C48 40               [ 1]  188     neg a 
+      008C49                        189 2$: ; delta Y 
+      008C49 11 01            [ 1]  190     cp a,(POS,sp)
+      008C4B 2B 06            [ 1]  191     jrmi 4$ 
+      008C4D                        192 3$: ; if delta Y >= 0 collision object not mouse 
+      008C4D 72 14 00 09      [ 1]  193     bset game_flags,#F_GAME_OVER
+      008C51 2A 54            [ 1]  194     jrpl 9$ 
+      008C53                        195 4$:  ; collision with mouse
+                                    196 ; erase food 
+      008C53 CE 00 0C         [ 2]  197     ldw x,food_coord
+      008C56 90 AE 8B 96      [ 2]  198     ldw y,#MOUSE 
+      008C5A CD 8B CB         [ 4]  199     call draw_sprite
+      008C5D 72 12 00 09      [ 1]  200     bset game_flags,#F_NO_FOOD 
+      008C61 72 10 00 09      [ 1]  201     bset game_flags,#F_FOOD_COLL
+      000BE5                        202     _incz snake_len 
+      008C65 3C 0A                    1     .byte 0x3c, snake_len 
+      008C67 0C 02            [ 1]  203     inc (GAIN,sp)
+      008C69 C6 00 0C         [ 1]  204     ld a,food_coord ; mouse y coord 
+      008C6C A1 09            [ 1]  205     cp a,#9 
+      008C6E 26 02            [ 1]  206     jrne 5$
+      008C70 0C 02            [ 1]  207     inc (GAIN,sp) ; food at top border     
+      008C72 A1 BB            [ 1]  208 5$: cp a,#VRES-MOUSE_HEIGHT-1
+      008C74 26 02            [ 1]  209     jrne 6$ 
+      008C76 0C 02            [ 1]  210     inc (GAIN,sp) ; food at bottom border 
+      008C78 C6 00 0D         [ 1]  211 6$: ld a,food_coord+1 ; mouse x coord
+      008C7B A1 01            [ 1]  212     cp a,#1 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 79.
 Hexadecimal [24-Bits]
 
 
 
-      008C83                        213 81$:
-      000C03                        214     _strxz score
-      008C83 BF 04                    1     .byte 0xbf,score 
-      000C05                        215     _clrz food_coord 
-      008C85 3F 0B                    1     .byte 0x3f, food_coord 
-      000C07                        216     _clrz food_coord+1     
-      008C87 3F 0C                    1     .byte 0x3f, food_coord+1 
-      008C89                        217 9$:
-      000C09                        218     _drop 1 
-      008C89 5B 01            [ 2]    1     addw sp,#1 
-      008C8B 85               [ 2]  219     popw x 
-      008C8C 81               [ 4]  220     ret 
-                                    221 
-                                    222 
-                                    223 ;---------------------
-                                    224 ; according to 
-                                    225 ; actual head position 
-                                    226 ; and direction compute 
-                                    227 ; next snake head 
-                                    228 ; coordinates
-                                    229 ; input:
-                                    230 ;   X     actual position
-                                    231 ; output:
-                                    232 ;   X     next position 
-                                    233 ;---------------------
-      008C8D                        234 next_head_pos:
-      000C0D                        235     _ldaz snake_dir 
-      008C8D B6 0A                    1     .byte 0xb6,snake_dir 
-      008C8F A1 00            [ 1]  236     cp a,#NORTH 
-      008C91 26 05            [ 1]  237     jrne 2$ 
-                                    238 ; going north 
-      008C93 1D 04 00         [ 2]  239     subw x,#SNAKE_SPRITE_HEIGHT<<8
-      008C96 20 15            [ 2]  240     jra 9$        
-      008C98 A1 01            [ 1]  241 2$: cp a,#EAST 
-      008C9A 26 05            [ 1]  242     jrne 4$ 
-                                    243 ;going east 
-      008C9C 1C 00 04         [ 2]  244     addw x,#SNAKE_SPRITE_WIDTH 
-      008C9F 20 0C            [ 2]  245     jra 9$ 
-      008CA1 A1 02            [ 1]  246 4$: cp a,#SOUTH 
-      008CA3 26 05            [ 1]  247     jrne 6$
-                                    248 ;going south 
-      008CA5 1C 04 00         [ 2]  249     addw x,#SNAKE_SPRITE_HEIGHT<<8
-      008CA8 20 03            [ 2]  250     jra 9$ 
-      008CAA                        251 6$: ; going west 
-      008CAA 1D 00 04         [ 2]  252     subw x,#SNAKE_SPRITE_WIDTH 
-      008CAD                        253 9$:
-      008CAD 81               [ 4]  254     ret 
-                                    255 
-                                    256 ;------------------------------
-                                    257 ; move memory block from 
-                                    258 ; low address to higher address    
-                                    259 ; input:
-                                    260 ;    A   count 
-                                    261 ;    X   destination 
-                                    262 ;    Y   source 
+      008C7D 26 02            [ 1]  213     jrne 7$ 
+      008C7F 0C 02            [ 1]  214     inc (GAIN,sp) ; food at left border 
+      008C81 A1 C2            [ 1]  215 7$: cp a,#HRES-MOUSE_WIDTH-1
+      008C83 26 02            [ 1]  216     jrne 8$
+      008C85 0C 02            [ 1]  217     inc (GAIN,sp) ; food at right border 
+      008C87                        218 8$: ; score+=(MAX_SPEED+1-speed)*(GAIN,sp)
+      008C87 A6 0A            [ 1]  219     ld a,#MAX_SPEED+1
+      008C89 C0 00 06         [ 1]  220     sub a,speed 
+      008C8C 5F               [ 1]  221     clrw x 
+      008C8D 97               [ 1]  222     ld xl,a 
+      008C8E 7B 02            [ 1]  223     ld a,(GAIN,sp)
+      008C90 42               [ 4]  224     mul x,a ; gain 
+      008C91 9F               [ 1]  225     ld a,xl 
+      008C92 72 BB 00 04      [ 2]  226     addw x,score
+      000C16                        227     _strxz score
+      008C96 BF 04                    1     .byte 0xbf,score 
+      008C98 A1 06            [ 1]  228     cp a,#6
+      008C9A 2B 04            [ 1]  229     jrmi 81$ 
+      008C9C 72 16 00 09      [ 1]  230     bset game_flags,#F_POO 
+      008CA0                        231 81$:
+      000C20                        232     _clrz food_coord 
+      008CA0 3F 0C                    1     .byte 0x3f, food_coord 
+      000C22                        233     _clrz food_coord+1     
+      008CA2 3F 0D                    1     .byte 0x3f, food_coord+1 
+      008CA4 CD 80 FC         [ 4]  234     call beep 
+      008CA7                        235 9$:
+      000C27                        236     _drop VAR_SIZE
+      008CA7 5B 02            [ 2]    1     addw sp,#VAR_SIZE 
+      008CA9 85               [ 2]  237     popw x 
+      008CAA 81               [ 4]  238     ret 
+                                    239 
+                                    240 
+                                    241 ;---------------------
+                                    242 ; according to 
+                                    243 ; actual head position 
+                                    244 ; and direction compute 
+                                    245 ; next snake head 
+                                    246 ; coordinates
+                                    247 ; input:
+                                    248 ;   X     actual position
+                                    249 ; output:
+                                    250 ;   X     next position 
+                                    251 ;---------------------
+      008CAB                        252 next_head_pos:
+      000C2B                        253     _ldaz snake_dir 
+      008CAB B6 0B                    1     .byte 0xb6,snake_dir 
+      008CAD A1 00            [ 1]  254     cp a,#NORTH 
+      008CAF 26 05            [ 1]  255     jrne 2$ 
+                                    256 ; going north 
+      008CB1 1D 04 00         [ 2]  257     subw x,#SNAKE_SPRITE_HEIGHT<<8
+      008CB4 20 15            [ 2]  258     jra 9$        
+      008CB6 A1 01            [ 1]  259 2$: cp a,#EAST 
+      008CB8 26 05            [ 1]  260     jrne 4$ 
+                                    261 ;going east 
+      008CBA 1C 00 04         [ 2]  262     addw x,#SNAKE_SPRITE_WIDTH 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 80.
 Hexadecimal [24-Bits]
 
 
 
-                                    263 ;-------------------------------
-      008CAE                        264 move_array_up:
-      008CAE 88               [ 1]  265     push a 
-      008CAF 90 F6            [ 1]  266 1$: ld a,(y)
-      008CB1 90 5A            [ 2]  267     decw y 
-      008CB3 F7               [ 1]  268     ld (x),a 
-      008CB4 5A               [ 2]  269     decw x 
-      008CB5 0A 01            [ 1]  270     dec (1,sp)
-      008CB7 26 F6            [ 1]  271     jrne 1$ 
-      000C39                        272     _drop 1 
-      008CB9 5B 01            [ 2]    1     addw sp,#1 
-      008CBB 81               [ 4]  273     ret 
-                                    274 
-                                    275 ;-----------------------
-                                    276 ; move snake 
-                                    277 ;-----------------------
-                           000001   278     POS=1 ; new head coordinates 
-                           000003   279     HEAD=POS+2 ; actual head position 
-                           000003   280     TAIL=HEAD 
-                           000004   281     VAR_SIZE=HEAD+1
-      008CBC                        282 move_snake:
-      008CBC 89               [ 2]  283     pushw x 
-      008CBD 90 89            [ 2]  284     pushw y 
-      000C3F                        285     _vars VAR_SIZE 
-      008CBF 52 04            [ 2]    1     sub sp,#VAR_SIZE 
-                                    286 ; erase head by drawing over it 
-      008CC1 CE 00 0D         [ 2]  287     ldw x,snake_body 
-      008CC4 1F 03            [ 2]  288     ldw (HEAD,sp),x 
-      008CC6 CD 8B D5         [ 4]  289     call draw_head 
-                                    290 ; draw ring at head position     
-      008CC9 1E 03            [ 2]  291     ldw x,(HEAD,sp)  ; head position 
-      008CCB 90 AE 8B 90      [ 2]  292     ldw y,#RING 
-      008CCF CD 8B CB         [ 4]  293     call draw_sprite 
-                                    294 ;draw head at new position 
-      008CD2 1E 03            [ 2]  295     ldw x,(HEAD,sp)
-      008CD4 CD 8C 8D         [ 4]  296     call next_head_pos
-      008CD7 1F 01            [ 2]  297     ldw (POS,sp),x
-      008CD9 CD 8B D5         [ 4]  298     call draw_head
-      008CDC 27 0A            [ 1]  299     jreq 1$
-                                    300 ;collision deteted  
-      008CDE 1E 01            [ 2]  301     ldw x,(POS,sp)
-      008CE0 CD 8C 20         [ 4]  302     call food_collision 
-      008CE3 72 04 00 08 2C   [ 2]  303     btjt game_flags,#F_GAME_OVER,9$
-      008CE8                        304 1$: 
-                                    305 ; move array elements 1 cell toward tail 
-      000C68                        306     _ldaz snake_len
-      008CE8 B6 09                    1     .byte 0xb6,snake_len 
-      008CEA 4A               [ 1]  307     dec a
-      008CEB 48               [ 1]  308     sll a 
-      008CEC 5F               [ 1]  309     clrw x 
-      008CED 97               [ 1]  310     ld xl,a 
-      008CEE 1C 00 0D         [ 2]  311     addw x,#snake_body ; last array element 
-      008CF1 90 93            [ 1]  312     ldw y,x 
-      008CF3 FE               [ 2]  313     ldw x,(x)
-      008CF4 1F 03            [ 2]  314     ldw (TAIL,sp),x ; last ring position  
+      008CBD 20 0C            [ 2]  263     jra 9$ 
+      008CBF A1 02            [ 1]  264 4$: cp a,#SOUTH 
+      008CC1 26 05            [ 1]  265     jrne 6$
+                                    266 ;going south 
+      008CC3 1C 04 00         [ 2]  267     addw x,#SNAKE_SPRITE_HEIGHT<<8
+      008CC6 20 03            [ 2]  268     jra 9$ 
+      008CC8                        269 6$: ; going west 
+      008CC8 1D 00 04         [ 2]  270     subw x,#SNAKE_SPRITE_WIDTH 
+      008CCB                        271 9$:
+      008CCB 81               [ 4]  272     ret 
+                                    273 
+                                    274 ;------------------------------
+                                    275 ; move memory block from 
+                                    276 ; low address to higher address    
+                                    277 ; input:
+                                    278 ;    A   count 
+                                    279 ;    X   destination 
+                                    280 ;    Y   source 
+                                    281 ;-------------------------------
+      008CCC                        282 move_array_up:
+      008CCC 88               [ 1]  283     push a 
+      008CCD 90 F6            [ 1]  284 1$: ld a,(y)
+      008CCF 90 5A            [ 2]  285     decw y 
+      008CD1 F7               [ 1]  286     ld (x),a 
+      008CD2 5A               [ 2]  287     decw x 
+      008CD3 0A 01            [ 1]  288     dec (1,sp)
+      008CD5 26 F6            [ 1]  289     jrne 1$ 
+      000C57                        290     _drop 1 
+      008CD7 5B 01            [ 2]    1     addw sp,#1 
+      008CD9 81               [ 4]  291     ret 
+                                    292 
+                                    293 ;-----------------------
+                                    294 ; move snake 
+                                    295 ;-----------------------
+                           000001   296     POS=1 ; new head coordinates 
+                           000003   297     HEAD=POS+2 ; actual head position 
+                           000003   298     TAIL=HEAD 
+                           000004   299     VAR_SIZE=HEAD+1
+      008CDA                        300 move_snake:
+      008CDA 89               [ 2]  301     pushw x 
+      008CDB 90 89            [ 2]  302     pushw y 
+      000C5D                        303     _vars VAR_SIZE 
+      008CDD 52 04            [ 2]    1     sub sp,#VAR_SIZE 
+                                    304 ; erase head by drawing over it 
+      008CDF CE 00 0E         [ 2]  305     ldw x,snake_body 
+      008CE2 1F 03            [ 2]  306     ldw (HEAD,sp),x 
+      008CE4 CD 8B D5         [ 4]  307     call draw_head 
+                                    308 ; draw ring at head position     
+      008CE7 1E 03            [ 2]  309     ldw x,(HEAD,sp)  ; head position 
+      008CE9 90 AE 8B 90      [ 2]  310     ldw y,#RING 
+      008CED CD 8B CB         [ 4]  311     call draw_sprite 
+                                    312 ;draw head at new position 
+      008CF0 1E 03            [ 2]  313     ldw x,(HEAD,sp)
+      008CF2 CD 8C AB         [ 4]  314     call next_head_pos
+      008CF5 1F 01            [ 2]  315     ldw (POS,sp),x
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 81.
 Hexadecimal [24-Bits]
 
 
 
-      008CF6 93               [ 1]  315     ldw x,y 
-      008CF7 90 5A            [ 2]  316     decw y 
-      008CF9 5C               [ 1]  317     incw x 
-      000C7A                        318     _ldaz snake_len 
-      008CFA B6 09                    1     .byte 0xb6,snake_len 
-      008CFC 4A               [ 1]  319     dec a 
-      008CFD 48               [ 1]  320     sll a     
-      008CFE CD 8C AE         [ 4]  321     call move_array_up 
-                                    322 ; set 1 element as new head position 
-      008D01 1E 01            [ 2]  323     ldw x,(POS,sp)
-      008D03 CF 00 0D         [ 2]  324     ldw snake_body,x    
-      008D06 72 00 00 08 09   [ 2]  325     btjt game_flags,#F_FOOD_COLL,9$
-                                    326 ; erase last ring 
-      008D0B 1E 03            [ 2]  327     ldw x,(TAIL,sp)
-      008D0D 90 AE 8B 90      [ 2]  328     ldw y,#RING
-      008D11 CD 8B CB         [ 4]  329     call draw_sprite
-      008D14                        330 9$:
-      000C94                        331     _drop VAR_SIZE 
-      008D14 5B 04            [ 2]    1     addw sp,#VAR_SIZE 
-      008D16 90 85            [ 2]  332     popw y 
-      008D18 85               [ 2]  333     popw x  
-      008D19 81               [ 4]  334     ret 
-                                    335 
-                                    336 
-                                    337 ;--------------------------
-                                    338 ; rotate snake head 
-                                    339 ; input
-                                    340 ;     A   {LEFT,RIGHT}
-                                    341 ;--------------------------
-      008D1A                        342 rotate_head:
-      008D1A 88               [ 1]  343     push a 
-      000C9B                        344     _ldaz snake_dir 
-      008D1B B6 0A                    1     .byte 0xb6,snake_dir 
-      008D1D 90 AE 00 06      [ 2]  345     ldw y,#6 
-      008D21 90 42            [ 4]  346     mul y,a 
-      008D23 72 A9 8B 78      [ 2]  347     addw y,#HEAD_UP
-      008D27 CE 00 0D         [ 2]  348     ldw x,snake_body 
-      008D2A CD 8B CB         [ 4]  349     call draw_sprite 
-      008D2D 84               [ 1]  350     pop a 
-      008D2E A1 01            [ 1]  351     cp a,#BTN_LEFT 
-      008D30 26 05            [ 1]  352     jrne 2$ 
-      000CB2                        353     _ldaz snake_dir 
-      008D32 B6 0A                    1     .byte 0xb6,snake_dir 
-      008D34 4A               [ 1]  354     dec a 
-      008D35 20 03            [ 2]  355     jra 4$ 
-      000CB7                        356 2$: _ldaz snake_dir 
-      008D37 B6 0A                    1     .byte 0xb6,snake_dir 
-      008D39 4C               [ 1]  357     inc a 
-      008D3A A4 03            [ 1]  358 4$: and a,#3 
-      000CBC                        359     _straz snake_dir 
-      008D3C B7 0A                    1     .byte 0xb7,snake_dir 
-      008D3E 90 AE 00 06      [ 2]  360     ldw y,#6
-      008D42 90 42            [ 4]  361     mul y,a 
-      008D44 72 A9 8B 78      [ 2]  362     addw y,#HEAD_UP 
-      008D48 CE 00 0D         [ 2]  363     ldw x,snake_body 
+      008CF7 CD 8B D5         [ 4]  316     call draw_head
+      008CFA 27 0A            [ 1]  317     jreq 1$
+                                    318 ;collision deteted  
+      008CFC 1E 01            [ 2]  319     ldw x,(POS,sp)
+      008CFE CD 8C 24         [ 4]  320     call food_collision 
+      008D01 72 04 00 09 36   [ 2]  321     btjt game_flags,#F_GAME_OVER,9$
+      008D06                        322 1$: 
+                                    323 ; move array elements 1 cell toward tail 
+      000C86                        324     _ldaz snake_len
+      008D06 B6 0A                    1     .byte 0xb6,snake_len 
+      008D08 4A               [ 1]  325     dec a
+      008D09 48               [ 1]  326     sll a 
+      008D0A 5F               [ 1]  327     clrw x 
+      008D0B 97               [ 1]  328     ld xl,a 
+      008D0C 1C 00 0E         [ 2]  329     addw x,#snake_body ; last array element 
+      008D0F 90 93            [ 1]  330     ldw y,x 
+      008D11 FE               [ 2]  331     ldw x,(x)
+      008D12 1F 03            [ 2]  332     ldw (TAIL,sp),x ; last ring position  
+      008D14 93               [ 1]  333     ldw x,y 
+      008D15 90 5A            [ 2]  334     decw y 
+      008D17 5C               [ 1]  335     incw x 
+      000C98                        336     _ldaz snake_len 
+      008D18 B6 0A                    1     .byte 0xb6,snake_len 
+      008D1A 4A               [ 1]  337     dec a 
+      008D1B 48               [ 1]  338     sll a     
+      008D1C CD 8C CC         [ 4]  339     call move_array_up 
+                                    340 ; set 1 element as new head position 
+      008D1F 1E 01            [ 2]  341     ldw x,(POS,sp)
+      008D21 CF 00 0E         [ 2]  342     ldw snake_body,x    
+      008D24 72 00 00 09 0B   [ 2]  343     btjt game_flags,#F_FOOD_COLL,8$
+                                    344 ; erase last ring 
+      008D29 1E 03            [ 2]  345     ldw x,(TAIL,sp)
+      008D2B 90 AE 8B 90      [ 2]  346     ldw y,#RING
+      008D2F CD 8B CB         [ 4]  347     call draw_sprite
+      008D32 20 08            [ 2]  348     jra 9$ 
+      008D34                        349 8$:
+      008D34 72 07 00 09 03   [ 2]  350     btjf game_flags,#F_POO,9$ 
+      008D39 CD 8C 0B         [ 4]  351     call snake_poo 
+      008D3C                        352 9$:
+      000CBC                        353     _drop VAR_SIZE 
+      008D3C 5B 04            [ 2]    1     addw sp,#VAR_SIZE 
+      008D3E 90 85            [ 2]  354     popw y 
+      008D40 85               [ 2]  355     popw x  
+      008D41 81               [ 4]  356     ret 
+                                    357 
+                                    358 
+                                    359 ;--------------------------
+                                    360 ; rotate snake head 
+                                    361 ; input
+                                    362 ;     A   {LEFT,RIGHT}
+                                    363 ;--------------------------
+      008D42                        364 rotate_head:
+      008D42 88               [ 1]  365     push a 
+      000CC3                        366     _ldaz snake_dir 
+      008D43 B6 0B                    1     .byte 0xb6,snake_dir 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 82.
 Hexadecimal [24-Bits]
 
 
 
-      008D4B CD 8B CB         [ 4]  364     call draw_sprite 
-      008D4E 81               [ 4]  365     ret 
-                                    366 
-                                    367 ;--------------------------
-                                    368 ; read keypad 
-                                    369 ; LEFT turn left 
-                                    370 ; RIGHT turn right 
-                                    371 ;--------------------------
-                           000001   372     KPAD=1
-      008D4F                        373 user_input:
-      008D4F 4B 00            [ 1]  374     push #0 
-      008D51 CD 81 38         [ 4]  375     call read_keypad
-      008D54 27 1C            [ 1]  376     jreq 4$ 
-      008D56 6B 01            [ 1]  377     ld (KPAD,sp),a  
-      008D58 A6 01            [ 1]  378     ld a,#BTN_LEFT 
-      008D5A 14 01            [ 1]  379     and a,(KPAD,sp)
-      008D5C 27 05            [ 1]  380     jreq 2$ 
-      008D5E CD 8D 1A         [ 4]  381     call rotate_head
-      008D61 20 09            [ 2]  382     jra 3$
-      008D63 A6 04            [ 1]  383 2$: ld a,#BTN_RIGHT 
-      008D65 14 01            [ 1]  384     and a,(KPAD,sp)
-      008D67 27 03            [ 1]  385     jreq 3$ 
-      008D69 CD 8D 1A         [ 4]  386     call rotate_head 
-      008D6C                        387 3$:
-      008D6C AE 00 0A         [ 2]  388     ldw x,#10
-      008D6F CD 81 61         [ 4]  389     call wait_key_release
-      008D72                        390 4$:
-      000CF2                        391     _drop 1 
-      008D72 5B 01            [ 2]    1     addw sp,#1 
-      008D74 81               [ 4]  392     ret 
-                                    393 
-                                    394 ;-------------------------
-                                    395 ; create a new mouse 
-                                    396 ; at random position 
-                                    397 ;-------------------------
-      008D75                        398 new_food:
-      008D75 CD 81 E4         [ 4]  399     call prng
-      008D78 A6 B2            [ 1]  400     ld a,#VRES-MOUSE_HEIGHT-FONT_HEIGHT-2 
-      008D7A 62               [ 2]  401     div x,a 
-      008D7B AB 09            [ 1]  402     add a,#FONT_HEIGHT+1
-      000CFD                        403     _straz food_coord 
-      008D7D B7 0B                    1     .byte 0xb7,food_coord 
-      008D7F CD 81 E4         [ 4]  404     call prng 
-      008D82 A6 C1            [ 1]  405     ld a,#HRES-MOUSE_WIDTH-2 
-      008D84 62               [ 2]  406     div x,a 
-      008D85 4C               [ 1]  407     inc a 
-      000D06                        408     _straz food_coord+1
-      008D86 B7 0C                    1     .byte 0xb7,food_coord+1 
-      008D88 CE 00 0B         [ 2]  409     ldw x,food_coord 
-      008D8B 90 AE 8B 96      [ 2]  410     ldw y,#MOUSE 
-      008D8F CD 8B CB         [ 4]  411     call draw_sprite 
-      008D92 4D               [ 1]  412     tnz a 
-      008D93 27 0C            [ 1]  413     jreq 9$ 
-      008D95 CE 00 0B         [ 2]  414     ldw x,food_coord 
-      008D98 90 AE 8B 96      [ 2]  415     ldw y,#MOUSE 
+      008D45 90 AE 00 06      [ 2]  367     ldw y,#6 
+      008D49 90 42            [ 4]  368     mul y,a 
+      008D4B 72 A9 8B 78      [ 2]  369     addw y,#HEAD_UP
+      008D4F CE 00 0E         [ 2]  370     ldw x,snake_body 
+      008D52 CD 8B CB         [ 4]  371     call draw_sprite 
+      008D55 84               [ 1]  372     pop a 
+      008D56 A1 01            [ 1]  373     cp a,#BTN_LEFT 
+      008D58 26 05            [ 1]  374     jrne 2$ 
+      000CDA                        375     _ldaz snake_dir 
+      008D5A B6 0B                    1     .byte 0xb6,snake_dir 
+      008D5C 4A               [ 1]  376     dec a 
+      008D5D 20 03            [ 2]  377     jra 4$ 
+      000CDF                        378 2$: _ldaz snake_dir 
+      008D5F B6 0B                    1     .byte 0xb6,snake_dir 
+      008D61 4C               [ 1]  379     inc a 
+      008D62 A4 03            [ 1]  380 4$: and a,#3 
+      000CE4                        381     _straz snake_dir 
+      008D64 B7 0B                    1     .byte 0xb7,snake_dir 
+      008D66 90 AE 00 06      [ 2]  382     ldw y,#6
+      008D6A 90 42            [ 4]  383     mul y,a 
+      008D6C 72 A9 8B 78      [ 2]  384     addw y,#HEAD_UP 
+      008D70 CE 00 0E         [ 2]  385     ldw x,snake_body 
+      008D73 CD 8B CB         [ 4]  386     call draw_sprite 
+      008D76 81               [ 4]  387     ret 
+                                    388 
+                                    389 ;--------------------------
+                                    390 ; read keypad 
+                                    391 ; LEFT turn left 
+                                    392 ; RIGHT turn right 
+                                    393 ;--------------------------
+                           000001   394     KPAD=1
+      008D77                        395 user_input:
+      008D77 4B 00            [ 1]  396     push #0 
+      008D79 CD 81 38         [ 4]  397     call read_keypad
+      008D7C 27 44            [ 1]  398     jreq 8$ 
+      008D7E 6B 01            [ 1]  399     ld (KPAD,sp),a  
+      008D80 A6 01            [ 1]  400     ld a,#BTN_LEFT 
+      008D82 14 01            [ 1]  401     and a,(KPAD,sp)
+      008D84 27 05            [ 1]  402     jreq 2$ 
+      008D86 CD 8D 42         [ 4]  403     call rotate_head
+      008D89 20 31            [ 2]  404     jra 6$
+      008D8B A6 04            [ 1]  405 2$: ld a,#BTN_RIGHT 
+      008D8D 14 01            [ 1]  406     and a,(KPAD,sp)
+      008D8F 27 05            [ 1]  407     jreq 3$ 
+      008D91 CD 8D 42         [ 4]  408     call rotate_head
+      008D94 20 26            [ 2]  409     jra 6$ 
+      008D96                        410 3$:
+      008D96 A6 08            [ 1]  411     ld a,#BTN_UP 
+      008D98 14 01            [ 1]  412     and a,(KPAD,sp)
+      008D9A 27 0E            [ 1]  413     jreq 4$
+      008D9C A6 01            [ 1]  414     ld a,#MIN_SPEED 
+      008D9E C1 00 06         [ 1]  415     cp a,speed 
+      008DA1 27 19            [ 1]  416     jreq 6$  
+      000D23                        417     _decz speed
+      008DA3 3A 06                    1     .byte 0x3a,speed 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 83.
 Hexadecimal [24-Bits]
 
 
 
-      008D9C CD 8B CB         [ 4]  416     call draw_sprite 
-      008D9F 20 D4            [ 2]  417     jra new_food 
-      000D21                        418 9$: _clrz game_flags
-      008DA1 3F 08                    1     .byte 0x3f, game_flags 
-      008DA3 81               [ 4]  419     ret 
-                                    420 
-                                    421 ;----------------------
-                                    422 ; print score top left 
-                                    423 ; corner 
-                                    424 ;----------------------
-      008DA4                        425 prt_score:
-      008DA4 89               [ 2]  426     pushw x 
-      000D25                        427     _clrz cx 
-      008DA5 3F 74                    1     .byte 0x3f, cx 
-      000D27                        428     _clrz cy 
-      008DA7 3F 73                    1     .byte 0x3f, cy 
-      000D29                        429     _ldxz score 
-      008DA9 BE 04                    1     .byte 0xbe,score 
-      008DAB CD 88 AE         [ 4]  430     call put_uint16
-      008DAE 85               [ 2]  431     popw x
-      008DAF 81               [ 4]  432     ret 
-                                    433 
-                                    434 ;-------------------------
-                                    435 ; game initialization
-                                    436 ;-------------------------
-      008DB0                        437 snake_init:
-      008DB0 A6 02            [ 1]  438     ld a,#(1<<F_NO_FOOD)
-      000D32                        439     _straz game_flags 
-      008DB2 B7 08                    1     .byte 0xb7,game_flags 
-      008DB4 5F               [ 1]  440     clrw x 
-      000D35                        441     _strxz score 
-      008DB5 BF 04                    1     .byte 0xbf,score 
-      000D37                        442     _strxz food_coord
-      008DB7 BF 0B                    1     .byte 0xbf,food_coord 
-      008DB9 CD 82 06         [ 4]  443     call set_seed  ; using ticks 
-      008DBC A6 03            [ 1]  444     ld a,#3
-      000D3E                        445     _straz snake_len 
-      008DBE B7 09                    1     .byte 0xb7,snake_len 
-      008DC0 A6 01            [ 1]  446     ld a,#EAST
-      000D42                        447     _straz snake_dir
-      008DC2 B7 0A                    1     .byte 0xb7,snake_dir 
-      008DC4 AE 00 0D         [ 2]  448     ldw x,#snake_body 
-      008DC7 90 AE 1F 30      [ 2]  449     ldw y,#(31<<8)+48 
-      008DCB FF               [ 2]  450     ldw (x),y
-      008DCC 72 A2 00 04      [ 2]  451     subw y,#SNAKE_SPRITE_WIDTH
-      008DD0 EF 02            [ 2]  452     ldw (2,x),y 
-      008DD2 72 A2 00 04      [ 2]  453     subw y,#SNAKE_SPRITE_WIDTH
-      008DD6 EF 04            [ 2]  454     ldw (4,x),y 
-      008DD8 CD 87 18         [ 4]  455     call tv_cls
-      008DDB CD 8B A2         [ 4]  456     call draw_walls 
-      008DDE CD 8B E3         [ 4]  457     call draw_snake 
-      008DE1 81               [ 4]  458     ret 
-                                    459 
-                                    460 ;-------------------------
-                                    461 ; game main routine
+      008DA5 CD 8D F4         [ 4]  418     call prt_info 
+      008DA8 20 12            [ 2]  419     jra 6$ 
+      008DAA A6 02            [ 1]  420 4$: ld a,#BTN_DOWN 
+      008DAC 14 01            [ 1]  421     and a,(KPAD,sp)
+      008DAE 27 0C            [ 1]  422     jreq 6$
+      008DB0 A6 09            [ 1]  423     ld a,#MAX_SPEED 
+      008DB2 C1 00 06         [ 1]  424     cp a,speed 
+      008DB5 27 05            [ 1]  425     jreq 6$
+      000D37                        426     _incz speed
+      008DB7 3C 06                    1     .byte 0x3c, speed 
+      008DB9 CD 8D F4         [ 4]  427     call prt_info  
+      008DBC                        428 6$:
+      008DBC AE 00 0A         [ 2]  429     ldw x,#10
+      008DBF CD 81 61         [ 4]  430     call wait_key_release
+      008DC2                        431 8$:
+      000D42                        432     _drop 1 
+      008DC2 5B 01            [ 2]    1     addw sp,#1 
+      008DC4 81               [ 4]  433     ret 
+                                    434 
+                                    435 ;-------------------------
+                                    436 ; create a new mouse 
+                                    437 ; at random position 
+                                    438 ;-------------------------
+      008DC5                        439 new_food:
+      008DC5 CD 81 E4         [ 4]  440     call prng
+      008DC8 A6 B2            [ 1]  441     ld a,#VRES-MOUSE_HEIGHT-FONT_HEIGHT-2 
+      008DCA 62               [ 2]  442     div x,a 
+      008DCB AB 09            [ 1]  443     add a,#FONT_HEIGHT+1
+      000D4D                        444     _straz food_coord 
+      008DCD B7 0C                    1     .byte 0xb7,food_coord 
+      008DCF CD 81 E4         [ 4]  445     call prng 
+      008DD2 A6 C1            [ 1]  446     ld a,#HRES-MOUSE_WIDTH-2 
+      008DD4 62               [ 2]  447     div x,a 
+      008DD5 4C               [ 1]  448     inc a 
+      000D56                        449     _straz food_coord+1
+      008DD6 B7 0D                    1     .byte 0xb7,food_coord+1 
+      008DD8 CE 00 0C         [ 2]  450     ldw x,food_coord 
+      008DDB 90 AE 8B 96      [ 2]  451     ldw y,#MOUSE 
+      008DDF CD 8B CB         [ 4]  452     call draw_sprite 
+      008DE2 4D               [ 1]  453     tnz a 
+      008DE3 27 0C            [ 1]  454     jreq 9$ 
+      008DE5 CE 00 0C         [ 2]  455     ldw x,food_coord 
+      008DE8 90 AE 8B 96      [ 2]  456     ldw y,#MOUSE 
+      008DEC CD 8B CB         [ 4]  457     call draw_sprite 
+      008DEF 20 D4            [ 2]  458     jra new_food 
+      000D71                        459 9$: _clrz game_flags
+      008DF1 3F 09                    1     .byte 0x3f, game_flags 
+      008DF3 81               [ 4]  460     ret 
+                                    461 
+                                    462 ;----------------------
+                                    463 ; print score top left 
+                                    464 ; corner 
+                                    465 ;----------------------
+      008DF4                        466 prt_info:
+      008DF4 89               [ 2]  467     pushw x 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 84.
 Hexadecimal [24-Bits]
 
 
 
-                                    462 ;-------------------------
-      008DE2                        463 snake:
-      008DE2 CD 8D B0         [ 4]  464     call snake_init
-      008DE5 A6 3C            [ 1]  465     ld a,#60
-      008DE7 CD 80 B3         [ 4]  466     call pause
-      008DEA                        467 1$: 
-      008DEA 72 03 00 08 06   [ 2]  468     btjf game_flags,#F_NO_FOOD,2$
-      008DEF CD 8D A4         [ 4]  469     call prt_score 
-      008DF2 CD 8D 75         [ 4]  470     call new_food 
-      008DF5                        471 2$:
-      008DF5 CD 8C BC         [ 4]  472     call move_snake 
-      008DF8 72 04 00 08 0A   [ 2]  473     btjt game_flags,#F_GAME_OVER,game_over  
-      008DFD CD 8D 4F         [ 4]  474     call user_input
-      008E00 A6 06            [ 1]  475     ld a,#6
-      008E02 CD 80 B3         [ 4]  476     call pause 
-      008E05 20 E3            [ 2]  477     jra 1$
-      008E07                        478 game_over:
-      000D87                        479     _ldxz score 
-      008E07 BE 04                    1     .byte 0xbe,score 
-      008E09 C3 00 06         [ 2]  480     cpw x,max_score 
-      008E0C 2B 02            [ 1]  481     jrmi 4$ 
-      000D8E                        482     _strxz max_score
-      008E0E BF 06                    1     .byte 0xbf,max_score 
-      008E10                        483 4$:
-      008E10 AE FF FF         [ 2]  484     ldw x,#0xffff 
-      008E13 CD 81 61         [ 4]  485     call wait_key_release
-      008E16 CD 87 18         [ 4]  486     call tv_cls 
-      008E19 90 AE 8E 53      [ 2]  487     ldw y,#gover 
-      008E1D CD 88 2F         [ 4]  488     call tv_puts 
-      008E20 90 AE 8E 5E      [ 2]  489     ldw y,#score_str
-      008E24 CD 88 2F         [ 4]  490     call tv_puts 
-      000DA7                        491     _ldxz score 
-      008E27 BE 04                    1     .byte 0xbe,score 
-      008E29 CD 88 AE         [ 4]  492     call put_uint16
-      008E2C CD 87 9C         [ 4]  493     call crlf 
-      008E2F 90 AE 8E 66      [ 2]  494     ldw y,#max_score_str
-      008E33 CD 88 2F         [ 4]  495     call tv_puts 
-      000DB6                        496     _ldxz max_score 
-      008E36 BE 06                    1     .byte 0xbe,max_score 
-      008E38 CD 88 AE         [ 4]  497     call put_uint16
-      008E3B CD 87 9C         [ 4]  498     call crlf
-      008E3E 90 AE 8E 72      [ 2]  499     ldw y,#prompt 
-      008E42 CD 88 2F         [ 4]  500     call tv_puts 
-      008E45                        501 6$:
-      008E45 CD 81 5B         [ 4]  502     call wait_key 
-      008E48 A1 20            [ 1]  503     cp a,#BTN_A 
-      008E4A 27 96            [ 1]  504     jreq snake 
-      008E4C A1 10            [ 1]  505     cp a,#BTN_B 
-      008E4E 27 02            [ 1]  506     jreq 9$
-      008E50 20 F3            [ 2]  507     jra 6$
-      008E52                        508 9$:     
-      008E52 81               [ 4]  509     ret 
-                                    510 
-      008E53 67 61 6D 65 20 6F 76   511 gover: .asciz "game over\r"
-             65 72 0D 00
+      000D75                        468     _clrz cx 
+      008DF5 3F 74                    1     .byte 0x3f, cx 
+      000D77                        469     _clrz cy 
+      008DF7 3F 73                    1     .byte 0x3f, cy 
+      008DF9 90 AE 8E 2D      [ 2]  470     ldw y,#score_str
+      008DFD CD 88 2F         [ 4]  471     call tv_puts 
+      000D80                        472     _ldxz score 
+      008E00 BE 04                    1     .byte 0xbe,score 
+      008E02 CD 88 AE         [ 4]  473     call put_uint16
+      008E05 A6 0C            [ 1]  474     ld a,#12
+      000D87                        475     _straz cx 
+      008E07 B7 74                    1     .byte 0xb7,cx 
+      008E09 90 AE 8E 34      [ 2]  476     ldw y,#speed_str 
+      008E0D CD 88 2F         [ 4]  477     call tv_puts
+      008E10 A6 0A            [ 1]  478     ld a,#MAX_SPEED+1 
+      008E12 C0 00 06         [ 1]  479     sub a,speed 
+      008E15 5F               [ 1]  480     clrw x 
+      008E16 97               [ 1]  481     ld xl,a 
+      008E17 CD 88 AE         [ 4]  482     call put_uint16
+      008E1A A6 18            [ 1]  483     ld a,#24
+      000D9C                        484     _straz cx 
+      008E1C B7 74                    1     .byte 0xb7,cx 
+      008E1E 90 AE 8E 3B      [ 2]  485     ldw y,#max_str 
+      008E22 CD 88 2F         [ 4]  486     call tv_puts 
+      008E25 CE 00 07         [ 2]  487     ldw x,max_score
+      008E28 CD 88 AE         [ 4]  488     call put_uint16
+      008E2B 85               [ 2]  489     popw x
+      008E2C 81               [ 4]  490     ret 
+      008E2D 53 43 4F 52 45 3A 00   491 score_str: .asciz "SCORE:"
+      008E34 53 50 45 45 44 3A 00   492 speed_str: .asciz "SPEED:"  
+      008E3B 6D 61 78 3A 00         493 max_str: .asciz "max:"
+                                    494 
+                                    495 ;-------------------------
+                                    496 ; game initialization
+                                    497 ;-------------------------
+      008E40                        498 snake_init:
+      008E40 A6 02            [ 1]  499     ld a,#(1<<F_NO_FOOD)
+      000DC2                        500     _straz game_flags 
+      008E42 B7 09                    1     .byte 0xb7,game_flags 
+      008E44 A6 05            [ 1]  501     ld a,#5 
+      000DC6                        502     _straz speed
+      008E46 B7 06                    1     .byte 0xb7,speed 
+      008E48 5F               [ 1]  503     clrw x 
+      000DC9                        504     _strxz score 
+      008E49 BF 04                    1     .byte 0xbf,score 
+      000DCB                        505     _strxz food_coord
+      008E4B BF 0C                    1     .byte 0xbf,food_coord 
+      008E4D CD 82 06         [ 4]  506     call set_seed  ; using ticks 
+      008E50 A6 03            [ 1]  507     ld a,#3
+      000DD2                        508     _straz snake_len 
+      008E52 B7 0A                    1     .byte 0xb7,snake_len 
+      008E54 A6 01            [ 1]  509     ld a,#EAST
+      000DD6                        510     _straz snake_dir
+      008E56 B7 0B                    1     .byte 0xb7,snake_dir 
+      008E58 AE 00 0E         [ 2]  511     ldw x,#snake_body 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 85.
 Hexadecimal [24-Bits]
 
 
 
-      008E5E 73 63 6F 72 65 3A 20   512 score_str: .asciz "score: "
-             00
-      008E66 6D 61 78 20 73 63 6F   513 max_score_str: .asciz "max score: "
-             72 65 3A 20 00
-      008E72 41 20 6E 65 77 20 67   514 prompt: .asciz "A new game\rB exit"
+      008E5B 90 AE 1F 30      [ 2]  512     ldw y,#(31<<8)+48 
+      008E5F FF               [ 2]  513     ldw (x),y
+      008E60 72 A2 00 04      [ 2]  514     subw y,#SNAKE_SPRITE_WIDTH
+      008E64 EF 02            [ 2]  515     ldw (2,x),y 
+      008E66 72 A2 00 04      [ 2]  516     subw y,#SNAKE_SPRITE_WIDTH
+      008E6A EF 04            [ 2]  517     ldw (4,x),y 
+      008E6C CD 87 18         [ 4]  518     call tv_cls
+      008E6F CD 8B A2         [ 4]  519     call draw_walls 
+      008E72 CD 8B E3         [ 4]  520     call draw_snake 
+      008E75 81               [ 4]  521     ret 
+                                    522 
+                                    523 ;-------------------------
+                                    524 ; game main routine
+                                    525 ;-------------------------
+      008E76                        526 snake:
+      008E76 CD 8E 40         [ 4]  527     call snake_init
+      008E79 A6 1E            [ 1]  528     ld a,#30
+      008E7B CD 80 B3         [ 4]  529     call pause
+      008E7E                        530 1$: 
+      008E7E 72 03 00 09 06   [ 2]  531     btjf game_flags,#F_NO_FOOD,2$
+      008E83 CD 8D F4         [ 4]  532     call prt_info 
+      008E86 CD 8D C5         [ 4]  533     call new_food 
+      008E89                        534 2$:
+      008E89 CD 8C DA         [ 4]  535     call move_snake 
+      008E8C 72 04 00 09 0A   [ 2]  536     btjt game_flags,#F_GAME_OVER,game_over  
+      008E91 CD 8D 77         [ 4]  537     call user_input
+      000E14                        538     _ldaz speed 
+      008E94 B6 06                    1     .byte 0xb6,speed 
+      008E96 CD 80 B3         [ 4]  539     call pause 
+      008E99 20 E3            [ 2]  540     jra 1$
+      008E9B                        541 game_over:
+      008E9B A6 05            [ 1]  542     ld a,#5
+      008E9D CD 81 09         [ 4]  543     call noise 
+      000E20                        544     _ldxz score 
+      008EA0 BE 04                    1     .byte 0xbe,score 
+      008EA2 C3 00 07         [ 2]  545     cpw x,max_score 
+      008EA5 2B 02            [ 1]  546     jrmi 4$ 
+      000E27                        547     _strxz max_score
+      008EA7 BF 07                    1     .byte 0xbf,max_score 
+      008EA9                        548 4$:
+      008EA9 AE FF FF         [ 2]  549     ldw x,#0xffff 
+      008EAC CD 81 61         [ 4]  550     call wait_key_release
+      008EAF CD 87 18         [ 4]  551     call tv_cls 
+      008EB2 90 AE 8E DD      [ 2]  552     ldw y,#gover 
+      008EB6 CD 88 2F         [ 4]  553     call tv_puts 
+      008EB9 90 AE 8E 2D      [ 2]  554     ldw y,#score_str
+      008EBD CD 88 2F         [ 4]  555     call tv_puts 
+      000E40                        556     _ldxz score 
+      008EC0 BE 04                    1     .byte 0xbe,score 
+      008EC2 CD 88 AE         [ 4]  557     call put_uint16
+      008EC5 CD 87 9C         [ 4]  558     call crlf 
+      008EC8 90 AE 8E E8      [ 2]  559     ldw y,#prompt 
+      008ECC CD 88 2F         [ 4]  560     call tv_puts 
+      008ECF                        561 6$:
+      008ECF CD 81 5B         [ 4]  562     call wait_key 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 86.
+Hexadecimal [24-Bits]
+
+
+
+      008ED2 A1 20            [ 1]  563     cp a,#BTN_A 
+      008ED4 27 A0            [ 1]  564     jreq snake 
+      008ED6 A1 10            [ 1]  565     cp a,#BTN_B 
+      008ED8 27 02            [ 1]  566     jreq 9$
+      008EDA 20 F3            [ 2]  567     jra 6$
+      008EDC                        568 9$:     
+      008EDC 81               [ 4]  569     ret 
+                                    570 
+      008EDD 67 61 6D 65 20 6F 76   571 gover: .asciz "game over\r"
+             65 72 0D 00
+      008EE8 41 20 6E 65 77 20 67   572 prompt: .asciz "A new game\rB exit"
              61 6D 65 0D 42 20 65
              78 69 74 00
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 86.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 87.
 Hexadecimal [24-Bits]
 
 
@@ -4604,31 +4670,31 @@ Hexadecimal [24-Bits]
                                       9  
                                      10 
                                      11 ; sprites 
-      008E84 04 01 FF FF FF FF       12 I0: .byte 4,1,0xff,0xff,0xff,0xff; horizontal I 
-      008E8A 01 04 FF FF FF FF       13 I1: .byte 1,4,0xff,0xff,0xff,0xff ; vertical I 
-      008E90 02 02 FF FF FF FF       14 SQUARE: .byte 2,2,0xff,0xff,0xff,0xff 
-      008E96 06 04 FC FC 30 30       15 T0: .byte 6,4,0xfc,0xfc,0x30,0x30 ; normal T 
-      008E9C 04 06 30 30 F0 F0 30    16 T1: .byte 4,6,0x30,0x30,0xf0,0xf0,0x30,0x30 ; T rotated right  
+      008EFA 04 01 FF FF FF FF       12 I0: .byte 4,1,0xff,0xff,0xff,0xff; horizontal I 
+      008F00 01 04 FF FF FF FF       13 I1: .byte 1,4,0xff,0xff,0xff,0xff ; vertical I 
+      008F06 02 02 FF FF FF FF       14 SQUARE: .byte 2,2,0xff,0xff,0xff,0xff 
+      008F0C 06 04 FC FC 30 30       15 T0: .byte 6,4,0xfc,0xfc,0x30,0x30 ; normal T 
+      008F12 04 06 30 30 F0 F0 30    16 T1: .byte 4,6,0x30,0x30,0xf0,0xf0,0x30,0x30 ; T rotated right  
              30
-      008EA4 04 06 C0 C0 F0 F0 C0    17 T2: .byte 4,6,0xc0,0xc0,0xf0,0xf0,0xc0,0xc0 ; T rotated left 
+      008F1A 04 06 C0 C0 F0 F0 C0    17 T2: .byte 4,6,0xc0,0xc0,0xf0,0xf0,0xc0,0xc0 ; T rotated left 
              C0
-      008EAC 06 04 30 30 F0 F0       18 T3: .byte 6,4,0x30,0x30,0xf0,0xf0 ; T upside down 
-      008EB2 06 04 FC FC C0 C0       19 L0: .byte 6,4,0xfc,0xfc,0xc0,0xc0 ; L rotated right 
-      008EB8 04 06 F0 F0 30 30 30    20 L1: .byte 4,6,0xf0,0xf0,0x30,0x30,0x30,0x30 ; L upside down 
+      008F22 06 04 30 30 F0 F0       18 T3: .byte 6,4,0x30,0x30,0xf0,0xf0 ; T upside down 
+      008F28 06 04 FC FC C0 C0       19 L0: .byte 6,4,0xfc,0xfc,0xc0,0xc0 ; L rotated right 
+      008F2E 04 06 F0 F0 30 30 30    20 L1: .byte 4,6,0xf0,0xf0,0x30,0x30,0x30,0x30 ; L upside down 
              30
-      008EC0 06 04 0C 0C FC FC       21 L2: .byte 6,4,0xc,0xc,0xfc,0xfc ; L rotated left 
-      008EC6 04 06 C0 C0 C0 FC FC    22 L3: .byte 4,6,0xc0,0xc0,0xc0,0xfc,0xfc ; L upside 
-      008ECD 06 04 FC FC 0C 0C       23 J0: .byte 6,4,0xfc,0xfc,0xc,0xc ; J rotated left 
-      008ED3 04 06 C0 C0 C0 C0 FC    24 J1:  .byte 4,6,0xc0,0xc0,0xc0,0xc0,0xfc,0xfc ; J upside 
+      008F36 06 04 0C 0C FC FC       21 L2: .byte 6,4,0xc,0xc,0xfc,0xfc ; L rotated left 
+      008F3C 04 06 C0 C0 C0 FC FC    22 L3: .byte 4,6,0xc0,0xc0,0xc0,0xfc,0xfc ; L upside 
+      008F43 06 04 FC FC 0C 0C       23 J0: .byte 6,4,0xfc,0xfc,0xc,0xc ; J rotated left 
+      008F49 04 06 C0 C0 C0 C0 FC    24 J1:  .byte 4,6,0xc0,0xc0,0xc0,0xc0,0xfc,0xfc ; J upside 
              FC
-      008EDB 06 04 C0 C0 FC FC       25 J2: .byte 6,4,0xc0,0xc0,0xfc,0xfc ; j rotated right 
-      008EE1 04 06 FC FC 0C 0C 0C    26 J3: .byte 4,6,0xfc,0xfc,0xc,0xc,0xc,0xc  ; j upside down 
+      008F51 06 04 C0 C0 FC FC       25 J2: .byte 6,4,0xc0,0xc0,0xfc,0xfc ; j rotated right 
+      008F57 04 06 FC FC 0C 0C 0C    26 J3: .byte 4,6,0xfc,0xfc,0xc,0xc,0xc,0xc  ; j upside down 
              0C
-      008EE9 06 04 F0 F0 3C 3C       27 Z0: .byte 6,4,0xf0,0xf0,0x3c,0x3c ; 
-      008EEF 04 06 30 30 3C 30 C0    28 Z1: .byte 4,6,0x30,0x30,0x3c,0x30,0xc0,0xc0 
+      008F5F 06 04 F0 F0 3C 3C       27 Z0: .byte 6,4,0xf0,0xf0,0x3c,0x3c ; 
+      008F65 04 06 30 30 3C 30 C0    28 Z1: .byte 4,6,0x30,0x30,0x3c,0x30,0xc0,0xc0 
              C0
-      008EF7 06 04 3C 3C F0 F0       29 S0: .byte 6,4,0x3c,0x3c,0xf0,0xf0 
-      008EFD 04 06 C0 C0 F0 F0 0C    30 S1: .byte 4,6,0xc0,0xc0,0xf0,0xf0,0xc,0xc 
+      008F6D 06 04 3C 3C F0 F0       29 S0: .byte 6,4,0x3c,0x3c,0xf0,0xf0 
+      008F73 04 06 C0 C0 F0 F0 0C    30 S1: .byte 4,6,0xc0,0xc0,0xf0,0xf0,0xc,0xc 
              0C
                                      31 
                                      32 ;--------------------
@@ -4636,40 +4702,40 @@ Hexadecimal [24-Bits]
                                      34 ; wich tetrahedrons 
                                      35 ; falls.
                                      36 ;--------------------
-      008F05                         37 draw_well:
+      008F7B                         37 draw_well:
                                      38 ; left side 
-      008F05 AE 00 00         [ 2]   39     ldw x,#(0<<8)+0
-      008F08 90 AE 10 C0      [ 2]   40     ldw y,#((VRES-WELL_DEPTH)<<8)+VRES
-      008F0C CD 88 3B         [ 4]   41     call line
+      008F7B AE 00 00         [ 2]   39     ldw x,#(0<<8)+0
+      008F7E 90 AE 10 C0      [ 2]   40     ldw y,#((VRES-WELL_DEPTH)<<8)+VRES
+      008F82 CD 88 3B         [ 4]   41     call line
                                      42 ;bottom  
-      008F0F AE 01 51         [ 2]   43     ldw x,#(1<<8)+WELL_WIDTH+1 
-      008F12 90 AE BF BF      [ 2]   44     ldw y,#((VRES-1)<<8)+VRES-1
-      008F16 CD 88 3B         [ 4]   45     call line 
+      008F85 AE 01 51         [ 2]   43     ldw x,#(1<<8)+WELL_WIDTH+1 
+      008F88 90 AE BF BF      [ 2]   44     ldw y,#((VRES-1)<<8)+VRES-1
+      008F8C CD 88 3B         [ 4]   45     call line 
                                      46 ;right side
-      008F19 AE 51 51         [ 2]   47     ldw x,#((WELL_WIDTH+1)<<8)+WELL_WIDTH+1
-      008F1C 90 AE 10 C0      [ 2]   48     ldw y,#((VRES-WELL_DEPTH)<<8)+VRES
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 87.
+      008F8F AE 51 51         [ 2]   47     ldw x,#((WELL_WIDTH+1)<<8)+WELL_WIDTH+1
+      008F92 90 AE 10 C0      [ 2]   48     ldw y,#((VRES-WELL_DEPTH)<<8)+VRES
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 88.
 Hexadecimal [24-Bits]
 
 
 
-      008F20 CD 88 3B         [ 4]   49     call line 
-      008F23 81               [ 4]   50     ret 
+      008F96 CD 88 3B         [ 4]   49     call line 
+      008F99 81               [ 4]   50     ret 
                                      51 
                                      52 ;-------------------------
                                      53 ; initialize game 
                                      54 ;-------------------------
-      008F24                         55 fall_init:
-      008F24 CD 87 18         [ 4]   56     call tv_cls  
-      008F27 CD 8F 05         [ 4]   57     call draw_well 
-      008F2A 81               [ 4]   58     ret 
+      008F9A                         55 fall_init:
+      008F9A CD 87 18         [ 4]   56     call tv_cls  
+      008F9D CD 8F 7B         [ 4]   57     call draw_well 
+      008FA0 81               [ 4]   58     ret 
                                      59 
-      008F2B                         60 fall:
-      008F2B CD 8F 24         [ 4]   61     call fall_init
-      008F2E 20 FE            [ 2]   62 jra .
-      008F30 81               [ 4]   63     ret 
+      008FA1                         60 fall:
+      008FA1 CD 8F 9A         [ 4]   61     call fall_init
+      008FA4 20 FE            [ 2]   62 jra .
+      008FA6 81               [ 4]   63     ret 
                                      64 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 88.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 89.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -4729,7 +4795,7 @@ Symbol Table
     CLK_PCKE=  0050C7     |     CLK_PCKE=  000000     |     CLK_PCKE=  000001 
     CLK_PCKE=  000007     |     CLK_PCKE=  000005     |     CLK_PCKE=  000006 
     CLK_PCKE=  000004     |     CLK_PCKE=  000002     |     CLK_PCKE=  000003 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 89.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 90.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -4789,334 +4855,336 @@ Symbol Table
     FONT_HEI=  000008     |     FONT_WID=  000006     |     FR_HORZ =  003D76 
     FR_T3_CL=  00F424     |     FS      =  00001C     |     F_CURSOR=  000001 
     F_CUR_VI=  000002     |     F_DISP_M=  000005     |     F_EVEN  =  000000 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 90.
-Hexadecimal [24-Bits]
-
-Symbol Table
-
-    F_FOOD_C=  000000     |     F_GAME_O=  000002     |     F_GAME_T=  000007 
-    F_NO_FOO=  000001     |     F_SOUND_=  000006     |     F_VIDEO =  000004 
-    GAM_ADR =  000001     |     GPIO_BAS=  005000     |     GPIO_CR1=  000003 
-    GPIO_CR2=  000004     |     GPIO_DDR=  000002     |     GPIO_IDR=  000001 
-    GPIO_ODR=  000000     |     GPIO_SIZ=  000005     |     GS      =  00001D 
-    HALF_LIN=  0001FC     |     HEAD    =  000003     |   7 HEAD_DOW   000B04 R
-  7 HEAD_LEF   000B0A R   |   7 HEAD_RIG   000AFE R   |   7 HEAD_UP    000AF8 R
-    HLINE   =  0003F8     |     HPULSE  =  00004B     |     HRES    =  0000C8 
-    HSECNT  =  004809     |   7 I0         000E04 R   |   7 I1         000E0A R
-    I2C_BASE=  005210     |     I2C_CCRH=  00521C     |     I2C_CCRH=  000080 
-    I2C_CCRH=  0000C0     |     I2C_CCRH=  000080     |     I2C_CCRH=  000000 
-    I2C_CCRH=  000001     |     I2C_CCRH=  000000     |     I2C_CCRH=  000006 
-    I2C_CCRH=  000007     |     I2C_CCRL=  00521B     |     I2C_CCRL=  00001A 
-    I2C_CCRL=  000002     |     I2C_CCRL=  00000D     |     I2C_CCRL=  000050 
-    I2C_CCRL=  000090     |     I2C_CCRL=  0000A0     |     I2C_CR1 =  005210 
-    I2C_CR1_=  000006     |     I2C_CR1_=  000007     |     I2C_CR1_=  000000 
-    I2C_CR2 =  005211     |     I2C_CR2_=  000002     |     I2C_CR2_=  000003 
-    I2C_CR2_=  000000     |     I2C_CR2_=  000001     |     I2C_CR2_=  000007 
-    I2C_DR  =  005216     |     I2C_FAST=  000001     |     I2C_FREQ=  005212 
-    I2C_ITR =  00521A     |     I2C_ITR_=  000002     |     I2C_ITR_=  000000 
-    I2C_ITR_=  000001     |     I2C_OARH=  005214     |     I2C_OARH=  000001 
-    I2C_OARH=  000002     |     I2C_OARH=  000006     |     I2C_OARH=  000007 
-    I2C_OARL=  005213     |     I2C_OARL=  000000     |     I2C_OAR_=  000813 
-    I2C_OAR_=  000009     |     I2C_PECR=  00521E     |     I2C_READ=  000001 
-    I2C_SR1 =  005217     |     I2C_SR1_=  000003     |     I2C_SR1_=  000001 
-    I2C_SR1_=  000002     |     I2C_SR1_=  000006     |     I2C_SR1_=  000000 
-    I2C_SR1_=  000004     |     I2C_SR1_=  000007     |     I2C_SR2 =  005218 
-    I2C_SR2_=  000002     |     I2C_SR2_=  000001     |     I2C_SR2_=  000000 
-    I2C_SR2_=  000003     |     I2C_SR2_=  000005     |     I2C_SR3 =  005219 
-    I2C_SR3_=  000001     |     I2C_SR3_=  000007     |     I2C_SR3_=  000004 
-    I2C_SR3_=  000000     |     I2C_SR3_=  000002     |     I2C_STD =  000000 
-    I2C_TRIS=  00521D     |     I2C_TRIS=  000005     |     I2C_TRIS=  000005 
-    I2C_TRIS=  000005     |     I2C_TRIS=  000011     |     I2C_TRIS=  000011 
-    I2C_TRIS=  000011     |     I2C_WRIT=  000000     |     IDX     =  000002 
-    INCR    =  000001     |     INPUT_DI=  000000     |     INPUT_EI=  000001 
-    INPUT_FL=  000000     |     INPUT_PU=  000001     |     INT_ADC2=  000016 
-    INT_AUAR=  000012     |     INT_AWU =  000001     |     INT_CAN_=  000008 
-    INT_CAN_=  000009     |     INT_CLK =  000002     |     INT_EXTI=  000003 
-    INT_EXTI=  000004     |     INT_EXTI=  000005     |     INT_EXTI=  000006 
-    INT_EXTI=  000007     |     INT_FLAS=  000018     |     INT_I2C =  000013 
-    INT_SPI =  00000A     |     INT_TIM1=  00000C     |     INT_TIM1=  00000B 
-    INT_TIM2=  00000E     |     INT_TIM2=  00000D     |     INT_TIM3=  000010 
-    INT_TIM3=  00000F     |     INT_TIM4=  000017     |     INT_TLI =  000000 
-    INT_UART=  000011     |     INT_UART=  000015     |     INT_UART=  000014 
-    INT_VECT=  008060     |     INT_VECT=  00800C     |     INT_VECT=  008028 
-    INT_VECT=  00802C     |     INT_VECT=  008010     |     INT_VECT=  008014 
-    INT_VECT=  008018     |     INT_VECT=  00801C     |     INT_VECT=  008020 
-    INT_VECT=  008024     |     INT_VECT=  008068     |     INT_VECT=  008054 
-    INT_VECT=  008000     |     INT_VECT=  008030     |     INT_VECT=  008038 
-    INT_VECT=  008034     |     INT_VECT=  008040     |     INT_VECT=  00803C 
-    INT_VECT=  008048     |     INT_VECT=  008044     |     INT_VECT=  008064 
-    INT_VECT=  008008     |     INT_VECT=  008004     |     INT_VECT=  008050 
-    INT_VECT=  00804C     |     INT_VECT=  00805C     |     INT_VECT=  008058 
-    ISTR    =  000003     |     ITC_SPR1=  007F70     |     ITC_SPR2=  007F71 
-    ITC_SPR3=  007F72     |     ITC_SPR4=  007F73     |     ITC_SPR5=  007F74 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 91.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-    ITC_SPR6=  007F75     |     ITC_SPR7=  007F76     |     ITC_SPR8=  007F77 
-    ITC_SPR_=  000001     |     ITC_SPR_=  000000     |     ITC_SPR_=  000003 
-    IWDG_KEY=  000055     |     IWDG_KEY=  0000CC     |     IWDG_KEY=  0000AA 
-    IWDG_KR =  0050E0     |     IWDG_PR =  0050E1     |     IWDG_RLR=  0050E2 
-  7 J0         000E4D R   |   7 J1         000E53 R   |   7 J2         000E5B R
-  7 J3         000E61 R   |     KERNEL_V=  000060     |     KPAD    =  000001 
-    KPAD_IDR=  005006     |     KPAD_POR=  005005     |   7 L0         000E32 R
-  7 L1         000E38 R   |   7 L2         000E40 R   |   7 L3         000E46 R
-    LB      =  000002     |     LEN     =  000001     |     LF      =  00000A 
-    LINE_DEL=  000082     |     LINE_PER=  000018     |     MAJOR   =  000001 
-    MASK    =  000005     |     MINOR   =  000001     |   7 MOUSE      000B16 R
-    MOUSE_HE=  000004     |     MOUSE_WI=  000005     |     NAFR    =  004804 
-    NAK     =  000015     |     NCLKOPT =  004808     |     NFLASH_W=  00480E 
-    NHSECNT =  00480A     |     NOPT1   =  004802     |     NOPT2   =  004804 
-    NOPT3   =  004806     |     NOPT4   =  004808     |     NOPT5   =  00480A 
-    NOPT6   =  00480C     |     NOPT7   =  00480E     |     NOPTBL  =  00487F 
-    NORTH   =  000000     |     NUBC    =  004802     |     NWDGOPT =  004806 
-    NWDGOPT_=  FFFFFFFD     |     NWDGOPT_=  FFFFFFFC     |     NWDGOPT_=  FFFFFFFF 
-    NWDGOPT_=  FFFFFFFE     |   7 NonHandl   000000 R   |     OFS_UART=  000002 
-    OFS_UART=  000003     |     OFS_UART=  000004     |     OFS_UART=  000005 
-    OFS_UART=  000006     |     OFS_UART=  000007     |     OFS_UART=  000008 
-    OFS_UART=  000009     |     OFS_UART=  000001     |     OFS_UART=  000009 
-    OFS_UART=  00000A     |     OFS_UART=  000000     |     OPT0    =  004800 
-    OPT1    =  004801     |     OPT2    =  004803     |     OPT3    =  004805 
-    OPT4    =  004807     |     OPT5    =  004809     |     OPT6    =  00480B 
-    OPT7    =  00480D     |     OPTBL   =  00487E     |     OPTION_B=  004800 
-    OPTION_E=  00487F     |     OPTION_S=  000080     |     OUTPUT_F=  000001 
-    OUTPUT_O=  000000     |     OUTPUT_P=  000001     |     OUTPUT_S=  000000 
-    PA      =  000000     |     PA_BASE =  005000     |     PA_CR1  =  005003 
-    PA_CR2  =  005004     |     PA_DDR  =  005002     |     PA_IDR  =  005001 
-    PA_ODR  =  005000     |     PB      =  000005     |     PB_BASE =  005005 
-    PB_CR1  =  005008     |     PB_CR2  =  005009     |     PB_DDR  =  005007 
-    PB_IDR  =  005006     |     PB_ODR  =  005005     |     PC      =  00000A 
-    PC_BASE =  00500A     |     PC_CR1  =  00500D     |     PC_CR2  =  00500E 
-    PC_DDR  =  00500C     |     PC_IDR  =  00500B     |     PC_ODR  =  00500A 
-    PD      =  00000F     |     PD_BASE =  00500F     |     PD_CR1  =  005012 
-    PD_CR2  =  005013     |     PD_DDR  =  005011     |     PD_IDR  =  005010 
-    PD_ODR  =  00500F     |     PE      =  000014     |     PE_BASE =  005014 
-    PE_CR1  =  005017     |     PE_CR2  =  005018     |     PE_DDR  =  005016 
-    PE_IDR  =  005015     |     PE_ODR  =  005014     |     PF      =  000019 
-    PF_BASE =  005019     |     PF_CR1  =  00501C     |     PF_CR2  =  00501D 
-    PF_DDR  =  00501B     |     PF_IDR  =  00501A     |     PF_ODR  =  005019 
-    PG      =  00001E     |     PG_BASE =  00501E     |     PG_CR1  =  005021 
-    PG_CR2  =  005022     |     PG_DDR  =  005020     |     PG_IDR  =  00501F 
-    PG_ODR  =  00501E     |     PH      =  000023     |     PH_BASE =  005023 
-    PH_CR1  =  005026     |     PH_CR2  =  005027     |     PH_DDR  =  005025 
-    PH_IDR  =  005024     |     PH_ODR  =  005023     |     PH_POST_=  000003 
-    PH_PRE_V=  000001     |     PH_VIDEO=  000002     |     PH_VSYNC=  000000 
-    PI      =  000028     |     PI_BASE =  005028     |     PI_CR1  =  00502B 
-    PI_CR2  =  00502C     |     PI_DDR  =  00502A     |     PI_IDR  =  005029 
-    PI_ODR  =  005028     |   7 POO        000B1C R   |     POO_HEIG=  000004 
-    POO_WIDT=  000007     |     POS     =  000001     |     RAM_BASE=  000000 
-    RAM_END =  0017FF     |     RAM_SIZE=  001800     |     REV     =  000000 
-  7 RING       000B10 R   |     ROP     =  004800     |     ROW     =  000007 
-    ROWS    =  000001     |     RS      =  00001E     |     RST_SR  =  0050B3 
+    F_FOOD_C=  000000     |     F_GAME_O=  000002     |     F_GAME_T=  000007 
+    F_NO_FOO=  000001     |     F_POO   =  000003     |     F_SOUND_=  000006 
+    F_VIDEO =  000004     |     GAIN    =  000002     |     GAM_ADR =  000001 
+    GPIO_BAS=  005000     |     GPIO_CR1=  000003     |     GPIO_CR2=  000004 
+    GPIO_DDR=  000002     |     GPIO_IDR=  000001     |     GPIO_ODR=  000000 
+    GPIO_SIZ=  000005     |     GS      =  00001D     |     HALF_LIN=  0001FC 
+    HEAD    =  000003     |   7 HEAD_DOW   000B04 R   |   7 HEAD_LEF   000B0A R
+  7 HEAD_RIG   000AFE R   |   7 HEAD_UP    000AF8 R   |     HLINE   =  0003F8 
+    HPULSE  =  00004B     |     HRES    =  0000C8     |     HSECNT  =  004809 
+  7 I0         000E7A R   |   7 I1         000E80 R   |     I2C_BASE=  005210 
+    I2C_CCRH=  00521C     |     I2C_CCRH=  000080     |     I2C_CCRH=  0000C0 
+    I2C_CCRH=  000080     |     I2C_CCRH=  000000     |     I2C_CCRH=  000001 
+    I2C_CCRH=  000000     |     I2C_CCRH=  000006     |     I2C_CCRH=  000007 
+    I2C_CCRL=  00521B     |     I2C_CCRL=  00001A     |     I2C_CCRL=  000002 
+    I2C_CCRL=  00000D     |     I2C_CCRL=  000050     |     I2C_CCRL=  000090 
+    I2C_CCRL=  0000A0     |     I2C_CR1 =  005210     |     I2C_CR1_=  000006 
+    I2C_CR1_=  000007     |     I2C_CR1_=  000000     |     I2C_CR2 =  005211 
+    I2C_CR2_=  000002     |     I2C_CR2_=  000003     |     I2C_CR2_=  000000 
+    I2C_CR2_=  000001     |     I2C_CR2_=  000007     |     I2C_DR  =  005216 
+    I2C_FAST=  000001     |     I2C_FREQ=  005212     |     I2C_ITR =  00521A 
+    I2C_ITR_=  000002     |     I2C_ITR_=  000000     |     I2C_ITR_=  000001 
+    I2C_OARH=  005214     |     I2C_OARH=  000001     |     I2C_OARH=  000002 
+    I2C_OARH=  000006     |     I2C_OARH=  000007     |     I2C_OARL=  005213 
+    I2C_OARL=  000000     |     I2C_OAR_=  000813     |     I2C_OAR_=  000009 
+    I2C_PECR=  00521E     |     I2C_READ=  000001     |     I2C_SR1 =  005217 
+    I2C_SR1_=  000003     |     I2C_SR1_=  000001     |     I2C_SR1_=  000002 
+    I2C_SR1_=  000006     |     I2C_SR1_=  000000     |     I2C_SR1_=  000004 
+    I2C_SR1_=  000007     |     I2C_SR2 =  005218     |     I2C_SR2_=  000002 
+    I2C_SR2_=  000001     |     I2C_SR2_=  000000     |     I2C_SR2_=  000003 
+    I2C_SR2_=  000005     |     I2C_SR3 =  005219     |     I2C_SR3_=  000001 
+    I2C_SR3_=  000007     |     I2C_SR3_=  000004     |     I2C_SR3_=  000000 
+    I2C_SR3_=  000002     |     I2C_STD =  000000     |     I2C_TRIS=  00521D 
+    I2C_TRIS=  000005     |     I2C_TRIS=  000005     |     I2C_TRIS=  000005 
+    I2C_TRIS=  000011     |     I2C_TRIS=  000011     |     I2C_TRIS=  000011 
+    I2C_WRIT=  000000     |     IDX     =  000002     |     INCR    =  000001 
+    INPUT_DI=  000000     |     INPUT_EI=  000001     |     INPUT_FL=  000000 
+    INPUT_PU=  000001     |     INT_ADC2=  000016     |     INT_AUAR=  000012 
+    INT_AWU =  000001     |     INT_CAN_=  000008     |     INT_CAN_=  000009 
+    INT_CLK =  000002     |     INT_EXTI=  000003     |     INT_EXTI=  000004 
+    INT_EXTI=  000005     |     INT_EXTI=  000006     |     INT_EXTI=  000007 
+    INT_FLAS=  000018     |     INT_I2C =  000013     |     INT_SPI =  00000A 
+    INT_TIM1=  00000C     |     INT_TIM1=  00000B     |     INT_TIM2=  00000E 
+    INT_TIM2=  00000D     |     INT_TIM3=  000010     |     INT_TIM3=  00000F 
+    INT_TIM4=  000017     |     INT_TLI =  000000     |     INT_UART=  000011 
+    INT_UART=  000015     |     INT_UART=  000014     |     INT_VECT=  008060 
+    INT_VECT=  00800C     |     INT_VECT=  008028     |     INT_VECT=  00802C 
+    INT_VECT=  008010     |     INT_VECT=  008014     |     INT_VECT=  008018 
+    INT_VECT=  00801C     |     INT_VECT=  008020     |     INT_VECT=  008024 
+    INT_VECT=  008068     |     INT_VECT=  008054     |     INT_VECT=  008000 
+    INT_VECT=  008030     |     INT_VECT=  008038     |     INT_VECT=  008034 
+    INT_VECT=  008040     |     INT_VECT=  00803C     |     INT_VECT=  008048 
+    INT_VECT=  008044     |     INT_VECT=  008064     |     INT_VECT=  008008 
+    INT_VECT=  008004     |     INT_VECT=  008050     |     INT_VECT=  00804C 
+    INT_VECT=  00805C     |     INT_VECT=  008058     |     ISTR    =  000003 
+    ITC_SPR1=  007F70     |     ITC_SPR2=  007F71     |     ITC_SPR3=  007F72 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 92.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-  7 S0         000E77 R   |   7 S1         000E7D R   |     SEL     =  000012 
-    SEMIC   =  00003B     |     SFR_BASE=  005000     |     SFR_END =  0057FF 
-    SHARP   =  000023     |     SHIFT   =  000004     |     SI      =  00000F 
-    SNAKE_SP=  000004     |     SNAKE_SP=  000004     |     SO      =  00000E 
-    SOH     =  000001     |     SOUND_BI=  000000     |     SOUND_PO=  00500F 
-    SOUTH   =  000002     |     SPACE   =  000020     |     SPI_CR1 =  005200 
-    SPI_CR1_=  000003     |     SPI_CR1_=  000000     |     SPI_CR1_=  000001 
-    SPI_CR1_=  000007     |     SPI_CR1_=  000002     |     SPI_CR1_=  000006 
-    SPI_CR2 =  005201     |     SPI_CR2_=  000007     |     SPI_CR2_=  000006 
-    SPI_CR2_=  000005     |     SPI_CR2_=  000004     |     SPI_CR2_=  000002 
-    SPI_CR2_=  000000     |     SPI_CR2_=  000001     |     SPI_CRCP=  005205 
-    SPI_DR  =  005204     |     SPI_ICR =  005202     |     SPI_RXCR=  005206 
-    SPI_SR  =  005203     |     SPI_SR_B=  000007     |     SPI_SR_C=  000004 
-    SPI_SR_M=  000005     |     SPI_SR_O=  000006     |     SPI_SR_R=  000000 
-    SPI_SR_T=  000001     |     SPI_SR_W=  000003     |     SPI_TXCR=  005207 
-    SPRITE  =  000002     |   7 SQUARE     000E10 R   |     STACK_EM=  0017FF 
-    STACK_SI=  000080     |     STX     =  000002     |     SUB     =  00001A 
-    SWIM_CSR=  007F80     |     SYN     =  000016     |   7 T0         000E16 R
-  7 T1         000E1C R   |   7 T2         000E24 R   |   7 T3         000E2C R
-    TAB     =  000009     |     TAIL    =  000003     |     TETRA_WI=  000008 
-    TICK    =  000027     |     TIM1_ARR=  005262     |     TIM1_ARR=  005263 
-    TIM1_BKR=  00526D     |     TIM1_BKR=  000006     |     TIM1_BKR=  000004 
-    TIM1_BKR=  000005     |     TIM1_BKR=  000000     |     TIM1_BKR=  000007 
-    TIM1_BKR=  000002     |     TIM1_BKR=  000003     |     TIM1_CCE=  00525C 
-    TIM1_CCE=  00525D     |     TIM1_CCM=  005258     |     TIM1_CCM=  000000 
-    TIM1_CCM=  000001     |     TIM1_CCM=  000004     |     TIM1_CCM=  000005 
-    TIM1_CCM=  000006     |     TIM1_CCM=  000007     |     TIM1_CCM=  000002 
-    TIM1_CCM=  000003     |     TIM1_CCM=  000007     |     TIM1_CCM=  000002 
-    TIM1_CCM=  000004     |     TIM1_CCM=  000005     |     TIM1_CCM=  000006 
-    TIM1_CCM=  000004     |     TIM1_CCM=  000003     |     TIM1_CCM=  005259 
-    TIM1_CCM=  000000     |     TIM1_CCM=  000001     |     TIM1_CCM=  000004 
-    TIM1_CCM=  000005     |     TIM1_CCM=  000006     |     TIM1_CCM=  000007 
-    TIM1_CCM=  000002     |     TIM1_CCM=  000003     |     TIM1_CCM=  000007 
-    TIM1_CCM=  000002     |     TIM1_CCM=  000004     |     TIM1_CCM=  000005 
-    TIM1_CCM=  000006     |     TIM1_CCM=  000004     |     TIM1_CCM=  000003 
-    TIM1_CCM=  00525A     |     TIM1_CCM=  000000     |     TIM1_CCM=  000001 
-    TIM1_CCM=  000004     |     TIM1_CCM=  000005     |     TIM1_CCM=  000006 
-    TIM1_CCM=  000007     |     TIM1_CCM=  000002     |     TIM1_CCM=  000003 
-    TIM1_CCM=  000007     |     TIM1_CCM=  000002     |     TIM1_CCM=  000004 
-    TIM1_CCM=  000005     |     TIM1_CCM=  000006     |     TIM1_CCM=  000004 
-    TIM1_CCM=  000003     |     TIM1_CCM=  00525B     |     TIM1_CCM=  000000 
-    TIM1_CCM=  000001     |     TIM1_CCM=  000004     |     TIM1_CCM=  000005 
-    TIM1_CCM=  000006     |     TIM1_CCM=  000007     |     TIM1_CCM=  000002 
-    TIM1_CCM=  000003     |     TIM1_CCM=  000007     |     TIM1_CCM=  000002 
-    TIM1_CCM=  000004     |     TIM1_CCM=  000005     |     TIM1_CCM=  000006 
-    TIM1_CCM=  000004     |     TIM1_CCM=  000003     |     TIM1_CCR=  005265 
-    TIM1_CCR=  005266     |     TIM1_CCR=  005267     |     TIM1_CCR=  005268 
-    TIM1_CCR=  005269     |     TIM1_CCR=  00526A     |     TIM1_CCR=  00526B 
-    TIM1_CCR=  00526C     |     TIM1_CNT=  00525E     |     TIM1_CNT=  00525F 
-    TIM1_CR1=  005250     |     TIM1_CR1=  000007     |     TIM1_CR1=  000000 
-    TIM1_CR1=  000006     |     TIM1_CR1=  000005     |     TIM1_CR1=  000004 
-    TIM1_CR1=  000003     |     TIM1_CR1=  000001     |     TIM1_CR1=  000002 
-    TIM1_CR2=  005251     |     TIM1_CR2=  000000     |     TIM1_CR2=  000002 
-    TIM1_CR2=  000004     |     TIM1_CR2=  000005     |     TIM1_CR2=  000006 
-    TIM1_DTR=  00526E     |     TIM1_EGR=  005257     |     TIM1_EGR=  000007 
+    ITC_SPR4=  007F73     |     ITC_SPR5=  007F74     |     ITC_SPR6=  007F75 
+    ITC_SPR7=  007F76     |     ITC_SPR8=  007F77     |     ITC_SPR_=  000001 
+    ITC_SPR_=  000000     |     ITC_SPR_=  000003     |     IWDG_KEY=  000055 
+    IWDG_KEY=  0000CC     |     IWDG_KEY=  0000AA     |     IWDG_KR =  0050E0 
+    IWDG_PR =  0050E1     |     IWDG_RLR=  0050E2     |   7 J0         000EC3 R
+  7 J1         000EC9 R   |   7 J2         000ED1 R   |   7 J3         000ED7 R
+    KERNEL_V=  000060     |     KPAD    =  000001     |     KPAD_IDR=  005006 
+    KPAD_POR=  005005     |   7 L0         000EA8 R   |   7 L1         000EAE R
+  7 L2         000EB6 R   |   7 L3         000EBC R   |     LB      =  000002 
+    LEN     =  000001     |     LF      =  00000A     |     LINE_DEL=  000082 
+    LINE_PER=  000018     |     MAJOR   =  000001     |     MASK    =  000005 
+    MAX_SPEE=  000009     |     MINOR   =  000001     |     MIN_SPEE=  000001 
+  7 MOUSE      000B16 R   |     MOUSE_HE=  000004     |     MOUSE_WI=  000005 
+    NAFR    =  004804     |     NAK     =  000015     |     NCLKOPT =  004808 
+    NFLASH_W=  00480E     |     NHSECNT =  00480A     |     NOPT1   =  004802 
+    NOPT2   =  004804     |     NOPT3   =  004806     |     NOPT4   =  004808 
+    NOPT5   =  00480A     |     NOPT6   =  00480C     |     NOPT7   =  00480E 
+    NOPTBL  =  00487F     |     NORTH   =  000000     |     NUBC    =  004802 
+    NWDGOPT =  004806     |     NWDGOPT_=  FFFFFFFD     |     NWDGOPT_=  FFFFFFFC 
+    NWDGOPT_=  FFFFFFFF     |     NWDGOPT_=  FFFFFFFE     |   7 NonHandl   000000 R
+    OFS_UART=  000002     |     OFS_UART=  000003     |     OFS_UART=  000004 
+    OFS_UART=  000005     |     OFS_UART=  000006     |     OFS_UART=  000007 
+    OFS_UART=  000008     |     OFS_UART=  000009     |     OFS_UART=  000001 
+    OFS_UART=  000009     |     OFS_UART=  00000A     |     OFS_UART=  000000 
+    OPT0    =  004800     |     OPT1    =  004801     |     OPT2    =  004803 
+    OPT3    =  004805     |     OPT4    =  004807     |     OPT5    =  004809 
+    OPT6    =  00480B     |     OPT7    =  00480D     |     OPTBL   =  00487E 
+    OPTION_B=  004800     |     OPTION_E=  00487F     |     OPTION_S=  000080 
+    OUTPUT_F=  000001     |     OUTPUT_O=  000000     |     OUTPUT_P=  000001 
+    OUTPUT_S=  000000     |     PA      =  000000     |     PA_BASE =  005000 
+    PA_CR1  =  005003     |     PA_CR2  =  005004     |     PA_DDR  =  005002 
+    PA_IDR  =  005001     |     PA_ODR  =  005000     |     PB      =  000005 
+    PB_BASE =  005005     |     PB_CR1  =  005008     |     PB_CR2  =  005009 
+    PB_DDR  =  005007     |     PB_IDR  =  005006     |     PB_ODR  =  005005 
+    PC      =  00000A     |     PC_BASE =  00500A     |     PC_CR1  =  00500D 
+    PC_CR2  =  00500E     |     PC_DDR  =  00500C     |     PC_IDR  =  00500B 
+    PC_ODR  =  00500A     |     PD      =  00000F     |     PD_BASE =  00500F 
+    PD_CR1  =  005012     |     PD_CR2  =  005013     |     PD_DDR  =  005011 
+    PD_IDR  =  005010     |     PD_ODR  =  00500F     |     PE      =  000014 
+    PE_BASE =  005014     |     PE_CR1  =  005017     |     PE_CR2  =  005018 
+    PE_DDR  =  005016     |     PE_IDR  =  005015     |     PE_ODR  =  005014 
+    PF      =  000019     |     PF_BASE =  005019     |     PF_CR1  =  00501C 
+    PF_CR2  =  00501D     |     PF_DDR  =  00501B     |     PF_IDR  =  00501A 
+    PF_ODR  =  005019     |     PG      =  00001E     |     PG_BASE =  00501E 
+    PG_CR1  =  005021     |     PG_CR2  =  005022     |     PG_DDR  =  005020 
+    PG_IDR  =  00501F     |     PG_ODR  =  00501E     |     PH      =  000023 
+    PH_BASE =  005023     |     PH_CR1  =  005026     |     PH_CR2  =  005027 
+    PH_DDR  =  005025     |     PH_IDR  =  005024     |     PH_ODR  =  005023 
+    PH_POST_=  000003     |     PH_PRE_V=  000001     |     PH_VIDEO=  000002 
+    PH_VSYNC=  000000     |     PI      =  000028     |     PI_BASE =  005028 
+    PI_CR1  =  00502B     |     PI_CR2  =  00502C     |     PI_DDR  =  00502A 
+    PI_IDR  =  005029     |     PI_ODR  =  005028     |   7 POO        000B1C R
+    POO_HEIG=  000004     |     POO_WIDT=  000007     |     POS     =  000001 
+    RAM_BASE=  000000     |     RAM_END =  0017FF     |     RAM_SIZE=  001800 
+    REV     =  000000     |   7 RING       000B10 R   |     ROP     =  004800 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 93.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-    TIM1_EGR=  000001     |     TIM1_EGR=  000002     |     TIM1_EGR=  000003 
-    TIM1_EGR=  000004     |     TIM1_EGR=  000005     |     TIM1_EGR=  000006 
-    TIM1_EGR=  000000     |     TIM1_ETR=  005253     |     TIM1_ETR=  000006 
-    TIM1_ETR=  000000     |     TIM1_ETR=  000001     |     TIM1_ETR=  000002 
-    TIM1_ETR=  000003     |     TIM1_ETR=  000007     |     TIM1_ETR=  000004 
-    TIM1_ETR=  000005     |     TIM1_IER=  005254     |     TIM1_IER=  000007 
-    TIM1_IER=  000001     |     TIM1_IER=  000002     |     TIM1_IER=  000003 
-    TIM1_IER=  000004     |     TIM1_IER=  000005     |     TIM1_IER=  000006 
-    TIM1_IER=  000000     |     TIM1_OIS=  00526F     |     TIM1_PSC=  005260 
-    TIM1_PSC=  005261     |     TIM1_RCR=  005264     |     TIM1_SMC=  005252 
-    TIM1_SMC=  000007     |     TIM1_SMC=  000000     |     TIM1_SMC=  000001 
-    TIM1_SMC=  000002     |     TIM1_SMC=  000004     |     TIM1_SMC=  000005 
-    TIM1_SMC=  000006     |     TIM1_SR1=  005255     |     TIM1_SR1=  000007 
-    TIM1_SR1=  000001     |     TIM1_SR1=  000002     |     TIM1_SR1=  000003 
-    TIM1_SR1=  000004     |     TIM1_SR1=  000005     |     TIM1_SR1=  000006 
-    TIM1_SR1=  000000     |     TIM1_SR2=  005256     |     TIM1_SR2=  000001 
-    TIM1_SR2=  000002     |     TIM1_SR2=  000003     |     TIM1_SR2=  000004 
-    TIM2_ARR=  00530D     |     TIM2_ARR=  00530E     |     TIM2_CCE=  005308 
-    TIM2_CCE=  000000     |     TIM2_CCE=  000001     |     TIM2_CCE=  000004 
-    TIM2_CCE=  000005     |     TIM2_CCE=  005309     |     TIM2_CCM=  005305 
-    TIM2_CCM=  005306     |     TIM2_CCM=  005307     |     TIM2_CCM=  000000 
-    TIM2_CCM=  000004     |     TIM2_CCM=  000003     |     TIM2_CCR=  00530F 
-    TIM2_CCR=  005310     |     TIM2_CCR=  005311     |     TIM2_CCR=  005312 
-    TIM2_CCR=  005313     |     TIM2_CCR=  005314     |     TIM2_CNT=  00530A 
-    TIM2_CNT=  00530B     |     TIM2_CR1=  005300     |     TIM2_CR1=  000007 
-    TIM2_CR1=  000000     |     TIM2_CR1=  000003     |     TIM2_CR1=  000001 
-    TIM2_CR1=  000002     |     TIM2_EGR=  005304     |     TIM2_EGR=  000001 
-    TIM2_EGR=  000002     |     TIM2_EGR=  000003     |     TIM2_EGR=  000006 
-    TIM2_EGR=  000000     |     TIM2_IER=  005301     |     TIM2_PSC=  00530C 
-    TIM2_SR1=  005302     |     TIM2_SR2=  005303     |     TIM3_ARR=  00532B 
-    TIM3_ARR=  00532C     |     TIM3_CCE=  005327     |     TIM3_CCE=  000000 
-    TIM3_CCE=  000001     |     TIM3_CCE=  000004     |     TIM3_CCE=  000005 
-    TIM3_CCE=  000000     |     TIM3_CCE=  000001     |     TIM3_CCM=  005325 
-    TIM3_CCM=  000000     |     TIM3_CCM=  000004     |     TIM3_CCM=  000003 
-    TIM3_CCM=  005326     |     TIM3_CCM=  000000     |     TIM3_CCM=  000004 
-    TIM3_CCM=  000003     |     TIM3_CCM=  000000     |     TIM3_CCM=  000004 
-    TIM3_CCM=  000003     |     TIM3_CCR=  00532D     |     TIM3_CCR=  00532E 
-    TIM3_CCR=  00532F     |     TIM3_CCR=  005330     |     TIM3_CNT=  005328 
-    TIM3_CNT=  005329     |     TIM3_CR1=  005320     |     TIM3_CR1=  000007 
-    TIM3_CR1=  000000     |     TIM3_CR1=  000003     |     TIM3_CR1=  000001 
-    TIM3_CR1=  000002     |     TIM3_EGR=  005324     |     TIM3_EGR=  000001 
-    TIM3_EGR=  000002     |     TIM3_EGR=  000003     |     TIM3_EGR=  000006 
-    TIM3_EGR=  000000     |     TIM3_IER=  005321     |     TIM3_IER=  000001 
-    TIM3_IER=  000002     |     TIM3_IER=  000003     |     TIM3_IER=  000006 
-    TIM3_IER=  000000     |     TIM3_PSC=  00532A     |     TIM3_SR1=  005322 
-    TIM3_SR1=  000001     |     TIM3_SR1=  000002     |     TIM3_SR1=  000003 
-    TIM3_SR1=  000006     |     TIM3_SR1=  000000     |     TIM3_SR2=  005323 
-    TIM3_SR2=  000001     |     TIM3_SR2=  000002     |     TIM3_SR2=  000003 
-    TIM4_ARR=  005346     |     TIM4_CNT=  005344     |     TIM4_CR1=  005340 
-    TIM4_CR1=  000007     |     TIM4_CR1=  000000     |     TIM4_CR1=  000003 
-    TIM4_CR1=  000001     |     TIM4_CR1=  000002     |     TIM4_EGR=  005343 
-    TIM4_EGR=  000000     |     TIM4_IER=  005341     |     TIM4_IER=  000000 
-    TIM4_PSC=  005345     |     TIM4_PSC=  000000     |     TIM4_PSC=  000007 
-    TIM4_PSC=  000004     |     TIM4_PSC=  000001     |     TIM4_PSC=  000005 
-    TIM4_PSC=  000002     |     TIM4_PSC=  000006     |     TIM4_PSC=  000003 
+    ROW     =  000007     |     ROWS    =  000001     |     RS      =  00001E 
+    RST_SR  =  0050B3     |   7 S0         000EED R   |   7 S1         000EF3 R
+    SEL     =  000012     |     SEMIC   =  00003B     |     SFR_BASE=  005000 
+    SFR_END =  0057FF     |     SHARP   =  000023     |     SHIFT   =  000004 
+    SI      =  00000F     |     SNAKE_SP=  000004     |     SNAKE_SP=  000004 
+    SO      =  00000E     |     SOH     =  000001     |     SOUND_BI=  000000 
+    SOUND_PO=  00500F     |     SOUTH   =  000002     |     SPACE   =  000020 
+    SPI_CR1 =  005200     |     SPI_CR1_=  000003     |     SPI_CR1_=  000000 
+    SPI_CR1_=  000001     |     SPI_CR1_=  000007     |     SPI_CR1_=  000002 
+    SPI_CR1_=  000006     |     SPI_CR2 =  005201     |     SPI_CR2_=  000007 
+    SPI_CR2_=  000006     |     SPI_CR2_=  000005     |     SPI_CR2_=  000004 
+    SPI_CR2_=  000002     |     SPI_CR2_=  000000     |     SPI_CR2_=  000001 
+    SPI_CRCP=  005205     |     SPI_DR  =  005204     |     SPI_ICR =  005202 
+    SPI_RXCR=  005206     |     SPI_SR  =  005203     |     SPI_SR_B=  000007 
+    SPI_SR_C=  000004     |     SPI_SR_M=  000005     |     SPI_SR_O=  000006 
+    SPI_SR_R=  000000     |     SPI_SR_T=  000001     |     SPI_SR_W=  000003 
+    SPI_TXCR=  005207     |     SPRITE  =  000002     |   7 SQUARE     000E86 R
+    STACK_EM=  0017FF     |     STACK_SI=  000080     |     STX     =  000002 
+    SUB     =  00001A     |     SWIM_CSR=  007F80     |     SYN     =  000016 
+  7 T0         000E8C R   |   7 T1         000E92 R   |   7 T2         000E9A R
+  7 T3         000EA2 R   |     TAB     =  000009     |     TAIL    =  000003 
+    TETRA_WI=  000008     |     TICK    =  000027     |     TIM1_ARR=  005262 
+    TIM1_ARR=  005263     |     TIM1_BKR=  00526D     |     TIM1_BKR=  000006 
+    TIM1_BKR=  000004     |     TIM1_BKR=  000005     |     TIM1_BKR=  000000 
+    TIM1_BKR=  000007     |     TIM1_BKR=  000002     |     TIM1_BKR=  000003 
+    TIM1_CCE=  00525C     |     TIM1_CCE=  00525D     |     TIM1_CCM=  005258 
+    TIM1_CCM=  000000     |     TIM1_CCM=  000001     |     TIM1_CCM=  000004 
+    TIM1_CCM=  000005     |     TIM1_CCM=  000006     |     TIM1_CCM=  000007 
+    TIM1_CCM=  000002     |     TIM1_CCM=  000003     |     TIM1_CCM=  000007 
+    TIM1_CCM=  000002     |     TIM1_CCM=  000004     |     TIM1_CCM=  000005 
+    TIM1_CCM=  000006     |     TIM1_CCM=  000004     |     TIM1_CCM=  000003 
+    TIM1_CCM=  005259     |     TIM1_CCM=  000000     |     TIM1_CCM=  000001 
+    TIM1_CCM=  000004     |     TIM1_CCM=  000005     |     TIM1_CCM=  000006 
+    TIM1_CCM=  000007     |     TIM1_CCM=  000002     |     TIM1_CCM=  000003 
+    TIM1_CCM=  000007     |     TIM1_CCM=  000002     |     TIM1_CCM=  000004 
+    TIM1_CCM=  000005     |     TIM1_CCM=  000006     |     TIM1_CCM=  000004 
+    TIM1_CCM=  000003     |     TIM1_CCM=  00525A     |     TIM1_CCM=  000000 
+    TIM1_CCM=  000001     |     TIM1_CCM=  000004     |     TIM1_CCM=  000005 
+    TIM1_CCM=  000006     |     TIM1_CCM=  000007     |     TIM1_CCM=  000002 
+    TIM1_CCM=  000003     |     TIM1_CCM=  000007     |     TIM1_CCM=  000002 
+    TIM1_CCM=  000004     |     TIM1_CCM=  000005     |     TIM1_CCM=  000006 
+    TIM1_CCM=  000004     |     TIM1_CCM=  000003     |     TIM1_CCM=  00525B 
+    TIM1_CCM=  000000     |     TIM1_CCM=  000001     |     TIM1_CCM=  000004 
+    TIM1_CCM=  000005     |     TIM1_CCM=  000006     |     TIM1_CCM=  000007 
+    TIM1_CCM=  000002     |     TIM1_CCM=  000003     |     TIM1_CCM=  000007 
+    TIM1_CCM=  000002     |     TIM1_CCM=  000004     |     TIM1_CCM=  000005 
+    TIM1_CCM=  000006     |     TIM1_CCM=  000004     |     TIM1_CCM=  000003 
+    TIM1_CCR=  005265     |     TIM1_CCR=  005266     |     TIM1_CCR=  005267 
+    TIM1_CCR=  005268     |     TIM1_CCR=  005269     |     TIM1_CCR=  00526A 
+    TIM1_CCR=  00526B     |     TIM1_CCR=  00526C     |     TIM1_CNT=  00525E 
+    TIM1_CNT=  00525F     |     TIM1_CR1=  005250     |     TIM1_CR1=  000007 
+    TIM1_CR1=  000000     |     TIM1_CR1=  000006     |     TIM1_CR1=  000005 
+    TIM1_CR1=  000004     |     TIM1_CR1=  000003     |     TIM1_CR1=  000001 
+    TIM1_CR1=  000002     |     TIM1_CR2=  005251     |     TIM1_CR2=  000000 
+    TIM1_CR2=  000002     |     TIM1_CR2=  000004     |     TIM1_CR2=  000005 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 94.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-    TIM4_PSC=  000000     |     TIM4_PSC=  000001     |     TIM4_PSC=  000002 
-    TIM4_SR =  005342     |     TIM4_SR_=  000000     |     UART1   =  000000 
-    UART1_BA=  005230     |     UART1_BR=  005232     |     UART1_BR=  005233 
-    UART1_CR=  005234     |     UART1_CR=  005235     |     UART1_CR=  005236 
-    UART1_CR=  005237     |     UART1_CR=  005238     |     UART1_DR=  005231 
-    UART1_GT=  005239     |     UART1_PO=  000000     |     UART1_PS=  00523A 
-    UART1_RX=  000004     |     UART1_SR=  005230     |     UART1_TX=  000005 
-    UART2   =  000001     |     UART3   =  000002     |     UART3_BA=  005240 
-    UART3_BR=  005242     |     UART3_BR=  005243     |     UART3_CR=  005244 
-    UART3_CR=  005245     |     UART3_CR=  005246     |     UART3_CR=  005247 
-    UART3_CR=  004249     |     UART3_DR=  005241     |     UART3_PO=  00000F 
-    UART3_RX=  000006     |     UART3_SR=  005240     |     UART3_TX=  000005 
-    UART_CR1=  000004     |     UART_CR1=  000002     |     UART_CR1=  000000 
-    UART_CR1=  000001     |     UART_CR1=  000007     |     UART_CR1=  000006 
-    UART_CR1=  000005     |     UART_CR1=  000003     |     UART_CR2=  000004 
-    UART_CR2=  000002     |     UART_CR2=  000005     |     UART_CR2=  000001 
-    UART_CR2=  000000     |     UART_CR2=  000006     |     UART_CR2=  000003 
-    UART_CR2=  000007     |     UART_CR3=  000003     |     UART_CR3=  000001 
-    UART_CR3=  000002     |     UART_CR3=  000000     |     UART_CR3=  000006 
-    UART_CR3=  000004     |     UART_CR3=  000005     |     UART_CR4=  000000 
-    UART_CR4=  000001     |     UART_CR4=  000002     |     UART_CR4=  000003 
-    UART_CR4=  000004     |     UART_CR4=  000006     |     UART_CR4=  000005 
-    UART_CR5=  000003     |     UART_CR5=  000001     |     UART_CR5=  000002 
-    UART_CR5=  000004     |     UART_CR5=  000005     |     UART_CR6=  000004 
-    UART_CR6=  000007     |     UART_CR6=  000001     |     UART_CR6=  000002 
-    UART_CR6=  000000     |     UART_CR6=  000005     |     UART_SR_=  000001 
-    UART_SR_=  000004     |     UART_SR_=  000002     |     UART_SR_=  000003 
-    UART_SR_=  000000     |     UART_SR_=  000005     |     UART_SR_=  000006 
-    UART_SR_=  000007     |     UBC     =  004801     |     UINT    =  000001 
-    US      =  00001F     |     VAR_SIZE=  000004     |     VBUFF_SI=  0012C0 
-    VIDEO_LI=  0000C0     |     VPULSE  =  0001B4     |     VRES    =  0000C0 
-    VSIZE   =  000002     |     VT      =  00000B     |     WDGOPT  =  004805 
-    WDGOPT_I=  000002     |     WDGOPT_L=  000003     |     WDGOPT_W=  000000 
-    WDGOPT_W=  000001     |     WELL_DEP=  0000B0     |     WELL_WID=  000050 
-    WEST    =  000004     |     WWDG_CR =  0050D1     |     WWDG_WR =  0050D2 
-    X0      =  000001     |     X1      =  000002     |     XCOOR   =  000002 
-    XCOORH  =  000001     |     XOFF    =  000013     |     XON     =  000011 
-    Y0      =  000003     |     Y1      =  000004     |     YCOOR   =  000001 
-  7 Z0         000E69 R   |   7 Z1         000E6F R   |   5 acc16      000064 GR
-  5 acc8       000065 GR  |   9 app_vari   000004 R   |   7 beep       00007C R
-  7 bit_mask   0006AF R   |   7 clock_in   000004 R   |   7 cold_sta   0000F8 R
-  7 crlf       00071C R   |   7 cursor_r   00072C R   |   5 cx         000074 R
-  5 cy         000073 R   |   7 dbg_prin   000982 R   |   5 delay_ti   000062 R
-  7 draw_hea   000B55 R   |   7 draw_sna   000B63 R   |   7 draw_spr   000B4B R
-  7 draw_wal   000B22 R   |   7 draw_wel   000E85 R   |   7 fall       000EAB R
-  7 fall_ini   000EA4 R   |   7 fill       0009F3 R   |   5 flags      00006A GR
-  5 fmstr      000066 GR  |   7 font_6x8   0001A0 R   |   7 font_end   0004D8 R
-  7 food_col   000BA0 R   |   9 food_coo   00000B R   |   9 game_fla   000008 R
-  7 game_ove   000D87 R   |   7 gover      000DD3 R   |   7 hex_digi   0009A1 R
-  7 invert_p   0006F1 R   |   7 jitter_c   00064C R   |   7 kpad_inp   0000B0 R
-  7 left_4pi   000908 R   |   7 line       0007BB R   |   7 main       0009FB R
-  9 max_scor   000006 R   |   7 max_scor   000DE6 R   |   7 menu       000A01 R
-  7 move       0009AF GR  |   7 move_arr   000C2E R   |   7 move_dow   0009CF R
-  7 move_exi   0009EE R   |   7 move_loo   0009D4 R   |   7 move_sna   000C3C R
-  7 move_up    0009C1 R   |   7 new_food   000CF5 R   |   7 next_hea   000C0D R
+    TIM1_CR2=  000006     |     TIM1_DTR=  00526E     |     TIM1_EGR=  005257 
+    TIM1_EGR=  000007     |     TIM1_EGR=  000001     |     TIM1_EGR=  000002 
+    TIM1_EGR=  000003     |     TIM1_EGR=  000004     |     TIM1_EGR=  000005 
+    TIM1_EGR=  000006     |     TIM1_EGR=  000000     |     TIM1_ETR=  005253 
+    TIM1_ETR=  000006     |     TIM1_ETR=  000000     |     TIM1_ETR=  000001 
+    TIM1_ETR=  000002     |     TIM1_ETR=  000003     |     TIM1_ETR=  000007 
+    TIM1_ETR=  000004     |     TIM1_ETR=  000005     |     TIM1_IER=  005254 
+    TIM1_IER=  000007     |     TIM1_IER=  000001     |     TIM1_IER=  000002 
+    TIM1_IER=  000003     |     TIM1_IER=  000004     |     TIM1_IER=  000005 
+    TIM1_IER=  000006     |     TIM1_IER=  000000     |     TIM1_OIS=  00526F 
+    TIM1_PSC=  005260     |     TIM1_PSC=  005261     |     TIM1_RCR=  005264 
+    TIM1_SMC=  005252     |     TIM1_SMC=  000007     |     TIM1_SMC=  000000 
+    TIM1_SMC=  000001     |     TIM1_SMC=  000002     |     TIM1_SMC=  000004 
+    TIM1_SMC=  000005     |     TIM1_SMC=  000006     |     TIM1_SR1=  005255 
+    TIM1_SR1=  000007     |     TIM1_SR1=  000001     |     TIM1_SR1=  000002 
+    TIM1_SR1=  000003     |     TIM1_SR1=  000004     |     TIM1_SR1=  000005 
+    TIM1_SR1=  000006     |     TIM1_SR1=  000000     |     TIM1_SR2=  005256 
+    TIM1_SR2=  000001     |     TIM1_SR2=  000002     |     TIM1_SR2=  000003 
+    TIM1_SR2=  000004     |     TIM2_ARR=  00530D     |     TIM2_ARR=  00530E 
+    TIM2_CCE=  005308     |     TIM2_CCE=  000000     |     TIM2_CCE=  000001 
+    TIM2_CCE=  000004     |     TIM2_CCE=  000005     |     TIM2_CCE=  005309 
+    TIM2_CCM=  005305     |     TIM2_CCM=  005306     |     TIM2_CCM=  005307 
+    TIM2_CCM=  000000     |     TIM2_CCM=  000004     |     TIM2_CCM=  000003 
+    TIM2_CCR=  00530F     |     TIM2_CCR=  005310     |     TIM2_CCR=  005311 
+    TIM2_CCR=  005312     |     TIM2_CCR=  005313     |     TIM2_CCR=  005314 
+    TIM2_CNT=  00530A     |     TIM2_CNT=  00530B     |     TIM2_CR1=  005300 
+    TIM2_CR1=  000007     |     TIM2_CR1=  000000     |     TIM2_CR1=  000003 
+    TIM2_CR1=  000001     |     TIM2_CR1=  000002     |     TIM2_EGR=  005304 
+    TIM2_EGR=  000001     |     TIM2_EGR=  000002     |     TIM2_EGR=  000003 
+    TIM2_EGR=  000006     |     TIM2_EGR=  000000     |     TIM2_IER=  005301 
+    TIM2_PSC=  00530C     |     TIM2_SR1=  005302     |     TIM2_SR2=  005303 
+    TIM3_ARR=  00532B     |     TIM3_ARR=  00532C     |     TIM3_CCE=  005327 
+    TIM3_CCE=  000000     |     TIM3_CCE=  000001     |     TIM3_CCE=  000004 
+    TIM3_CCE=  000005     |     TIM3_CCE=  000000     |     TIM3_CCE=  000001 
+    TIM3_CCM=  005325     |     TIM3_CCM=  000000     |     TIM3_CCM=  000004 
+    TIM3_CCM=  000003     |     TIM3_CCM=  005326     |     TIM3_CCM=  000000 
+    TIM3_CCM=  000004     |     TIM3_CCM=  000003     |     TIM3_CCM=  000000 
+    TIM3_CCM=  000004     |     TIM3_CCM=  000003     |     TIM3_CCR=  00532D 
+    TIM3_CCR=  00532E     |     TIM3_CCR=  00532F     |     TIM3_CCR=  005330 
+    TIM3_CNT=  005328     |     TIM3_CNT=  005329     |     TIM3_CR1=  005320 
+    TIM3_CR1=  000007     |     TIM3_CR1=  000000     |     TIM3_CR1=  000003 
+    TIM3_CR1=  000001     |     TIM3_CR1=  000002     |     TIM3_EGR=  005324 
+    TIM3_EGR=  000001     |     TIM3_EGR=  000002     |     TIM3_EGR=  000003 
+    TIM3_EGR=  000006     |     TIM3_EGR=  000000     |     TIM3_IER=  005321 
+    TIM3_IER=  000001     |     TIM3_IER=  000002     |     TIM3_IER=  000003 
+    TIM3_IER=  000006     |     TIM3_IER=  000000     |     TIM3_PSC=  00532A 
+    TIM3_SR1=  005322     |     TIM3_SR1=  000001     |     TIM3_SR1=  000002 
+    TIM3_SR1=  000003     |     TIM3_SR1=  000006     |     TIM3_SR1=  000000 
+    TIM3_SR2=  005323     |     TIM3_SR2=  000001     |     TIM3_SR2=  000002 
+    TIM3_SR2=  000003     |     TIM4_ARR=  005346     |     TIM4_CNT=  005344 
+    TIM4_CR1=  005340     |     TIM4_CR1=  000007     |     TIM4_CR1=  000000 
+    TIM4_CR1=  000003     |     TIM4_CR1=  000001     |     TIM4_CR1=  000002 
+    TIM4_EGR=  005343     |     TIM4_EGR=  000000     |     TIM4_IER=  005341 
+    TIM4_IER=  000000     |     TIM4_PSC=  005345     |     TIM4_PSC=  000000 
+    TIM4_PSC=  000007     |     TIM4_PSC=  000004     |     TIM4_PSC=  000001 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 95.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-  7 noise      000089 R   |   5 ntsc_fla   00006F R   |   7 ntsc_ini   0004D8 R
-  5 ntsc_pha   000070 R   |   7 ntsc_syn   000558 R   |   7 ntsc_vid   000635 R
-  7 pause      000033 R   |   7 pixel_ad   0006BE R   |   7 post_vid   000611 R
-  7 print_he   00099B R   |   7 prng       000164 GR  |   7 prog_lis   000A97 R
-  7 prompt     000DF2 R   |   7 prt_scor   000D24 R   |   5 ptr16      000068 GR
-  5 ptr8       000069 R   |   7 put_spri   000852 R   |   7 put_uint   00082E R
-  7 qbf        000ACB R   |   7 quick      000ABA R   |   7 read_key   0000B8 R
-  7 reset_pi   0006EA R   |   7 right_4p   000941 R   |   7 rotate_h   000C9A R
-  5 scan_lin   000071 R   |   9 score      000004 R   |   7 score_st   000DDE R
-  7 scroll_d   0008CF R   |   7 scroll_l   000931 R   |   7 scroll_r   000972 R
-  7 scroll_t   0006F7 R   |   7 scroll_u   000896 R   |   5 seedx      00006B R
-  5 seedy      00006D R   |   7 select_m   000A8D R   |   7 set_pixe   0006E4 R
-  7 set_seed   000186 R   |   7 sll_xy_3   000156 R   |   7 snake      000D62 R
-  9 snake_bo   00000D R   |   9 snake_di   00000A R   |   7 snake_in   000D30 R
-  9 snake_le   000009 R   |   7 snake_po   000B8B R   |   5 sound_ti   000063 R
+    TIM4_PSC=  000005     |     TIM4_PSC=  000002     |     TIM4_PSC=  000006 
+    TIM4_PSC=  000003     |     TIM4_PSC=  000000     |     TIM4_PSC=  000001 
+    TIM4_PSC=  000002     |     TIM4_SR =  005342     |     TIM4_SR_=  000000 
+    UART1   =  000000     |     UART1_BA=  005230     |     UART1_BR=  005232 
+    UART1_BR=  005233     |     UART1_CR=  005234     |     UART1_CR=  005235 
+    UART1_CR=  005236     |     UART1_CR=  005237     |     UART1_CR=  005238 
+    UART1_DR=  005231     |     UART1_GT=  005239     |     UART1_PO=  000000 
+    UART1_PS=  00523A     |     UART1_RX=  000004     |     UART1_SR=  005230 
+    UART1_TX=  000005     |     UART2   =  000001     |     UART3   =  000002 
+    UART3_BA=  005240     |     UART3_BR=  005242     |     UART3_BR=  005243 
+    UART3_CR=  005244     |     UART3_CR=  005245     |     UART3_CR=  005246 
+    UART3_CR=  005247     |     UART3_CR=  004249     |     UART3_DR=  005241 
+    UART3_PO=  00000F     |     UART3_RX=  000006     |     UART3_SR=  005240 
+    UART3_TX=  000005     |     UART_CR1=  000004     |     UART_CR1=  000002 
+    UART_CR1=  000000     |     UART_CR1=  000001     |     UART_CR1=  000007 
+    UART_CR1=  000006     |     UART_CR1=  000005     |     UART_CR1=  000003 
+    UART_CR2=  000004     |     UART_CR2=  000002     |     UART_CR2=  000005 
+    UART_CR2=  000001     |     UART_CR2=  000000     |     UART_CR2=  000006 
+    UART_CR2=  000003     |     UART_CR2=  000007     |     UART_CR3=  000003 
+    UART_CR3=  000001     |     UART_CR3=  000002     |     UART_CR3=  000000 
+    UART_CR3=  000006     |     UART_CR3=  000004     |     UART_CR3=  000005 
+    UART_CR4=  000000     |     UART_CR4=  000001     |     UART_CR4=  000002 
+    UART_CR4=  000003     |     UART_CR4=  000004     |     UART_CR4=  000006 
+    UART_CR4=  000005     |     UART_CR5=  000003     |     UART_CR5=  000001 
+    UART_CR5=  000002     |     UART_CR5=  000004     |     UART_CR5=  000005 
+    UART_CR6=  000004     |     UART_CR6=  000007     |     UART_CR6=  000001 
+    UART_CR6=  000002     |     UART_CR6=  000000     |     UART_CR6=  000005 
+    UART_SR_=  000001     |     UART_SR_=  000004     |     UART_SR_=  000002 
+    UART_SR_=  000003     |     UART_SR_=  000000     |     UART_SR_=  000005 
+    UART_SR_=  000006     |     UART_SR_=  000007     |     UBC     =  004801 
+    UINT    =  000001     |     US      =  00001F     |     VAR_SIZE=  000004 
+    VBUFF_SI=  0012C0     |     VIDEO_LI=  0000C0     |     VPULSE  =  0001B4 
+    VRES    =  0000C0     |     VSIZE   =  000002     |     VT      =  00000B 
+    WDGOPT  =  004805     |     WDGOPT_I=  000002     |     WDGOPT_L=  000003 
+    WDGOPT_W=  000000     |     WDGOPT_W=  000001     |     WELL_DEP=  0000B0 
+    WELL_WID=  000050     |     WEST    =  000004     |     WWDG_CR =  0050D1 
+    WWDG_WR =  0050D2     |     X0      =  000001     |     X1      =  000002 
+    XCOOR   =  000002     |     XCOORH  =  000001     |     XOFF    =  000013 
+    XON     =  000011     |     Y0      =  000003     |     Y1      =  000004 
+    YCOOR   =  000001     |   7 Z0         000EDF R   |   7 Z1         000EE5 R
+  5 acc16      000064 GR  |   5 acc8       000065 GR  |   9 app_vari   000004 R
+  7 beep       00007C R   |   7 bit_mask   0006AF R   |   7 clock_in   000004 R
+  7 cold_sta   0000F8 R   |   7 crlf       00071C R   |   7 cursor_r   00072C R
+  5 cx         000074 R   |   5 cy         000073 R   |   7 dbg_prin   000982 R
+  5 delay_ti   000062 R   |   7 draw_hea   000B55 R   |   7 draw_sna   000B63 R
+  7 draw_spr   000B4B R   |   7 draw_wal   000B22 R   |   7 draw_wel   000EFB R
+  7 fall       000F21 R   |   7 fall_ini   000F1A R   |   7 fill       0009F3 R
+  5 flags      00006A GR  |   5 fmstr      000066 GR  |   7 font_6x8   0001A0 R
+  7 font_end   0004D8 R   |   7 food_col   000BA4 R   |   9 food_coo   00000C R
+  9 game_fla   000009 R   |   7 game_ove   000E1B R   |   7 gover      000E5D R
+  7 hex_digi   0009A1 R   |   7 invert_p   0006F1 R   |   7 jitter_c   00064C R
+  7 kpad_inp   0000B0 R   |   7 left_4pi   000908 R   |   7 line       0007BB R
+  7 main       0009FB R   |   9 max_scor   000007 R   |   7 max_str    000DBB R
+  7 menu       000A01 R   |   7 move       0009AF GR  |   7 move_arr   000C4C R
+  7 move_dow   0009CF R   |   7 move_exi   0009EE R   |   7 move_loo   0009D4 R
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 96.
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+  7 move_sna   000C5A R   |   7 move_up    0009C1 R   |   7 new_food   000D45 R
+  7 next_hea   000C2B R   |   7 noise      000089 R   |   5 ntsc_fla   00006F R
+  7 ntsc_ini   0004D8 R   |   5 ntsc_pha   000070 R   |   7 ntsc_syn   000558 R
+  7 ntsc_vid   000635 R   |   7 pause      000033 R   |   7 pixel_ad   0006BE R
+  7 post_vid   000611 R   |   7 print_he   00099B R   |   7 prng       000164 GR
+  7 prog_lis   000A97 R   |   7 prompt     000E68 R   |   7 prt_info   000D74 R
+  5 ptr16      000068 GR  |   5 ptr8       000069 R   |   7 put_spri   000852 R
+  7 put_uint   00082E R   |   7 qbf        000ACB R   |   7 quick      000ABA R
+  7 read_key   0000B8 R   |   7 reset_pi   0006EA R   |   7 right_4p   000941 R
+  7 rotate_h   000CC2 R   |   5 scan_lin   000071 R   |   9 score      000004 R
+  7 score_st   000DAD R   |   7 scroll_d   0008CF R   |   7 scroll_l   000931 R
+  7 scroll_r   000972 R   |   7 scroll_t   0006F7 R   |   7 scroll_u   000896 R
+  5 seedx      00006B R   |   5 seedy      00006D R   |   7 select_m   000A8D R
+  7 set_pixe   0006E4 R   |   7 set_seed   000186 R   |   7 sll_xy_3   000156 R
+  7 snake      000DF6 R   |   9 snake_bo   00000E R   |   9 snake_di   00000B R
+  7 snake_in   000DC0 R   |   9 snake_le   00000A R   |   7 snake_po   000B8B R
+  5 sound_ti   000063 R   |   9 speed      000006 R   |   7 speed_st   000DB4 R
   7 srl_xy_3   00015D R   |   2 stack_fu   001780 GR  |   2 stack_un   001800 R
   7 sync_exi   000632 R   |   7 test_pre   0005C4 R   |   5 ticks      000060 R
   7 timer3_i   00001A R   |   7 tone       00003F R   |   6 tv_buffe   000080 R
   7 tv_cls     000698 R   |   7 tv_putc    000735 R   |   7 tv_puts    0007AF R
-  7 user_inp   000CCF R   |   7 user_sel   000A3D R   |   7 video_on   00053F R
+  7 user_inp   000CF7 R   |   7 user_sel   000A3D R   |   7 video_on   00053F R
   7 wait_key   0000DB R   |   7 wait_key   0000E1 R   |   7 xor_seed   00013A R
 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 96.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 97.
 Hexadecimal [24-Bits]
 
 Area Table
@@ -5128,7 +5196,7 @@ Area Table
    4 DATA       size      0   flags    8
    5 DATA1      size     15   flags    8
    6 DATA2      size   12C0   flags    8
-   7 CODE       size    EB1   flags    0
+   7 CODE       size    F27   flags    0
    8 G_DATA     size      0   flags    8
-   9 G_DATA3    size     49   flags    8
+   9 G_DATA3    size     4A   flags    8
 

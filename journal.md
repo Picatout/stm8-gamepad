@@ -1,3 +1,11 @@
+### 2023-12-28
+
+* Travail sur snake.asm 
+    * Ajout du contrôle de vitesse du serpent avec les touvhe HAUT|BAS.
+    * Modification affichage score.
+    * Ajout BEEP lorsque le serpent avale la souris.
+    * Ajout NOISE quand le serpent meure.
+
 ### 2023-12-27
 
 * Éliminer TIMER4 pour les délais utilise à la place l'interruption de TIMER1. La granularité tombe à 1/60 de seconde mais la sortie vidéo est plus propre.
