@@ -1,3 +1,9 @@
+### 2023-12-29
+
+* Travail sur snake.asm
+    * Ajout chronomètre TIME OUT avec bargraph.
+    * Ajuster dimension de l'arène pur que largeur et hauteur soit un multiple de SNAKE__SPRITE_WIDTH et SNAKE_SPRITE_HEIGHT.
+
 ### 2023-12-28
 
 * Travail sur snake.asm 

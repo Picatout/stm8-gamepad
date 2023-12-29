@@ -12,6 +12,7 @@
 app_variables:
 score: .blkw 1 ; game score 
 speed: .blkb 1 ; snake speed delay
+chrono: .blkb 1 ; chronometer delay 
 max_score: .blkw 1 ; maximum score 
 game_flags: .blkb 1 ; game boolean flags 
 snake_len: .blkb 1 ; snake length 
@@ -20,9 +21,24 @@ food_coord: .blkw 1 ; food coordinates
 snake_body: .blkw 32 ;  snake rings coords 
 
     .area CODE 
+; chronometer delay 
+CHRONO_DELAY=127
 
+; snake speed value 
 MIN_SPEED=1 
 MAX_SPEED=9 
+
+; borders position and area dimensions 
+LEFT_BORDER=0 ; left fence position 
+MIN_XCOOR=LEFT_BORDER+1; minimum snake x coordinate 
+RIGHT_BORDER=(HRES-4)&0xFC ; right fence position , 4 pixels reserved for calories bargraph.
+MAX_XCOOR=(RIGHT_BORDER-SNAKE_SPRITE_WIDTH) ; maximum snake x coordinate  
+PG_WIDTH=(RIGHT_BORDER-MIN_XCOOR) ; play ground width 
+TOP_BORDER=FONT_HEIGHT ; top fence y position , 1 character height reserved for status display  
+MIN_YCOOR=(TOP_BORDER+1) ; minimum snake y coordinate   
+BOTTOM_BORDER=(VRES-1) ; bottom fence position 
+MAX_YCOOR=(BOTTOM_BORDER-SNAKE_SPRITE_HEIGHT)
+PG_HEIGHT=(BOTTOM_BORDER-MIN_YCOOR); play ground height 
 
 ; game boolean flags 
 F_FOOD_COLL=0  ; collision with food, earn point
@@ -48,9 +64,12 @@ RING:       .byte SNAKE_SPRITE_WIDTH,SNAKE_SPRITE_HEIGHT,0x60,0x90,0X90,0X60
 MOUSE_WIDTH=5 
 MOUSE_HEIGHT=4
 MOUSE:      .byte MOUSE_WIDTH,MOUSE_HEIGHT,0X00,0X70,0XF8,0XA0 
-POO_WIDTH=7
+POO_WIDTH=4
 POO_HEIGHT=4
-POO:    .byte POO_WIDTH,POO_HEIGHT,0x10,0x38,0x7c,0xfe
+POO:    .byte POO_WIDTH,POO_HEIGHT,0x40,0x60,0x70,0xf0
+CB_WIDTH=3
+CB_HEIGHT=1
+CHRONO_BAR:    .byte CB_WIDTH,CB_HEIGHT,0x70 
 
 
 ;----------------------
@@ -58,21 +77,21 @@ POO:    .byte POO_WIDTH,POO_HEIGHT,0x10,0x38,0x7c,0xfe
 ; game area 
 ;---------------------
 draw_walls:
-; top wall 
-    ldw x,#HRES 
-    ldw y,#8*256+8  
+; top fence  
+    ldw x,#RIGHT_BORDER+1 
+    ldw y,#(TOP_BORDER<<8)+TOP_BORDER  
     call line
-; bottom wall 
-    ldw x,#HRES 
-    ldw y,#(VRES-1)*256+(VRES-1)
+; bottom fence  
+    ldw x,#RIGHT_BORDER+1 
+    ldw y,#(BOTTOM_BORDER<<8)+BOTTOM_BORDER
     call line 
-; left wall     
-    ldw x,#0 
-    ldw y,#8*256+(VRES-1)
+; left fence     
+    clrw x 
+    ldw y,#((TOP_BORDER+1)<<8)+BOTTOM_BORDER
     call line 
-; right wall     
-    ldw x,#((HRES-1)*256)+(HRES-1)
-    ldw y,#8*256+(VRES-1)
+; right fence
+    ldw x,#(RIGHT_BORDER<<8)+RIGHT_BORDER
+    ldw y,#((TOP_BORDER+1)<<8)+BOTTOM_BORDER
     call line 
     ret 
 
@@ -202,17 +221,17 @@ food_collision:
     _incz snake_len 
     inc (GAIN,sp)
     ld a,food_coord ; mouse y coord 
-    cp a,#9 
+    cp a,#MIN_YCOOR 
     jrne 5$
     inc (GAIN,sp) ; food at top border     
-5$: cp a,#VRES-MOUSE_HEIGHT-1
+5$: cp a,#MAX_YCOOR 
     jrne 6$ 
     inc (GAIN,sp) ; food at bottom border 
 6$: ld a,food_coord+1 ; mouse x coord
-    cp a,#1 
+    cp a,#MIN_XCOOR 
     jrne 7$ 
     inc (GAIN,sp) ; food at left border 
-7$: cp a,#HRES-MOUSE_WIDTH-1
+7$: cp a,#MAX_XCOOR
     jrne 8$
     inc (GAIN,sp) ; food at right border 
 8$: ; score+=(MAX_SPEED+1-speed)*(GAIN,sp)
@@ -432,20 +451,58 @@ user_input:
     _drop 1 
     ret 
 
+;-----------------------
+; when snake eat mouse 
+; reset chronometer 
+;-----------------------
+chrono_reset:
+    push #CHRONO_DELAY
+1$:
+    _ldaz chrono 
+    cp a,(1,sp)
+    jrpl 9$ 
+    ld a,#VRES-1 
+    sub a,chrono
+    ld xh,a  
+    ld a,#RIGHT_BORDER+1
+    ld xl,a 
+    ldw y,#CHRONO_BAR
+    call draw_sprite
+    _incz chrono 
+    jra 1$  
+9$: _drop 1 
+    ret 
+
+;-------------------------
+; decrement chrono 
+; remove a chrono tick 
+;-------------------------
+chrono_decr:
+    _decz chrono 
+    ld a,#VRES-1 
+    sub a,chrono 
+    ld xh,a 
+    ld a,#(RIGHT_BORDER+1)
+    ld xl,a 
+    ldw y,#CHRONO_BAR 
+    call draw_sprite 
+    tnz chrono 
+    ret 
+
 ;-------------------------
 ; create a new mouse 
 ; at random position 
 ;-------------------------
 new_food:
     call prng
-    ld a,#VRES-MOUSE_HEIGHT-FONT_HEIGHT-2 
+    ld a,#PG_HEIGHT 
     div x,a 
-    add a,#FONT_HEIGHT+1
+    add a,#MIN_YCOOR
     _straz food_coord 
     call prng 
-    ld a,#HRES-MOUSE_WIDTH-2 
+    ld a,#PG_WIDTH 
     div x,a 
-    inc a 
+    add a,#MIN_XCOOR
     _straz food_coord+1
     ldw x,food_coord 
     ldw y,#MOUSE 
@@ -457,6 +514,7 @@ new_food:
     call draw_sprite 
     jra new_food 
 9$: _clrz game_flags
+    call chrono_reset 
     ret 
 
 ;----------------------
@@ -498,6 +556,7 @@ max_str: .asciz "max:"
 snake_init:
     ld a,#(1<<F_NO_FOOD)
     _straz game_flags 
+    _clrz chrono 
     ld a,#5 
     _straz speed
     clrw x 
@@ -516,7 +575,7 @@ snake_init:
     subw y,#SNAKE_SPRITE_WIDTH
     ldw (4,x),y 
     call tv_cls
-    call draw_walls 
+    call draw_walls
     call draw_snake 
     ret 
 
@@ -535,9 +594,18 @@ snake:
     call move_snake 
     btjt game_flags,#F_GAME_OVER,game_over  
     call user_input
+    call chrono_decr  
+    jreq timeout
     _ldaz speed 
     call pause 
     jra 1$
+timeout:
+    ldw x,#(12<<8)+10 
+    _strxz cy 
+    ldw y,#timeout_str
+    call tv_puts 
+    ld a,#60 
+    call pause
 game_over:
     ld a,#5
     call noise 
@@ -569,4 +637,5 @@ game_over:
     ret 
 
 gover: .asciz "game over\r"
+timeout_str: .asciz "TIME OUT" 
 prompt: .asciz "A new game\rB exit"

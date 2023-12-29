@@ -161,6 +161,9 @@ scroll_text_up:
     ldw y,#tv_buffer 
     subw y,#VBUFF_SIZE-(FONT_HEIGHT*BYTES_PER_LINE)
     call fill 
+    popw y 
+    popw x 
+    pop a 
     ret 
 
 ;----------------------------
@@ -203,6 +206,7 @@ cursor_right:
     VAR_SIZE=ROW+1  
 tv_putc:
     pushw y 
+    pushw x 
     _vars VAR_SIZE 
     cp a,#CR 
     jrne 1$ 
@@ -269,7 +273,8 @@ tv_putc:
     call cursor_right
 9$:
     _drop VAR_SIZE 
-    popw y 
+    popw x 
+    popw y
     ret 
 
 ;--------------------------
@@ -421,11 +426,21 @@ put_uint16:
     SPRITE=ROWS+1 
     SHIFT=SPRITE+2
     COLL=SHIFT+1
-    VAR_SIZE=COLL
+    EDGE=COLL+1
+    VAR_SIZE=EDGE
 put_sprite:
     _vars VAR_SIZE 
     clr (COLL,sp) 
-    ld (ROWS,sp),a 
+    ld (ROWS,sp),a
+    clr (EDGE,sp)
+    ld a,xl  
+    srl a 
+    srl a  
+    srl a 
+    cp a,#BYTES_PER_LINE-1
+    jrmi 0$ 
+    cpl (EDGE,sp) 
+0$:  
     call pixel_addr 
     ld (SHIFT,sp),a
 1$:    
@@ -448,7 +463,9 @@ put_sprite:
     cp a,(SPRITE,sp)
     jreq 5$
     inc (COLL,sp)
-5$: ld a,(SPRITE+1,sp)
+5$: tnz (EDGE,sp) 
+    jrne 6$ 
+    ld a,(SPRITE+1,sp)
     xor a,(1,x)
     ld (1,x),a 
     and a,(SPRITE+1,sp) 
