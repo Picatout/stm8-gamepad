@@ -597,7 +597,7 @@ snake:
     call chrono_decr  
     jreq timeout
     _ldaz speed 
-    call pause 
+    call noise 
     jra 1$
 timeout:
     ldw x,#(12<<8)+10 
@@ -607,8 +607,6 @@ timeout:
     ld a,#60 
     call pause
 game_over:
-    ld a,#5
-    call noise 
     _ldxz score 
     cpw x,max_score 
     jrmi 4$ 

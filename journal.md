@@ -1,5 +1,7 @@
 ### 2023-12-29
 
+* Ajout de la sous-routine **tune** dans hardware_init.asm 
+
 * Travail sur snake.asm
     * Ajout chronomètre TIME OUT avec bargraph.
     * Ajuster dimension de l'arène pur que largeur et hauteur soit un multiple de SNAKE__SPRITE_WIDTH et SNAKE_SPRITE_HEIGHT.

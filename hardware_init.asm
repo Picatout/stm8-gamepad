@@ -268,6 +268,36 @@ beep:
 	pop a   
 	ret 
 
+	.macro _note  f,d 
+	.word f 
+	.byte d 
+	.endm 
+;-----------------------
+; play a tune 
+; struct {
+;	uint16t frequency 
+;	utin86  duration 60*n msec 
+;} note_t 
+; score: note[,note],0 
+; input:
+;   Y   score_list 
+;-----------------------
+tune:
+	ldw x,y
+	ldw x,(x)
+	ld a,(2,y)
+	jreq 9$
+	tnzw x 
+	jrne 2$
+	call pause 
+	addw y,#3
+	jra tune  
+2$:	call tone 
+	addw y,#3
+	jra tune  
+9$:
+	ret 
+
 ;------------------------
 ; generate white noise 
 ; input:
@@ -406,6 +436,5 @@ cold_start:
 	clrw x 
 	call set_seed
 4$:
-	call beep
 	jp main ; in tv_term.asm 
 
