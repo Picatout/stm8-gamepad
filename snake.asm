@@ -409,6 +409,8 @@ rotate_head:
 ; read keypad 
 ; LEFT turn left 
 ; RIGHT turn right 
+; UP increase speed 
+; DOWN decreas speed 
 ;--------------------------
     KPAD=1
 user_input:

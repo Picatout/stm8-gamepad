@@ -291,6 +291,34 @@ tv_puts:
 9$:
     ret
 
+;----------------------------
+; print unsigned integer 
+; input:
+;    X uint16_t 
+;-----------------------------
+    UINT=1
+    ISTR=UINT+2 
+    VAR_SIZE=ISTR+5
+put_uint16:
+    pushw y 
+    _vars VAR_SIZE 
+    ldw (UINT,sp),x 
+    ldw x,sp 
+    addw x,#ISTR+5
+    ldw y,x 
+    clr (y)
+    ldw x,(UINT,sp) 
+1$: decw y 
+    ld a,#10 
+    div x,a 
+    add a,#'0 
+    ld (y),a
+    tnzw x 
+    jrne 1$ 
+    call tv_puts 
+    _drop VAR_SIZE 
+    popw y 
+    ret 
 
 ;-------------------------------
 ; line drawing 
@@ -376,37 +404,6 @@ line:
 9$:
     _drop VAR_SIZE 
     ret 
-
-
-;----------------------------
-; print unsigned integer 
-; input:
-;    X uint16_t 
-;-----------------------------
-    UINT=1
-    ISTR=UINT+2 
-    VAR_SIZE=ISTR+5
-put_uint16:
-    pushw y 
-    _vars VAR_SIZE 
-    ldw (UINT,sp),x 
-    ldw x,sp 
-    addw x,#ISTR+5
-    ldw y,x 
-    clr (y)
-    ldw x,(UINT,sp) 
-1$: decw y 
-    ld a,#10 
-    div x,a 
-    add a,#'0 
-    ld (y),a
-    tnzw x 
-    jrne 1$ 
-    call tv_puts 
-    _drop VAR_SIZE 
-    popw y 
-    ret 
-
 
 ;--------------------------------------
 ; use invert_pixel 
