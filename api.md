@@ -1,4 +1,4 @@
-<!-->
+<!--
 ;;
 ; Copyright Jacques Deschênes 2023,2024  
 ; This file is part of stm8-gamepad
@@ -16,7 +16,7 @@
 ;     You should have received a copy of the GNU General Public License
 ;     along with ntsc_tuto.  If not, see <http://www.gnu.org/licenses/>.
 ;;
-</-->
+-->
 # interface d'application 
 
 Ce document décrit les fonctions à utiliser pour programmer des applications pour la console STM8-GAMEPAD.
