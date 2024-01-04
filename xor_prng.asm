@@ -17,7 +17,6 @@
 ;;
 
 
-
 ;---------------------------------
 ; Pseudo Random Number Generator 
 ; XORShift algorithm.
