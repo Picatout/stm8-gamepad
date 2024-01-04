@@ -24,14 +24,18 @@ J'ai fabriqué 2 prototypes.  Le premier est réalisé avec un stm8s207k8 et le 
 ### Prototype 1
 
 ![schématique prototype 1](docs/gamepad-schematic.png)
-![montage prototype 1](docs/prototype-1.JPG)
+
+![montage prototype 1](docs/prototype-1.jpg)
+
 L'ensemble tient sur une seule carte.
 
 ### Prototype 2
 
 ![schématique prototype 2](docs/stm8-gamepad-nucleo-version.png)
-![montage prototype 2 assemblé](docs/prototype-2-assemblé.JPG)
-![montage prototype 2 désassemblé](docs/prototype-2-sans-les-boutons.JPG)
+
+![montage prototype 2 assemblé](docs/prototype-2-assemblé.jpg)
+
+![montage prototype 2 désassemblé](docs/prototype-2-sans-les-boutons.jpg)
 
 La carte des boutons est enfichée par dessus la carte du circuit principal. De plus il n'y a pas de haut-parleur installé mais plutôt une sortie phono RCA (blanc) pour l'audio.
 
