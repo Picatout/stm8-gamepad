@@ -1,6 +1,6 @@
 # stm8 gamepad
 
-Console jeu rétro réalisté sur carte NUCLEO-8S207K8. 
+Console jeu rétro réalisée sur carte NUCLEO-8S207K8. 
 
 ## Caractéristiques
 
