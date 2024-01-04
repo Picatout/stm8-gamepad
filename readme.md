@@ -10,4 +10,10 @@ Console jeu rétro réalisée sur carte NUCLEO-8S207K8.
 * Petit haut-parleur pour tonalités et bruit blanc.
 
 
+## Documentation
+
+[api.md](api.md)
+
+version [docs/api.pdf][docs/api.pdf]
+
 
