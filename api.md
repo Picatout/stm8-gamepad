@@ -1,6 +1,6 @@
 # interface d'application 
 
-Ce programme décrit les fonctions à utiliser pour programmer des applications pour la console STM8-GAMEPAD.
+Ce document décrit les fonctions à utiliser pour programmer des applications pour la console STM8-GAMEPAD.
 
 Les applications doivent-être écrites en assembleur car les paramètres des fonctions sont passés dans les registres **A**,**X** et **Y**  et non sur la pile comme le langage **C** le fait.
 
