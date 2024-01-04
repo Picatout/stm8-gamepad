@@ -14,6 +14,7 @@ Console jeu rétro réalisée sur carte NUCLEO-8S207K8.
 
 [api.md](api.md)
 
-version [docs/api.pdf][docs/api.pdf]
+[docs/api.pdf](docs/api.pdf)
+
 
 
