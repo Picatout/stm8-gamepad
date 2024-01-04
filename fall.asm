@@ -59,6 +59,6 @@ fall_init:
 
 fall:
     call fall_init
-jra .
+    call wait_key 
     ret 
 

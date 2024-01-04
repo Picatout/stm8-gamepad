@@ -6,6 +6,61 @@ Les applications doivent-être écrites en assembleur car les paramètres des fo
 
 Il y a toujours moyen d'écrire les applications en **C** mais en utilisant l'assembleur inline pour charger les registres et faire l'appel vers la sous-routine.
 
+## NOTES 
+
+1. Les valeurs d'intervalles sont indiqué de la façon suivante **[début..fin[ | ]**  
+    * Si la valeur *fin* est suivie de **[** ça signifie que cette valeur est exclue de l'intervalle.
+    * Si la valeur *fin* est suivie de **]** ça signifie que cette valeur est incluse dans l'intervalle.
+
+2.  **HRES**  Résolution horizontale de l'affichage. 
+
+3.  **VRES** Résolution verticale de l'affichage. 
+
+4. **cx** varible octet contenant la coordonnée x du curseur texte. **[0..CHAR_PER_LINE[**.
+
+5. **cy** variable octet contenant la coordonnée y du curseur texte. **[0..LINE_PER_SCREEN[**.
+
+6. **CHAR_PER_LINE** Nombre de caractères affichable par ligne. 
+
+7. **LINE_PER_SCREEN** Nombre de lignes par écran. 
+
+8. Les variables **cx** et **cy** peuvent-être modifiées par le programme pour positionner le curseur texte. La fonction **tv_cls** les initialisent à **0**.
+
+9. L'espace réservé pour les variables d'application est dans l'intervalle **[4..KERNEL_VAR_ORG[**. Présentement **KERNEL_VAR_ORG=0x60**. Vérifiez cette valeur dans le fichier [hardware_init.asm](hardware_init.asm).  
+Les applications définissent leur variables dans le segment **G_DATA** comme suit
+```
+    .area G_DATA (ABS)
+    .org 4 
+score: .blkw 1 ; game score 
+speed: .blkb 1 ; snake speed delay
+chrono: .blkb 1 ; chronometer delay 
+max_score: .blkw 1 ; maximum score 
+game_flags: .blkb 1 ; game boolean flags 
+snake_len: .blkb 1 ; snake length 
+snake_dir: .blkb 1 ; head direction 
+food_coord: .blkw 1 ; food coordinates
+snake_body: .blkw 32 ;  snake rings coords 
+```
+
+10. Lorsqu'une application est ajoutée au système ses nom et adresse doivent-être ajoutés au système de menu dans le fichier [app.asm](app.asm). Cette liste doit se terminée par une valeur nulle.
+```
+prog_list: ; liste des applications disponibles.
+.asciz "SNAKE" ; nom qui apparaît dans le menu
+.word snake ; nom de la fonction qui lance l'application.
+; 2ième application 
+.asciz "FALL" 
+.word fall
+; 3ième application
+.asciz "QUICK BROWN FOX"  
+.word quick
+; fin de la liste
+.word 0  
+```
+Le menu supporte un maximum de 24 applications. C'est le nombre de lignes texte de l'affichage et cette valeur ne devrait pas varier.
+
+11. La mémoire étendue du stm8s207k8 de **32Ko** **[0x10000..0x17FFF]** n'est pas utilisée par le système mais une application peut l'utiliser pour sauvegarder des données persistantes. l'EEPROM de **2Ko** **[0x4000..0x47FF]** peut aussi être utilisée à cet effet.
+
+<hr>
 
 ## <a id="index">index</a>
 
@@ -24,8 +79,8 @@ Il y a toujours moyen d'écrire les applications en **C** mais en utilisant l'as
     * **X**   fréquence en hertz.
 <hr>
 
-* **tune**  Joue une séquence de notes le registre **Y** indique l'adresse de la séquence. 
-    * **Y**  adresse de la mélodie. Il s'agit d'une liste formé de la fréquence suivit de la durée. La liste doit se terminé par {0,0}. La macro **_note f,d** permet de contruire cette liste simplement. 
+* **tune**  Joue une séquence de notes. Le registre **Y** indique l'adresse de la séquence. 
+    * **Y**  adresse de la mélodie. Il s'agit d'une liste formée de la fréquence suivit de la durée. La liste doit se terminer par {0,0}. La macro **_note f,d** facilite la constuction de cette liste. 
     * une fréquence nulle indique une pause.
 
 ```
@@ -138,8 +193,8 @@ user_input:
 <hr>
 
 * **set_pixel** Allume un pixel. Les paramètres sont passés dans le registre **X**.
-    * **XL** coordonnée X du pixel {0..HRES-1}.
-    * **XH** coordonnée Y du pixel {0..VRES-1}. 
+    * **XL** coordonnée X du pixel [0..HRES[.
+    * **XH** coordonnée Y du pixel [0..VRES[. 
 <hr>
 
 * **reset_pixel** Éteint un pixel. Les paramètres sont passés dans le registre **X**.
@@ -175,10 +230,10 @@ courante du curseur texte. Avance le curseur à la position suivante.
 <hr>
 
 * **line**  Trace une ligne droite entre les coordonnées **{x0,y0}** et **{x1,y1}** excluant ce dernier point.
-    * **XL** coordonnée **x0**
-    * **XH** coordonnée **x1**
-    * **YL** coordonnée **y0** 
-    * **YH** coordonnée **y1**
+    * **XL** coordonnée **x0** [0..HRES[
+    * **XH** coordonnée **x1** [0..HRES[
+    * **YL** coordonnée **y0**  [0..VRES[
+    * **YH** coordonnée **y1** [0..VRES[
 <hr>
 
 * **put_sprite** Affiche un petit graphique d'au maximum 8 pixels en largeur et un maximum de **VRES** pixels en hauteur. Chaque rangé du sprite est représenté par un seul octet et le sprite comprend autant d'octets que sa hauteur. La fonction logique **XOR** est utilisée pour afficher les sprites. Cette méthode permet de détecter automatiquement les collisions. La fonction retourne une valeur dand **A** et ajuste le drapeau **Z** en fonction de cette valeur.
@@ -218,7 +273,7 @@ Sorties:
 
 ## <a id="divers">DIVERS</a>
 
-* **pause**   Suspend l'exécution pour une durée déterminée par la valeur passée dand **A**.
+* **pause**   Suspend l'exécution pour une durée déterminée par la valeur passée dans **A**.
     * **A** durée de la pause en 60ième de seconde.
 
 <a href="#index">index</a>
