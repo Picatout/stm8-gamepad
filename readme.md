@@ -31,7 +31,7 @@ L'ensemble tient sur une seule carte.
 
 ### Prototype 2
 
-![schématique prototype 2](docs/stm8-gamepad-nucleo-version.png)
+![schématique prototype 2](docs/stm8_gamepad_nucleo.png)
 
 ![montage prototype 2 assemblé](docs/prototype-2-assemblé.jpg)
 
