@@ -36,10 +36,13 @@ STACK_SIZE=128
     .area SSEG (ABS)
 ;; working buffers and stack at end of RAM. 	
 ;;-----------------------------------
-    .org RAM_SIZE-STACK_SIZE
+; video buffe
+VBUFF_SIZE=HRES*VRES/8 ; 200*192/8=4800 bytes 
+    .org RAM_SIZE-STACK_SIZE-VBUFF_SIZE
+tv_buffer: .blkb  VBUFF_SIZE
+; stack at end of RAM 
 stack_full:: .ds STACK_SIZE   ; control stack full 
 stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
-
 
 ;;--------------------------------------
     .area HOME 
@@ -80,7 +83,8 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int29  not used
 
 
-KERNEL_VAR_ORG=0x60
+SYS_VAR_SIZE=32 
+KERNEL_VAR_ORG=256-SYS_VAR_SIZE 
 ;--------------------------------------
     .area DATA (ABS)
 	.org KERNEL_VAR_ORG 
@@ -107,12 +111,6 @@ scan_line: .blkw 1 ; video lines {0..262}
 ; display variables 
 cy: .blkb 1 ; text cursor y coord {0..7} 
 cx: .blkb 1 ; text cursor y coord {0..15}
-
-
-; video buffer size=768 bytes 
-	.org 0x80 
-VBUFF_SIZE=HRES/8*VRES
-tv_buffer: .blkb  VBUFF_SIZE
 
 
 	.area CODE 

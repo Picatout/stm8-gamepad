@@ -1,3 +1,14 @@
+### 2024-01-05
+
+* Travail sur [splash.asm](splash.asm).
+
+* Écrire de l'outils de conversion de bitmaps en fichier asm pour le projet. [bmp_2_asm.c](tools/bmp_2_asm.c).
+
+* Travail sur jeu [conway.asm]
+
+* Déplacer le tampon vidéo *tv_buffer* vers la fin de la mémoire RAM sous la pile pour donné plus de mémoire aux applications. 
+* Les variables système sont déplacé à la fin de la page 0.
+
 ### 2023-12-29
 
 * Ajout de la sous-routine **tune** dans hardware_init.asm 

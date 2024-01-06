@@ -14,18 +14,18 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000000  l_SSEG                          
      00000000  l__CODE                         
      00000000  s_DATA1                         
-     00000000  s_DATA2                         
      00000000  s_G_DATA                        
+     00000000  s_G_DATA2                       
      00000000  s_G_DATA3                       
      00000000  s_SSEG0                         
      00000000  s__CODE                         
      00000001  s_DATA                          
      00000015  l_DATA1                         
-     0000004B  l_G_DATA3                       
+     0000004B  l_G_DATA2                       
+     0000006C  l_G_DATA3                       
      00000080  l_HOME                          
-     00000080  l_SSEG0                         
-     00000FAF  l_CODE                          
-     000012C0  l_DATA2                         
+     00001340  l_SSEG0                         
+     000023D5  l_CODE                          
      00008000  s_HOME                          
      00008080  s_CODE                          
 ASxxxx Linker V03.00 + NoICE + sdld,  page 2.
@@ -33,7 +33,7 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-SSEG0                               00000000    00000080 =         128. bytes (ABS,CON)
+SSEG0                               00000000    00001340 =        4928. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
@@ -57,39 +57,39 @@ DATA1                               00000000    00000015 =          21. bytes (A
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     00000064  acc16                              HW_INIT
-     00000065  acc8                               HW_INIT
-     00000066  fmstr                              HW_INIT
-     00000068  ptr16                              HW_INIT
-     0000006A  flags                              HW_INIT
+     000000E4  acc16                              HW_INIT
+     000000E5  acc8                               HW_INIT
+     000000E6  fmstr                              HW_INIT
+     000000E8  ptr16                              HW_INIT
+     000000EA  flags                              HW_INIT
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 5.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-DATA2                               00000000    000012C0 =        4800. bytes (ABS,CON)
-
-      Value  Global                              Global Defined In Module
-      -----  --------------------------------   ------------------------
-ASxxxx Linker V03.00 + NoICE + sdld,  page 6.
-Hexadecimal  [32-Bits]
-
-Area                                    Addr        Size        Decimal Bytes (Attributes)
---------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    00000FAF =        4015. bytes (REL,CON)
+CODE                                00008080    000023D5 =        9173. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
      000081FE  prng                               HW_INIT
      00008A5F  move                               HW_INIT
 
+ASxxxx Linker V03.00 + NoICE + sdld,  page 6.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+G_DATA2                             00000000    0000004B =          75. bytes (ABS,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
 ASxxxx Linker V03.00 + NoICE + sdld,  page 7.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-G_DATA3                             00000000    0000004B =          75. bytes (ABS,CON)
+G_DATA3                             00000000    0000006C =         108. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------

@@ -117,25 +117,123 @@ fill:
 	jrne fill
 	ret 
 
+;------------------------
+; load bitmap data in 
+; tv_buffer 
+; image is upside down 
+; input:
+;    A   byte per ROW
+;    X   data size 
+;    Y   data address 
+;------------------------
+	YCOOR=1 ; video graphic row 
+	COUNT=YCOOR+2 ; data size 
+	ROW_CNTR=COUNT+2 ; bytes per row 
+	VAR_SIZE=ROW_CNTR+1
+load_bmp:
+	_vars VAR_SIZE
+	clr (ROW_CNTR,sp)
+	ld (ROW_CNTR+1,sp),a  
+	ldw (COUNT,sp),x
+	ldw x,#VRES 
+	ldw (YCOOR,sp),x 
+1$: ; copy ROW_CNTR bytes 
+	dec (YCOOR+1,sp)
+	jreq 9$
+	ldw x,(YCOOR,sp) 
+	ld a,(ROW_CNTR+1,sp)
+	_straz acc8 
+	mul x,a 
+	addw x,#tv_buffer
+2$: ld a,(y)
+	ld (x),a 
+	incw x 
+	incw y 
+	_decz acc8 
+	jrne 2$
+	ldw x,(COUNT,sp)
+	subw x,(ROW_CNTR,sp)
+	ldw (COUNT,sp),x
+	jrugt 1$ 
+9$:	_drop VAR_SIZE
+	ret 
+
 ;--------------------------
 ; application entry point 
 ;--------------------------
+SCROLL_DLY=4
 main:
-.if 0
-; kpad test 
-	call tv_cls 
-1$:	call wait_key 
-	call print_hex 
-	call wait_key_release
-	clrw x 
-	_strxz cy 
-	jra 1$ 
-.endif  
+	call beep
+	call tv_cls
+; show splash screen 
+	ld a,#BYTES_PER_IMG_ROW
+	ldw x,#IMG_DATA_SIZE
+	ldw y,#img_data
+	call load_bmp
+	call scroll_8 
+	call scroll_8
+	ld a,#LINE_PER_SCREEN-1 
+	_straz cy 
+	_clrz cx 
+	ldw y,#version_str 
+	call tv_puts
+	call put_version
+	call scroll_8 
+	ld a,#LINE_PER_SCREEN-1
+	_straz cy 
+	_clrz cx 
+	ldw y,#cright 
+	call tv_puts
+	push #VRES 
+1$: ld a,#SCROLL_DLY
+	call pause 
+	call kpad_input 
+	jrne 2$ 
+	ldw y,#VRES<<8 
+	call scroll_up
+	dec (1,sp)
+	jrne 1$ 
+	_drop 1
+2$:
     call menu 
     call (x)
-    jra main 
+    jra 2$ 
 
+;------------------------
+; scroll up 8 row 
+; with 1/3 second delay 
+;------------------------
+scroll_8:
+	push #8 
+1$: ld a,#SCROLL_DLY 
+	call pause 
+	ldw x,#VRES<<8
+	call scroll_up 
+	dec (1,sp)
+	jrne 1$ 
+	_drop 1 
+	ret 
 
+;------------------------
+; print version string 
+;-----------------------
+put_version:
+	ld a,#'V 
+	call tv_putc
+	ldw x,#MAJOR 
+	call put_uint16
+	ld a,#'. 
+	call tv_putc 
+	ldw x,#MINOR
+	call put_uint16
+	ld a,#'R 
+	call tv_putc 
+	ldw x,#REV 
+	call put_uint16
+	ret 
+
+version_str: .asciz "STM8 game console, "
+cright: .asciz "(C) Jacques Deschenes, 2023,24"
 
 ;---------------------------
 ; display list of games
@@ -242,20 +340,14 @@ select_mark:
 
 
 prog_list:
+; a snake game variation
 .asciz "SNAKE"
 .word snake
+; John Conway game of life simulation
+.asciz "CONWAY"
+.word game_of_life
+; tetris like game 
 .asciz "FALL"
 .word fall
-.asciz "QUICK BROWN FOX"
-.word quick
 .word 0 
 
-quick:
-    call tv_cls 
-    ldw y,#qbf 
-    call tv_puts 
-    call wait_key 
-    call wait_key_release 
-    ret 
-
-qbf: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\r"

@@ -25,7 +25,9 @@ TETRA_WIDTH=8 ; 8x8 pixels tetrahedrons blocks
 WELL_WIDTH=TETRA_WIDTH*10
 WELL_DEPTH=TETRA_WIDTH*22
  
+    .area G_DATA 
 
+    .area CODE 
 ; sprites 
 I0: .byte 4,1,0xff,0xff,0xff,0xff; horizontal I 
 I1: .byte 1,4,0xff,0xff,0xff,0xff ; vertical I 

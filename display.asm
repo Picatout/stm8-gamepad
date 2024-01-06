@@ -280,7 +280,7 @@ tv_putc:
 ;--------------------------
 ; put string on tv 
 ; input:
-;   Y     *aciz 
+;   Y     *asciz 
 ;--------------------------
 tv_puts:
     ld a,(y)
