@@ -383,14 +383,14 @@ wait_key:
 ; wait for buttons released 
 ; but no more than 100msec
 ; input:
-;    X   maximum delay msec
+;    X   maximum delay, A/60 sec 
 ;--------------------------
     DLY=1
     VAR_SIZE=2
 wait_key_release:
     _vars VAR_SIZE
     addw x,ticks
-    ldw (DLY,sp),x 
+	ldw (DLY,sp),x 
 1$: 
     ldw x,ticks 
     cpw x,(DLY,sp)

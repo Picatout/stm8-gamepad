@@ -158,10 +158,46 @@ load_bmp:
 9$:	_drop VAR_SIZE
 	ret 
 
+SCROLL_DLY=1
+;------------------------
+; scroll up 8 row 
+; with 1/3 second delay 
+;------------------------
+scroll_8:
+	push #8 
+1$: ld a,#SCROLL_DLY 
+	call pause 
+	ldw x,#VRES<<8
+	call scroll_up 
+	dec (1,sp)
+	jrne 1$ 
+	_drop 1 
+	ret 
+
+;------------------------
+; print version string 
+;-----------------------
+put_version:
+	ld a,#'V 
+	call tv_putc
+	ldw x,#MAJOR 
+	call put_uint16
+	ld a,#'. 
+	call tv_putc 
+	ldw x,#MINOR
+	call put_uint16
+	ld a,#'R 
+	call tv_putc 
+	ldw x,#REV 
+	call put_uint16
+	ret 
+
+version_str: .asciz "STM8 game console, "
+cright: .asciz "(C) Jacques Deschenes, 2023,24"
+
 ;--------------------------
 ; application entry point 
 ;--------------------------
-SCROLL_DLY=3
 main:
 	call beep
 	call tv_cls
@@ -198,42 +234,6 @@ main:
     call menu 
     call (x)
     jra 2$ 
-
-;------------------------
-; scroll up 8 row 
-; with 1/3 second delay 
-;------------------------
-scroll_8:
-	push #8 
-1$: ld a,#SCROLL_DLY 
-	call pause 
-	ldw x,#VRES<<8
-	call scroll_up 
-	dec (1,sp)
-	jrne 1$ 
-	_drop 1 
-	ret 
-
-;------------------------
-; print version string 
-;-----------------------
-put_version:
-	ld a,#'V 
-	call tv_putc
-	ldw x,#MAJOR 
-	call put_uint16
-	ld a,#'. 
-	call tv_putc 
-	ldw x,#MINOR
-	call put_uint16
-	ld a,#'R 
-	call tv_putc 
-	ldw x,#REV 
-	call put_uint16
-	ret 
-
-version_str: .asciz "STM8 game console, "
-cright: .asciz "(C) Jacques Deschenes, 2023,24"
 
 ;---------------------------
 ; display list of games

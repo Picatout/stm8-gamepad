@@ -1,4 +1,11 @@
+### 2024-01-06
+
+* Recommencé à travailler sur [conway.asm](conway.asm).
+
+* Complété travail sur splash screen.
+
 ### 2024-01-05
+
 
 * Travail sur [splash.asm](splash.asm).
 
