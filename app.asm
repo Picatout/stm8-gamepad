@@ -161,7 +161,7 @@ load_bmp:
 ;--------------------------
 ; application entry point 
 ;--------------------------
-SCROLL_DLY=4
+SCROLL_DLY=3
 main:
 	call beep
 	call tv_cls
