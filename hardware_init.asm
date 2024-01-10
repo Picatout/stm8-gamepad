@@ -72,7 +72,15 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int18 UART1 RX full  
 	int NonHandledInterrupt ;int19 I2C 
 	int NonHandledInterrupt ;int20 UART3 TX completed
+.if DEBUG 
+.if NUCLEO
+	int UartRxHandler       ; int21 UART3 RX full 
+.else 
 	int NonHandledInterrupt ;int21 UART3 RX full
+.endif ;; NUCLEO
+.else 
+	int NonHandledInterrupt ;int21 UART3 RX full
+.endif ;; DEBUG 	
 	int NonHandledInterrupt ;int22 ADC2 end of conversion
 	int NonHandledInterrupt ;int23 TIM4 update$overflow 
 	int NonHandledInterrupt ;int24 flash writing EOP/WR_PG_DIS
@@ -112,6 +120,14 @@ scan_line: .blkw 1 ; video lines {0..262}
 cy: .blkb 1 ; text cursor y coord {0..7} 
 cx: .blkb 1 ; text cursor y coord {0..15}
 
+.if NUCLEO 
+.if DEBUG 
+RX_QUEUE_SIZE=8 
+rx1_head: .blkb 1 
+rx1_tail: .blkb 1 
+rx1_queue: .blkb 8 
+.endif ;; DEBUG 
+.endif ;; NUCLEO 
 
 	.area CODE 
 
@@ -430,6 +446,12 @@ cold_start:
 	ld PI_CR1,a 
 	call clock_init	
 	call timer3_init
+.if DEBUG 
+.if NUCLEO
+	call uart_init
+	call uart_cls 
+.endif ;; NUCLEO  
+.endif ;; DEBUG 
 	call ntsc_init ;
 	rim ; enable interrupts 
 	clrw x 

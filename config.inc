@@ -28,6 +28,9 @@
 	MINOR=0
 	REV=1
 
+; set to 1 when using NUCLEO-8S207K8 
+NUCLEO=1
+
 ; set to 1 to add dbg_print code 
 DEBUG=1
 

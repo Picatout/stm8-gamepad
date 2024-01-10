@@ -20,12 +20,12 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000000  s_SSEG0                         
      00000000  s__CODE                         
      00000001  s_DATA                          
-     00000015  l_DATA1                         
+     0000001F  l_DATA1                         
      0000004B  l_G_DATA2                       
-     0000006C  l_G_DATA3                       
      00000080  l_HOME                          
+     000000B6  l_G_DATA3                       
      00001340  l_SSEG0                         
-     0000245E  l_CODE                          
+     000026DF  l_CODE                          
      00008000  s_HOME                          
      00008080  s_CODE                          
 ASxxxx Linker V03.00 + NoICE + sdld,  page 2.
@@ -53,7 +53,7 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-DATA1                               00000000    00000015 =          21. bytes (ABS,CON)
+DATA1                               00000000    0000001F =          31. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
@@ -68,12 +68,17 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    0000245E =        9310. bytes (REL,CON)
+CODE                                00008080    000026DF =        9951. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     000081FE  prng                               HW_INIT
-     00008A5F  move                               HW_INIT
+     00008242  uart_putc                          HW_INIT
+     0000826E  qgetc                              HW_INIT
+     0000826E  uart_qgetc                         HW_INIT
+     00008274  getc                               HW_INIT
+     00008274  uart_getc                          HW_INIT
+     0000831A  prng                               HW_INIT
+     00008B4E  move                               HW_INIT
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 6.
 Hexadecimal  [32-Bits]
@@ -89,7 +94,7 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-G_DATA3                             00000000    0000006C =         108. bytes (ABS,CON)
+G_DATA3                             00000000    000000B6 =         182. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------

@@ -1,55 +1,3 @@
-;;
-; Copyright Jacques Deschênes 2023,2024  
-; This file is part of stm8-gamepad
-;
-;     stm8-gamepadis free software: you can redistribute it and/or modify
-;     it under the terms of the GNU General Public License as published by
-;     the Free Software Foundation, either version 3 of the License, or
-;     (at your option) any later version.
-;
-;     stm8-gamepadis distributed in the hope that it will be useful,
-;     but WITHOUT ANY WARRANTY; without even the implied warranty of
-;     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;     GNU General Public License for more details.
-;
-;     You should have received a copy of the GNU General Public License
-;     along with ntsc_tuto.  If not, see <http://www.gnu.org/licenses/>.
-;;
-
-.if DEBUG 
-    CURPOS=1 
-    VAR_SIZE=2
-dbg_print:
-    pushw x 
-    _vars VAR_SIZE 
-    _ldxz cy 
-    ldw (CURPOS,sp),x 
-    ldw x,#(7<<8)+8
-    _strxz cy 
-    _ldxz acc16 
-    call put_uint16
-    ldw x,(CURPOS,sp)
-    _strxz cy 
-    _drop VAR_SIZE 
-    popw x 
-    ret 
-
-print_hex:
-	push a 
-	swap a 
-	call hex_digit 
-	pop a 
-hex_digit:
-	and a,#15
-	add a,#'0 
-	cp a,#'9+1
-	jrmi 1$
-	add a,#7 
-1$: call tv_putc 
-	ret 
-
-.endif 
-
 ;---------------------------------------
 ; move memory block 
 ; input:
@@ -199,6 +147,15 @@ cright: .asciz "(C) Jacques Deschenes, 2023,24"
 ; application entry point 
 ;--------------------------
 main:
+.if DEBUG 
+.if NUCLEO
+	call uart_cls 
+	ldw x,#version_str 
+	call uart_puts
+	ld a,#CR 
+	call uart_putc
+.endif ;; NUCLEO 
+.endif ;; DEBUG 
 	call beep
 	call tv_cls
 ; show splash screen 
