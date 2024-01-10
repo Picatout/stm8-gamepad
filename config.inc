@@ -25,14 +25,14 @@
 ;  information 
 ;-----------------------
 	MAJOR=1
-	MINOR=0
-	REV=1
+	MINOR=1
+	REV=0
+
+; set to 1 to add dbg_print code 
+DEBUG=0
 
 ; set to 1 when using NUCLEO-8S207K8 
 NUCLEO=1
-
-; set to 1 to add dbg_print code 
-DEBUG=1
 
 ; master clock frequency in hz 
 	FMSTR=16000000 

@@ -188,18 +188,21 @@ main:
 	jrne 1$ 
 	_drop 1
 2$:
+	ldw y,#prog_list
     call menu 
     call (x)
     jra 2$ 
 
 ;---------------------------
 ; display list of games
+; input:
+;    Y   menu items 
 ;--------------------------
 	GAM_ADR=1
 	KPAD=GAM_ADR+16
 	SEL=KPAD+1 
 	COUNT=SEL+1
-	VAR_SIZE=COUNT 
+	VAR_SIZE=COUNT 	
 menu:
 	_vars VAR_SIZE 
 	clr (SEL,sp)
@@ -208,7 +211,6 @@ menu:
 	incw x 
 	_strxz ptr16 
 	call tv_cls  
-	ldw y,#prog_list
 ; build games list on stack     
 1$: ld a,(y)
     jreq user_select 

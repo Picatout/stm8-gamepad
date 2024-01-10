@@ -17,7 +17,8 @@
 ;;
 
 
-
+.if DEBUG 
+.if NUCLEO 
 ;-------------------------------
 	.area CODE 
 
@@ -264,4 +265,5 @@ hex_digit:
 	jrmi 9$ 
 	add a,#7 
 9$: ret 
-
+.endif ;; NUCLEO 
+.endif ;; DEBUG  

@@ -583,7 +583,16 @@ grid_init:
 ;---------------------------
 game_of_life:
     call life_init
+    ldw y,#patterns 
+    call menu 
+    tnzw x 
+    jrne 1$
+    ret 
+1$: cpw x,#free_hand 
+    jrne set_pattern 
+free_hand:
     call grid_init
+sim_init:
     clrw x 
     _strxz cy 
     ldw y,#erase_str
@@ -592,13 +601,124 @@ game_of_life:
     _strxz cy 
     ldw y,#gen_str
     call tv_puts 
-2$:
+sim:
     call print_gen
     call next_gen
 ld a,#15 
 call pause     
     call kpad_input 
-    jreq 2$
-    ret 
+    jreq sim  
+    jra game_of_life
+
+;-------------------------
+; set predefined pattern 
+; input:
+;   x     pattern address 
+;-------------------------
+    PATTERN=1
+    VAR_SIZE=2 
+set_pattern:
+    _vars VAR_SIZE 
+    ldw y,src 
+1$: ldw (PATTERN,sp),x 
+    ldw x,(x)
+    cpw x,#-1 
+    jreq 9$
+    call set_cell
+    ldw x,(PATTERN,sp)
+    addw x,#2
+    jra 1$  
+9$: 
+    _drop VAR_SIZE 
+    jp sim_init
 
 
+; liste de configuration prédéfinie 
+patterns:
+.asciz "FREE HAND"
+.word free_hand 
+.asciz "GLIDER"
+.word glider 
+.asciz "CLOCK"
+.word clock
+.asciz "PENTADECATHLON"
+.word pentadecathon
+.asciz "PENTOMINO R"
+.word pento_r 
+.asciz "EXIT" 
+.word  0  
+.word 0 
+
+  .macro _coord x,y 
+  .word ((y+GRID_CNTR_Y)<<8)+x+GRID_CNTR_X   
+  .endm 
+
+PATTERN_END=0XFFFF   
+glider: 
+    _coord 1,0 
+    _coord 2,1
+    _coord 2,2 
+    _coord 1,2
+    _coord 0,2 
+    .word PATTERN_END 
+
+clock:
+    _coord 6,0
+    _coord 7,0
+    _coord 6,1
+    _coord 7,1
+    _coord 4,3
+    _coord 5,3
+    _coord 6,3
+    _coord 7,3
+    _coord 0,4
+    _coord 1,4
+    _coord 3,4
+    _coord 6,4
+    _coord 8,4
+    _coord 0,5 
+    _coord 1,5
+    _coord 3,5
+    _coord 5,5 
+    _coord 8,5
+    _coord 3,6
+    _coord 5,6
+    _coord 8,6
+    _coord 10,6
+    _coord 11,6
+    _coord 3,7
+    _coord 8,7
+    _coord 10,7
+    _coord 11,7
+    _coord 4,8
+    _coord 5,8
+    _coord 6,8
+    _coord 7,8 
+    _coord 4,10
+    _coord 5,10
+    _coord 4,11 
+    _coord 5,11
+    .word PATTERN_END 
+
+pentadecathon:
+    _coord 2,0
+    _coord 7,0
+    _coord 0,1
+    _coord 1,1
+    _coord 3,1
+    _coord 4,1
+    _coord 5,1
+    _coord 6,1
+    _coord 8,1
+    _coord 9,1
+    _coord 2,2 
+    _coord 7,2
+    .word PATTERN_END 
+
+pento_r:
+    _coord 1,0
+    _coord 1,1 
+    _coord 2,1
+    _coord 0,2
+    _coord 1,2
+    .word PATTERN_END 
