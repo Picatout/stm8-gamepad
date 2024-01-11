@@ -399,7 +399,7 @@ wait_key:
 ; wait for buttons released 
 ; but no more than 100msec
 ; input:
-;    X   maximum delay, A/60 sec 
+;    X   maximum delay, x/60 sec 
 ;--------------------------
     DLY=1
     VAR_SIZE=2

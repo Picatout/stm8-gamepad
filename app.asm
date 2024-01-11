@@ -32,9 +32,6 @@ move_down: ; start from bottom address with incr=1
 	decw y
 	inc (LB,sp) ; incr=1 
 move_loop:	
-    _ldaz acc16 
-	or a, acc8
-	jreq move_exit 
 	addw x,(INCR,sp)
 	addw y,(INCR,sp) 
 	ld a,(y)
@@ -42,8 +39,9 @@ move_loop:
 	pushw x 
 	_ldxz acc16 
 	decw x 
-	ldw acc16,x 
+	_strxz acc16 
 	popw x 
+	jreq move_exit  
 	jra move_loop
 move_exit:
 	_drop VSIZE
@@ -59,11 +57,13 @@ move_exit:
 ;     Y   addr (incr)
 ;---------------------
 fill:
-	ld (y),a 
+	tnzw x 
+	jreq 9$
+1$:	ld (y),a 
 	incw y 
 	decw x 
-	jrne fill
-	ret 
+	jrne 1$
+9$:	ret 
 
 ;------------------------
 ; load bitmap data in 
@@ -106,22 +106,6 @@ load_bmp:
 9$:	_drop VAR_SIZE
 	ret 
 
-SCROLL_DLY=1
-;------------------------
-; scroll up 8 row 
-; with 1/3 second delay 
-;------------------------
-scroll_8:
-	push #8 
-1$: ld a,#SCROLL_DLY 
-	call pause 
-	ldw x,#VRES<<8
-	call scroll_up 
-	dec (1,sp)
-	jrne 1$ 
-	_drop 1 
-	ret 
-
 ;------------------------
 ; print version string 
 ;-----------------------
@@ -143,6 +127,7 @@ put_version:
 version_str: .asciz "STM8 game console, "
 cright: .asciz "(C) Jacques Deschenes, 2023,24"
 
+SCROLL_DLY=2
 ;--------------------------
 ; application entry point 
 ;--------------------------
@@ -163,32 +148,28 @@ main:
 	ldw x,#IMG_DATA_SIZE
 	ldw y,#img_data
 	call load_bmp
-	call scroll_8 
-	call scroll_8
+	ld a,#60 
+	call pause 
+	call scroll_text
 	ld a,#LINE_PER_SCREEN-1 
 	_straz cy 
 	_clrz cx 
 	ldw y,#version_str 
 	call tv_puts
 	call put_version
-	call scroll_8 
+	ld a,#8*SCROLL_DLY 
+	call pause 
+	call scroll_text 
+	ld a,#8*SCROLL_DLY
+	call pause  
 	ld a,#LINE_PER_SCREEN-1
 	_straz cy 
 	_clrz cx 
 	ldw y,#cright 
 	call tv_puts
-	push #VRES 
-1$: ld a,#SCROLL_DLY
-	call pause 
-	call kpad_input 
-	jrne 2$ 
-	ldw y,#VRES<<8 
-	call scroll_up
-	dec (1,sp)
-	jrne 1$ 
-	_drop 1
-2$:
-	ldw y,#prog_list
+    ld a,#SCROLL_DLY
+	call roll_up 
+2$:	ldw y,#prog_list
     call menu 
     call (x)
     jra 2$ 
@@ -272,6 +253,7 @@ user_select:
 	ld a,(KPAD,sp)
 	and a,#BTN_A
 	jreq user_select
+	ldw x,#255
 	call wait_key_release 
 	ld a,(SEL,sp)
 	sll a 
@@ -299,14 +281,15 @@ select_mark:
 
 
 prog_list:
+; tetris like game, but it's not. 
+fall_name:
+.asciz "CENEPAT"
+.word fall
 ; a snake game variation
 .asciz "SNAKE"
 .word snake
 ; John Conway game of life simulation
 .asciz "CONWAY"
 .word game_of_life
-; tetris like game 
-.asciz "FALL"
-.word fall
 .word 0 
 

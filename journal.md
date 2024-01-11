@@ -1,8 +1,8 @@
 ### 2024-01-11
 
 * Travail sur [fall.asm](fall.asm).
-
-* Optimisation de [conway.asm](conway.asm).
+* Ajouter routines *roll_up* et *scroll_text* dans [display.asm](display.asm).
+* Nettoyage de [conway.asm](conway.asm).
 
 ### 2024-01-10
 

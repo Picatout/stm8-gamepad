@@ -320,6 +320,63 @@ put_uint16:
     popw y 
     ret 
 
+;------------------------
+; scroll text up 1 line  
+;------------------------
+scroll_text:
+    push a 
+    pushw y 
+    pushw x 
+	ldw x,#BYTES_PER_IMG_ROW
+    ld a,#FONT_HEIGHT 
+    mul x,a
+    pushw x 
+    ldw x,#VBUFF_SIZE
+    subw x,(1,sp)
+    _strxz acc16 
+    ldw y,(1,sp)   
+    addw y,#tv_buffer
+    ldw x,#tv_buffer 
+    call move 
+    popw x
+    _strxz acc16 
+    ldw y,#tv_buffer
+    addw y,#VBUFF_SIZE
+    subw y,acc16
+    clr a 
+    call fill
+	popw x 
+    popw y 
+    pop a 
+    ret 
+
+;-----------------------
+; scroll all display up 
+; until display is empty  
+; or key pressed.
+; input:
+;    A   speed delay 
+;----------------------
+	ROWS=1
+	LOOP_DLY=2
+	VAR_SIZE=2
+roll_up: 
+	push a 
+	push #VRES
+1$: 
+	ldw x,#VRES<<8 
+    call scroll_up 
+	ld a,(LOOP_DLY,sp)
+	call pause 
+	dec (ROWS,sp)
+	jreq 9$ 
+	call kpad_input
+	jreq 1$ 
+9$:	ldw x,#255
+    call wait_key_release
+	_drop VAR_SIZE 
+	ret 
+
 ;-------------------------------
 ; line drawing 
 ;  X0<=X1 

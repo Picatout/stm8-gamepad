@@ -55,6 +55,10 @@ S1: .byte 4,6,0xc0,0xc0,0xf0,0xf0,0xc,0xc
 ; falls.
 ;--------------------
 draw_well:
+; top side 
+    ldw x,#(1<<8)+WELL_WIDTH+1
+    ldw y,#((VRES-WELL_DEPTH)<<8)+(VRES-WELL_DEPTH)
+    call line
 ; left side 
     ldw x,#(0<<8)+0
     ldw y,#((VRES-WELL_DEPTH)<<8)+VRES
@@ -74,6 +78,17 @@ draw_well:
 ;-------------------------
 fall_init:
     call tv_cls  
+    ldw y,#fall_name
+    ldw x,#(10<<8)+13
+    _strxz cy 
+    call tv_puts 
+    ldw x,#(11<<8)+6
+    _strxz cy 
+    ldw y,#name_in_lenght
+    call tv_puts
+    ld a,#2
+    call roll_up
+    call tv_cls 
     call draw_well 
     ret 
 
@@ -82,3 +97,5 @@ fall:
     call wait_key 
     ret 
 
+name_in_lenght:
+.asciz "Ce n'est pas TETRIS." 

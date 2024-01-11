@@ -23,14 +23,13 @@
     .include "uart.asm"
 
 ;-----------------------
-; print value in 
-; acc16 in hexadecimal
+; print value in X
+; in hexadecimal
 ; on terminal 
 ;----------------------
 dbg_print:
 .if DEBUG 
     pushw x 
-    ldw x,acc16 
     call uart_print_hex
     popw x
 .endif ;; DEBUG      
