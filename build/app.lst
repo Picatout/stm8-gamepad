@@ -4630,7 +4630,7 @@ Hexadecimal [24-Bits]
 
 
 
-      000B97 25 8D                  307 .word game_of_life
+      000B97 25 58                  307 .word game_of_life
                                     308 ; tetris like game 
       000B99 46 41 4C 4C 00         309 .asciz "FALL"
       000B9E 22 E2                  310 .word fall
@@ -6506,762 +6506,695 @@ Hexadecimal [24-Bits]
       002333 85               [ 2]  118     popw x
       002334 81               [ 4]  119     ret 
                                     120 
-                                    121 ;--------------------
-                                    122 ; put cell state 
+                                    121 ;-------------------------
+                                    122 ; put cell state to display
                                     123 ; input:
-                                    124 ;   A    cell state 
-                                    125 ;   XL   xcoord 
-                                    126 ;   XH   ycoord 
+                                    124 ;    XL   x coord 
+                                    125 ;    XH   y coord  
+                                    126 ;    Y    array addr
                                     127 ; output:
-                                    128 ;   X    unchanged 
-                                    129 ;   Y    unchanged
-                                    130 ;-------------------- 
-      002335                        131 put_cell:
-      002335 89               [ 2]  132     pushw x 
-      002336 90 89            [ 2]  133     pushw y 
-      002338 88               [ 1]  134     push a 
-      002339 CD 23 0D         [ 4]  135     call cell_index 
-      00233C 84               [ 1]  136     pop a 
-      00233D 72 F9 02         [ 2]  137     addw y,(2,sp)
-      002340 90 F7            [ 1]  138     ld (y),a 
-      002342 90 85            [ 2]  139     popw y 
-      002344 85               [ 2]  140     popw x 
-      002345 81               [ 4]  141     ret 
-                                    142 
-                                    143 ;---------------------
-                                    144 ; copy cell state 
-                                    145 ; from src to dest 
-                                    146 ; input:
-                                    147 ;    XL    x coord 
-                                    148 ;    XL    y coord 
-                                    149 ; output:
-                                    150 ;    A    unknown 
-                                    151 ;    X    index 
-                                    152 ;    Y    unchanged 
-                                    153 ;---------------------
-      002346                        154 copy_cell:
-      002346 90 89            [ 2]  155     pushw y 
-      002348 90 CE 00 06      [ 2]  156     ldw y,src 
-      00234C CD 23 26         [ 4]  157     call get_cell_state 
-      00234F 72 DA 00 08      [ 4]  158     or a,([dest],x)
-      002353 72 D7 00 08      [ 4]  159     ld ([dest],x),a 
+                                    128 ;    X   display {x,y} coordinates
+                                    129 ;    Y   unchanged   
+                                    130 ;---------------------------
+      002335                        131 display_cell:
+      002335 CD 23 26         [ 4]  132     call get_cell_state
+      002338 4B 20            [ 1]  133     push #SPACE 
+      00233A 4D               [ 1]  134     tnz a 
+      00233B 27 04            [ 1]  135     jreq 1$ 
+      00233D A6 84            [ 1]  136     ld a,#CELL 
+      00233F 6B 01            [ 1]  137     ld (1,sp),a 
+      002341                        138 1$:
+      002341 84               [ 1]  139     pop a 
+      002342                        140 display_char:    
+      002342 1C 01 00         [ 2]  141     addw x,#(GRID_TOP<<8)+GRID_LEFT
+      002345                        142     _strxz cy 
+      002345 BF F3                    1     .byte 0xbf,cy 
+      002347 CD 07 56         [ 4]  143     call tv_putc 
+      00234A 81               [ 4]  144     ret 
+                                    145 
+                                    146 ;-------------------------
+                                    147 ; toggle cell state at 
+                                    148 ; input:
+                                    149 ;    XL   gx 
+                                    150 ;    XH   gy
+                                    151 ;    Y    array addr 
+                                    152 ; output:
+                                    153 ;     A    inverted cell state 
+                                    154 ;     X    unchanged  
+                                    155 ;     Y    unchanged 
+                                    156 ;-------------------------- 
+      00234B                        157 toggle_cell:
+      00234B 90 89            [ 2]  158     pushw y 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 120.
 Hexadecimal [24-Bits]
 
 
 
-      002357 90 85            [ 2]  160     popw y 
-      002359 81               [ 4]  161     ret 
-                                    162 
-                                    163 ;-------------------------
-                                    164 ; put cell state to display
-                                    165 ; input:
-                                    166 ;    XL   x coord 
-                                    167 ;    XH   y coord  
-                                    168 ;    Y    array addr
-                                    169 ; output:
-                                    170 ;    X   display {x,y} coordinates
-                                    171 ;    Y   unchanged   
-                                    172 ;---------------------------
-      00235A                        173 display_cell:
-      00235A CD 23 26         [ 4]  174     call get_cell_state
-      00235D 4B 20            [ 1]  175     push #SPACE 
-      00235F 4D               [ 1]  176     tnz a 
-      002360 27 04            [ 1]  177     jreq 1$ 
-      002362 A6 84            [ 1]  178     ld a,#CELL 
-      002364 6B 01            [ 1]  179     ld (1,sp),a 
-      002366                        180 1$:
-      002366 84               [ 1]  181     pop a 
-      002367                        182 display_char:    
-      002367 1C 01 00         [ 2]  183     addw x,#(GRID_TOP<<8)+GRID_LEFT
-      00236A                        184     _strxz cy 
-      00236A BF F3                    1     .byte 0xbf,cy 
-      00236C CD 07 56         [ 4]  185     call tv_putc 
-      00236F 81               [ 4]  186     ret 
-                                    187 
-                                    188 ;-------------------------
-                                    189 ; toggle cell state at 
-                                    190 ; input:
-                                    191 ;    XL   gx 
-                                    192 ;    XH   gy
-                                    193 ;    Y    array addr 
-                                    194 ; output:
-                                    195 ;     A    inverted cell state 
-                                    196 ;     X    unchanged  
-                                    197 ;     Y    unchanged 
-                                    198 ;-------------------------- 
-      002370                        199 toggle_cell:
-      002370 90 89            [ 2]  200     pushw y 
-      002372 CD 23 0D         [ 4]  201     call cell_index  
-      002375 72 F9 01         [ 2]  202     addw y,(1,sp)
-      002378 90 F8            [ 1]  203     xor a,(y)
-      00237A 90 F7            [ 1]  204     ld (y),a 
-      00237C 90 85            [ 2]  205     popw y 
-      00237E 81               [ 4]  206     ret 
-                                    207 
-                                    208 ;---------------------
-                                    209 ; set cell bit in array 
-                                    210 ; input:
-                                    211 ;   XL   xcoord 
-                                    212 ;   XH   ycoord 
-                                    213 ;   Y    array addr 
+      00234D CD 23 0D         [ 4]  159     call cell_index  
+      002350 72 F9 01         [ 2]  160     addw y,(1,sp)
+      002353 90 F8            [ 1]  161     xor a,(y)
+      002355 90 F7            [ 1]  162     ld (y),a 
+      002357 90 85            [ 2]  163     popw y 
+      002359 81               [ 4]  164     ret 
+                                    165 
+                                    166 ;---------------------
+                                    167 ; set cell bit in array 
+                                    168 ; input:
+                                    169 ;   XL   xcoord 
+                                    170 ;   XH   ycoord 
+                                    171 ;   Y    array addr 
+                                    172 ; output:
+                                    173 ;   X    unchanged 
+                                    174 ;   y    unchanged 
+                                    175 ;------------------------ 
+      00235A                        176 set_cell:
+      00235A 90 89            [ 2]  177     pushw y
+      00235C CD 23 0D         [ 4]  178     call cell_index 
+      00235F 72 F9 01         [ 2]  179     addw y,(1,sp)
+      002362 90 FA            [ 1]  180     or a,(y)
+      002364 90 F7            [ 1]  181     ld (y),a 
+      002366 90 85            [ 2]  182     popw y 
+      002368 81               [ 4]  183     ret 
+                                    184 
+                                    185 ;--------------------------
+                                    186 ; get top row neighbors
+                                    187 ; count
+                                    188 ; input:
+                                    189 ;    XL   x coord 
+                                    190 ;    XH   y coord 
+                                    191 ;    Y    grid addr 
+                                    192 ; output:
+                                    193 ;    A    count
+                                    194 ;    X    not changed 
+                                    195 ;    Y    not changed 
+                                    196 ;--------------------------
+                           000001   197     YCOOR=1
+                           000002   198     XCOOR=YCOOR+1 
+                           000003   199     ADDR=XCOOR+1 
+                           000005   200     COUNT=ADDR+2  
+                           000005   201     VAR_SIZE=COUNT 
+      002369                        202 top_count:
+      002369                        203     _vars VAR_SIZE 
+      002369 52 05            [ 2]    1     sub sp,#VAR_SIZE 
+      00236B 0F 05            [ 1]  204     clr (COUNT,sp)
+      00236D 1F 01            [ 2]  205     ldw (YCOOR,sp),x 
+      00236F 17 03            [ 2]  206     ldw (ADDR,sp),y 
+      002371 9E               [ 1]  207     ld a,xh 
+      002372 4D               [ 1]  208     tnz a 
+      002373 27 24            [ 1]  209     jreq 9$ ; not top neighbors
+      002375 4A               [ 1]  210     dec a 
+      002376 95               [ 1]  211     ld xh,a 
+      002377 CD 23 26         [ 4]  212     call get_cell_state
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 121.
 Hexadecimal [24-Bits]
 
 
 
-                                    214 ; output:
-                                    215 ;   X    unchanged 
-                                    216 ;   y    unchanged 
-                                    217 ;------------------------ 
-      00237F                        218 set_cell:
-      00237F 90 89            [ 2]  219     pushw y
-      002381 CD 23 0D         [ 4]  220     call cell_index 
-      002384 72 F9 01         [ 2]  221     addw y,(1,sp)
-      002387 90 FA            [ 1]  222     or a,(y)
-      002389 90 F7            [ 1]  223     ld (y),a 
-      00238B 90 85            [ 2]  224     popw y 
-      00238D 81               [ 4]  225     ret 
-                                    226 
-                                    227 ;---------------------
-                                    228 ; reset cell bit in array 
-                                    229 ; input:
-                                    230 ;   XL   xcoord 
-                                    231 ;   XH   ycoord 
-                                    232 ;   Y    array addr 
-                                    233 ; output:
-                                    234 ;   X    unchanged 
-                                    235 ;   y    unchanged  
-                                    236 ;------------------------ 
-      00238E                        237 reset_cell:
-      00238E 90 89            [ 2]  238     pushw y 
-      002390 CD 23 0D         [ 4]  239     call cell_index 
-      002393 72 F9 01         [ 2]  240     addw y,(1,sp)
-      002396 43               [ 1]  241     cpl a 
-      002397 90 F4            [ 1]  242     and a,(y)
-      002399 90 F7            [ 1]  243     ld (y),a 
-      00239B 90 85            [ 2]  244     popw y 
-      00239D 81               [ 4]  245     ret 
-                                    246 
-                                    247 ;--------------------------
-                                    248 ; get top row neighbors
-                                    249 ; count
-                                    250 ; input:
-                                    251 ;    XL   x coord 
-                                    252 ;    XH   y coord 
-                                    253 ;    Y    grid addr 
-                                    254 ; output:
-                                    255 ;    A    count
-                                    256 ;    X    not changed 
-                                    257 ;    Y    not changed 
-                                    258 ;--------------------------
-                           000001   259     YCOOR=1
-                           000002   260     XCOOR=YCOOR+1 
-                           000003   261     ADDR=XCOOR+1 
-                           000005   262     COUNT=ADDR+2  
-                           000005   263     VAR_SIZE=COUNT 
-      00239E                        264 top_count:
-      00239E                        265     _vars VAR_SIZE 
-      00239E 52 05            [ 2]    1     sub sp,#VAR_SIZE 
-      0023A0 0F 05            [ 1]  266     clr (COUNT,sp)
-      0023A2 1F 01            [ 2]  267     ldw (YCOOR,sp),x 
+      00237A 27 02            [ 1]  213     jreq 1$ 
+      00237C 0C 05            [ 1]  214     inc (COUNT,sp)
+      00237E 9F               [ 1]  215 1$: ld a,xl 
+      00237F 4A               [ 1]  216     dec a 
+      002380 2B 08            [ 1]  217     jrmi 2$ ; no left neighbor
+      002382 97               [ 1]  218     ld xl,a 
+      002383 CD 23 26         [ 4]  219     call get_cell_state
+      002386 27 02            [ 1]  220     jreq 2$ 
+      002388 0C 05            [ 1]  221     inc (COUNT,sp)
+      00238A 7B 02            [ 1]  222 2$: ld a,(XCOOR,sp) 
+      00238C 4C               [ 1]  223     inc a 
+      00238D A1 20            [ 1]  224     cp a,#GRID_WIDTH 
+      00238F 27 08            [ 1]  225     jreq 9$
+      002391 97               [ 1]  226     ld xl,a  
+      002392 CD 23 26         [ 4]  227     call get_cell_state
+      002395 27 02            [ 1]  228     jreq 9$ 
+      002397 0C 05            [ 1]  229     inc (COUNT,sp)
+      002399                        230 9$: 
+      002399 7B 05            [ 1]  231     ld a,(COUNT,sp)
+      00239B 1E 01            [ 2]  232     ldw x,(YCOOR,sp)
+      00239D 16 03            [ 2]  233     ldw y,(ADDR,sp)
+      00239F                        234     _drop VAR_SIZE 
+      00239F 5B 05            [ 2]    1     addw sp,#VAR_SIZE 
+      0023A1 81               [ 4]  235     ret 
+                                    236 
+                                    237 ;--------------------------
+                                    238 ; get same row neighbors 
+                                    239 ; count 
+                                    240 ; input:
+                                    241 ;    XL   x coord 
+                                    242 ;    XH   y coord 
+                                    243 ;    Y    grid addr 
+                                    244 ; output:
+                                    245 ;    A    count  
+                                    246 ;    X    not changed 
+                                    247 ;    Y    not changed 
+                                    248 ;--------------------------
+                           000001   249     YCOOR=1
+                           000002   250     XCOOR=YCOOR+1 
+                           000003   251     ADDR=XCOOR+1 
+                           000005   252     COUNT=ADDR+2  
+                           000005   253     VAR_SIZE=COUNT 
+      0023A2                        254 row_count:
+      0023A2                        255     _vars VAR_SIZE 
+      0023A2 52 05            [ 2]    1     sub sp,#VAR_SIZE 
+      0023A4 0F 05            [ 1]  256     clr (COUNT,sp)
+      0023A6 1F 01            [ 2]  257     ldw (YCOOR,sp),x 
+      0023A8 17 03            [ 2]  258     ldw (ADDR,sp),y 
+      0023AA 9F               [ 1]  259     ld a,xl 
+      0023AB 4A               [ 1]  260     dec a 
+      0023AC 2B 08            [ 1]  261     jrmi 1$ 
+      0023AE 97               [ 1]  262     ld xl,a 
+      0023AF CD 23 26         [ 4]  263     call get_cell_state 
+      0023B2 27 02            [ 1]  264     jreq 1$ 
+      0023B4 0C 05            [ 1]  265     inc (COUNT,sp)
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 122.
 Hexadecimal [24-Bits]
 
 
 
-      0023A4 17 03            [ 2]  268     ldw (ADDR,sp),y 
-      0023A6 9E               [ 1]  269     ld a,xh 
-      0023A7 4D               [ 1]  270     tnz a 
-      0023A8 27 24            [ 1]  271     jreq 9$ ; not top neighbors
-      0023AA 4A               [ 1]  272     dec a 
-      0023AB 95               [ 1]  273     ld xh,a 
-      0023AC CD 23 26         [ 4]  274     call get_cell_state
-      0023AF 27 02            [ 1]  275     jreq 1$ 
-      0023B1 0C 05            [ 1]  276     inc (COUNT,sp)
-      0023B3 9F               [ 1]  277 1$: ld a,xl 
-      0023B4 4A               [ 1]  278     dec a 
-      0023B5 2B 08            [ 1]  279     jrmi 2$ ; no left neighbor
-      0023B7 97               [ 1]  280     ld xl,a 
-      0023B8 CD 23 26         [ 4]  281     call get_cell_state
-      0023BB 27 02            [ 1]  282     jreq 2$ 
-      0023BD 0C 05            [ 1]  283     inc (COUNT,sp)
-      0023BF 7B 02            [ 1]  284 2$: ld a,(XCOOR,sp) 
-      0023C1 4C               [ 1]  285     inc a 
-      0023C2 A1 20            [ 1]  286     cp a,#GRID_WIDTH 
-      0023C4 27 08            [ 1]  287     jreq 9$
-      0023C6 97               [ 1]  288     ld xl,a  
-      0023C7 CD 23 26         [ 4]  289     call get_cell_state
-      0023CA 27 02            [ 1]  290     jreq 9$ 
-      0023CC 0C 05            [ 1]  291     inc (COUNT,sp)
-      0023CE                        292 9$: 
-      0023CE 7B 05            [ 1]  293     ld a,(COUNT,sp)
-      0023D0 1E 01            [ 2]  294     ldw x,(YCOOR,sp)
-      0023D2 16 03            [ 2]  295     ldw y,(ADDR,sp)
-      0023D4                        296     _drop VAR_SIZE 
-      0023D4 5B 05            [ 2]    1     addw sp,#VAR_SIZE 
-      0023D6 81               [ 4]  297     ret 
-                                    298 
-                                    299 ;--------------------------
-                                    300 ; get same row neighbors 
-                                    301 ; count 
-                                    302 ; input:
-                                    303 ;    XL   x coord 
-                                    304 ;    XH   y coord 
-                                    305 ;    Y    grid addr 
-                                    306 ; output:
-                                    307 ;    A    count  
-                                    308 ;    X    not changed 
-                                    309 ;    Y    not changed 
-                                    310 ;--------------------------
-                           000001   311     YCOOR=1
-                           000002   312     XCOOR=YCOOR+1 
-                           000003   313     ADDR=XCOOR+1 
-                           000005   314     COUNT=ADDR+2  
-                           000005   315     VAR_SIZE=COUNT 
-      0023D7                        316 row_count:
-      0023D7                        317     _vars VAR_SIZE 
-      0023D7 52 05            [ 2]    1     sub sp,#VAR_SIZE 
-      0023D9 0F 05            [ 1]  318     clr (COUNT,sp)
-      0023DB 1F 01            [ 2]  319     ldw (YCOOR,sp),x 
-      0023DD 17 03            [ 2]  320     ldw (ADDR,sp),y 
+      0023B6 7B 02            [ 1]  266 1$: ld a,(XCOOR,sp)
+      0023B8 4C               [ 1]  267     inc a 
+      0023B9 A1 20            [ 1]  268     cp a,#GRID_WIDTH
+      0023BB 27 08            [ 1]  269     jreq 2$ 
+      0023BD 97               [ 1]  270     ld xl,a 
+      0023BE CD 23 26         [ 4]  271     call get_cell_state
+      0023C1 27 02            [ 1]  272     jreq 2$ 
+      0023C3 0C 05            [ 1]  273     inc (COUNT,sp)
+      0023C5                        274 2$: 
+      0023C5 7B 05            [ 1]  275     ld a,(COUNT,sp)
+      0023C7 1E 01            [ 2]  276     ldw x,(YCOOR,sp)
+      0023C9 16 03            [ 2]  277     ldw y,(ADDR,sp)
+      0023CB                        278     _drop VAR_SIZE 
+      0023CB 5B 05            [ 2]    1     addw sp,#VAR_SIZE 
+      0023CD 81               [ 4]  279     ret 
+                                    280 
+                                    281 ;--------------------------
+                                    282 ; get bottom row neighbors 
+                                    283 ; count
+                                    284 ; input:
+                                    285 ;    XL   x coord 
+                                    286 ;    XH   y coord 
+                                    287 ;    Y    grid addr 
+                                    288 ; output:
+                                    289 ;    A    count  
+                                    290 ;    X    not changed 
+                                    291 ;    Y    not changed 
+                                    292 ;--------------------------
+                           000001   293     YCOOR=1
+                           000002   294     XCOOR=YCOOR+1 
+                           000003   295     ADDR=XCOOR+1 
+                           000005   296     COUNT=ADDR+2  
+                           000005   297     VAR_SIZE=COUNT 
+      0023CE                        298 bottom_count:
+      0023CE                        299     _vars VAR_SIZE 
+      0023CE 52 05            [ 2]    1     sub sp,#VAR_SIZE 
+      0023D0 0F 05            [ 1]  300     clr (COUNT,sp)
+      0023D2 1F 01            [ 2]  301     ldw (YCOOR,sp),x 
+      0023D4 17 03            [ 2]  302     ldw (ADDR,sp),y 
+      0023D6 9E               [ 1]  303     ld a,xh 
+      0023D7 4C               [ 1]  304     inc a 
+      0023D8 A1 16            [ 1]  305     cp a,#GRID_HEIGHT
+      0023DA 27 24            [ 1]  306     jreq 9$ ; no bottom row
+      0023DC 95               [ 1]  307     ld xh,a 
+      0023DD CD 23 26         [ 4]  308     call get_cell_state
+      0023E0 27 02            [ 1]  309     jreq 1$ 
+      0023E2 0C 05            [ 1]  310     inc (COUNT,sp)
+      0023E4                        311 1$: 
+      0023E4 7B 02            [ 1]  312     ld a,(XCOOR,sp)
+      0023E6 4A               [ 1]  313     dec a 
+      0023E7 2B 08            [ 1]  314     jrmi 2$ ; no left column 
+      0023E9 97               [ 1]  315     ld xl,a 
+      0023EA CD 23 26         [ 4]  316     call get_cell_state
+      0023ED 27 02            [ 1]  317     jreq 2$ 
+      0023EF 0C 05            [ 1]  318     inc (COUNT,sp)
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 123.
 Hexadecimal [24-Bits]
 
 
 
-      0023DF 9F               [ 1]  321     ld a,xl 
-      0023E0 4A               [ 1]  322     dec a 
-      0023E1 2B 08            [ 1]  323     jrmi 1$ 
-      0023E3 97               [ 1]  324     ld xl,a 
-      0023E4 CD 23 26         [ 4]  325     call get_cell_state 
-      0023E7 27 02            [ 1]  326     jreq 1$ 
-      0023E9 0C 05            [ 1]  327     inc (COUNT,sp)
-      0023EB 7B 02            [ 1]  328 1$: ld a,(XCOOR,sp)
-      0023ED 4C               [ 1]  329     inc a 
-      0023EE A1 20            [ 1]  330     cp a,#GRID_WIDTH
-      0023F0 27 08            [ 1]  331     jreq 2$ 
-      0023F2 97               [ 1]  332     ld xl,a 
-      0023F3 CD 23 26         [ 4]  333     call get_cell_state
-      0023F6 27 02            [ 1]  334     jreq 2$ 
-      0023F8 0C 05            [ 1]  335     inc (COUNT,sp)
-      0023FA                        336 2$: 
-      0023FA 7B 05            [ 1]  337     ld a,(COUNT,sp)
-      0023FC 1E 01            [ 2]  338     ldw x,(YCOOR,sp)
-      0023FE 16 03            [ 2]  339     ldw y,(ADDR,sp)
-      002400                        340     _drop VAR_SIZE 
-      002400 5B 05            [ 2]    1     addw sp,#VAR_SIZE 
-      002402 81               [ 4]  341     ret 
-                                    342 
-                                    343 ;--------------------------
-                                    344 ; get bottom row neighbors 
-                                    345 ; count
-                                    346 ; input:
-                                    347 ;    XL   x coord 
-                                    348 ;    XH   y coord 
-                                    349 ;    Y    grid addr 
-                                    350 ; output:
-                                    351 ;    A    count  
-                                    352 ;    X    not changed 
-                                    353 ;    Y    not changed 
-                                    354 ;--------------------------
-                           000001   355     YCOOR=1
-                           000002   356     XCOOR=YCOOR+1 
-                           000003   357     ADDR=XCOOR+1 
-                           000005   358     COUNT=ADDR+2  
-                           000005   359     VAR_SIZE=COUNT 
-      002403                        360 bottom_count:
-      002403                        361     _vars VAR_SIZE 
-      002403 52 05            [ 2]    1     sub sp,#VAR_SIZE 
-      002405 0F 05            [ 1]  362     clr (COUNT,sp)
-      002407 1F 01            [ 2]  363     ldw (YCOOR,sp),x 
-      002409 17 03            [ 2]  364     ldw (ADDR,sp),y 
-      00240B 9E               [ 1]  365     ld a,xh 
-      00240C 4C               [ 1]  366     inc a 
-      00240D A1 16            [ 1]  367     cp a,#GRID_HEIGHT
-      00240F 27 24            [ 1]  368     jreq 9$ ; no bottom row
-      002411 95               [ 1]  369     ld xh,a 
-      002412 CD 23 26         [ 4]  370     call get_cell_state
-      002415 27 02            [ 1]  371     jreq 1$ 
-      002417 0C 05            [ 1]  372     inc (COUNT,sp)
-      002419                        373 1$: 
+      0023F1                        319 2$: 
+      0023F1 7B 02            [ 1]  320     ld a,(XCOOR,sp)
+      0023F3 4C               [ 1]  321     inc a 
+      0023F4 A1 20            [ 1]  322     cp a,#GRID_WIDTH
+      0023F6 27 08            [ 1]  323     jreq 9$ ; no right column 
+      0023F8 97               [ 1]  324     ld xl,a 
+      0023F9 CD 23 26         [ 4]  325     call get_cell_state
+      0023FC 27 02            [ 1]  326     jreq 9$ 
+      0023FE 0C 05            [ 1]  327     inc (COUNT,sp)
+      002400                        328 9$: 
+      002400 7B 05            [ 1]  329     ld a,(COUNT,sp)
+      002402 7B 05            [ 1]  330     ld a,(COUNT,sp)     
+      002404 1E 01            [ 2]  331     ldw x,(YCOOR,sp)
+      002406 16 03            [ 2]  332     ldw y,(ADDR,sp)
+      002408                        333     _drop VAR_SIZE 
+      002408 5B 05            [ 2]    1     addw sp,#VAR_SIZE 
+      00240A 81               [ 4]  334     ret 
+                                    335 
+                                    336 ;----------------------
+                                    337 ; input:
+                                    338 ;    XL    x coord 
+                                    339 ;    XH    Y coord 
+                                    340 ;    y     array addr 
+                                    341 ; output:
+                                    342 ;    A     count 
+                                    343 ;    X     not changed 
+                                    344 ;    Y     not changed 
+                                    345 ;----------------------
+      00240B                        346 neighbor_count: 
+      00240B CD 23 69         [ 4]  347     call top_count 
+      00240E 88               [ 1]  348     push a 
+      00240F CD 23 CE         [ 4]  349     call bottom_count 
+      002412 1B 01            [ 1]  350     add a,(1,sp)
+      002414 A1 04            [ 1]  351     cp a,#4 
+      002416 2A 07            [ 1]  352     jrpl 9$
+      002418 6B 01            [ 1]  353     ld (1,sp),a 
+      00241A CD 23 A2         [ 4]  354     call row_count 
+      00241D 1B 01            [ 1]  355     add a,(1,sp)
+      00241F                        356 9$:
+      00241F                        357     _drop 1
+      00241F 5B 01            [ 2]    1     addw sp,#1 
+      002421 81               [ 4]  358     ret 
+                                    359 
+                                    360 ;--------------------------
+                                    361 ; compute next generation
+                                    362 ; from src array to  
+                                    363 ; dest array. 
+                                    364 ; update display as each 
+                                    365 ; cell is evaluated.
+                                    366 ;--------------------------
+                           000001   367     YCOOR=1
+                           000002   368     XCOOR=YCOOR+1
+                           000003   369     COL_COUNT=XCOOR+1
+                           000004   370     ROW_COUNT=COL_COUNT+1
+                           000005   371     INDEX=ROW_COUNT+1
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 124.
 Hexadecimal [24-Bits]
 
 
 
-      002419 7B 02            [ 1]  374     ld a,(XCOOR,sp)
-      00241B 4A               [ 1]  375     dec a 
-      00241C 2B 08            [ 1]  376     jrmi 2$ ; no left column 
-      00241E 97               [ 1]  377     ld xl,a 
-      00241F CD 23 26         [ 4]  378     call get_cell_state
-      002422 27 02            [ 1]  379     jreq 2$ 
-      002424 0C 05            [ 1]  380     inc (COUNT,sp)
-      002426                        381 2$: 
-      002426 7B 02            [ 1]  382     ld a,(XCOOR,sp)
-      002428 4C               [ 1]  383     inc a 
-      002429 A1 20            [ 1]  384     cp a,#GRID_WIDTH
-      00242B 27 08            [ 1]  385     jreq 9$ ; no right column 
-      00242D 97               [ 1]  386     ld xl,a 
-      00242E CD 23 26         [ 4]  387     call get_cell_state
-      002431 27 02            [ 1]  388     jreq 9$ 
-      002433 0C 05            [ 1]  389     inc (COUNT,sp)
-      002435                        390 9$: 
-      002435 7B 05            [ 1]  391     ld a,(COUNT,sp)
-      002437 7B 05            [ 1]  392     ld a,(COUNT,sp)     
-      002439 1E 01            [ 2]  393     ldw x,(YCOOR,sp)
-      00243B 16 03            [ 2]  394     ldw y,(ADDR,sp)
-      00243D                        395     _drop VAR_SIZE 
-      00243D 5B 05            [ 2]    1     addw sp,#VAR_SIZE 
-      00243F 81               [ 4]  396     ret 
-                                    397 
-                                    398 ;----------------------
-                                    399 ; input:
-                                    400 ;    XL    x coord 
-                                    401 ;    XH    Y coord 
-                                    402 ;    y     array addr 
-                                    403 ; output:
-                                    404 ;    A     count 
-                                    405 ;    X     not changed 
-                                    406 ;    Y     not changed 
-                                    407 ;----------------------
-      002440                        408 neighbor_count: 
-      002440 CD 23 9E         [ 4]  409     call top_count 
-      002443 88               [ 1]  410     push a 
-      002444 CD 24 03         [ 4]  411     call bottom_count 
-      002447 1B 01            [ 1]  412     add a,(1,sp)
-      002449 A1 04            [ 1]  413     cp a,#4 
-      00244B 2A 07            [ 1]  414     jrpl 9$
-      00244D 6B 01            [ 1]  415     ld (1,sp),a 
-      00244F CD 23 D7         [ 4]  416     call row_count 
-      002452 1B 01            [ 1]  417     add a,(1,sp)
-      002454                        418 9$:
-      002454                        419     _drop 1
-      002454 5B 01            [ 2]    1     addw sp,#1 
-      002456 81               [ 4]  420     ret 
-                                    421 
-                                    422 ;--------------------------
-                                    423 ; compute next generation
-                                    424 ; from src array to  
-                                    425 ; dest array. 
-                                    426 ; update display as each 
+                           000007   372     MASK=INDEX+2
+                           000008   373     STATE=MASK+1 
+                           000008   374     VAR_SIZE=STATE 
+      002422                        375 next_gen:
+      002422                        376     _vars VAR_SIZE
+      002422 52 08            [ 2]    1     sub sp,#VAR_SIZE 
+      002424 0F 01            [ 1]  377     clr (YCOOR,sp)
+      002426 A6 16            [ 1]  378     ld a,#GRID_HEIGHT
+      002428 6B 04            [ 1]  379     ld (ROW_COUNT,sp),a 
+      00242A                        380 1$: ;row loop 
+      00242A 0F 02            [ 1]  381     clr (XCOOR,sp)
+      00242C A6 20            [ 1]  382     ld a,#GRID_WIDTH
+      00242E 6B 03            [ 1]  383     ld (COL_COUNT,sp),a 
+      002430                        384 2$: ;column loop 
+      002430 1E 01            [ 2]  385     ldw x,(YCOOR,sp)
+      002432 CD 23 0D         [ 4]  386     call cell_index 
+      002435 6B 07            [ 1]  387     ld (MASK,sp),a 
+      002437 17 05            [ 2]  388     ldw (INDEX,sp),y
+                                    389 ; reset dest cell 
+      002439 72 B9 00 08      [ 2]  390     addw y,dest 
+      00243D 43               [ 1]  391     cpl a 
+      00243E 90 F4            [ 1]  392     and a,(y)
+      002440 90 F7            [ 1]  393     ld (y),a
+                                    394 ; get source cell state        
+      002442 90 CE 00 06      [ 2]  395     ldw y,src
+      002446 72 F9 05         [ 2]  396     addw y,(INDEX,sp) 
+      002449 90 F6            [ 1]  397     ld a,(y)
+      00244B 14 07            [ 1]  398     and a,(MASK,sp)
+      00244D 6B 08            [ 1]  399     ld (STATE,sp),a 
+      00244F 90 CE 00 06      [ 2]  400     ldw y,src 
+      002453 CD 24 0B         [ 4]  401     call neighbor_count
+      002456 90 CE 00 08      [ 2]  402     ldw y,dest
+      00245A 72 F9 05         [ 2]  403     addw y,(INDEX,sp) 
+      00245D A1 02            [ 1]  404     cp a,#2
+      00245F 27 0A            [ 1]  405     jreq 3$ ; ==2 no cell change  
+      002461 2B 0C            [ 1]  406     jrmi 4$ ; <2 reset cell 
+      002463 A1 04            [ 1]  407     cp a,#4 
+      002465 2A 08            [ 1]  408     jrpl 4$ ; >=4 reset cell  
+                                    409 ; ==3 set cell     
+      002467 7B 07            [ 1]  410     ld a,(MASK,sp)
+      002469 20 05            [ 2]  411     jra 5$ 
+      00246B                        412 3$: ; no cell change 
+      00246B 7B 08            [ 1]  413     ld a,(STATE,sp)
+      00246D 20 01            [ 2]  414     jra 5$      
+      00246F                        415 4$: ; reset cell 
+      00246F 4F               [ 1]  416     clr a 
+      002470 90 FA            [ 1]  417 5$: or a,(y)
+      002472 90 F7            [ 1]  418     ld (y),a ; new state in dest array 
+      002474 1E 01            [ 2]  419     ldw x,(YCOOR,sp)
+      002476                        420     _ldyz dest
+      002476 90 BE 08                 1     .byte 0x90,0xbe,dest 
+      002479 CD 23 35         [ 4]  421     call display_cell
+      00247C 0C 02            [ 1]  422     inc (XCOOR,sp)
+      00247E 0A 03            [ 1]  423     dec (COL_COUNT,sp)
+      002480 26 AE            [ 1]  424     jrne 2$ 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 125.
 Hexadecimal [24-Bits]
 
 
 
-                                    427 ; cell is evaluated.
-                                    428 ;--------------------------
-                           000001   429     YCOOR=1
-                           000002   430     XCOOR=YCOOR+1
-                           000003   431     COL_COUNT=XCOOR+1
-                           000004   432     ROW_COUNT=COL_COUNT+1
-                           000005   433     INDEX=ROW_COUNT+1
-                           000007   434     MASK=INDEX+2
-                           000008   435     STATE=MASK+1 
-                           000008   436     VAR_SIZE=STATE 
-      002457                        437 next_gen:
-      002457                        438     _vars VAR_SIZE
-      002457 52 08            [ 2]    1     sub sp,#VAR_SIZE 
-      002459 0F 01            [ 1]  439     clr (YCOOR,sp)
-      00245B A6 16            [ 1]  440     ld a,#GRID_HEIGHT
-      00245D 6B 04            [ 1]  441     ld (ROW_COUNT,sp),a 
-      00245F                        442 1$: ;row loop 
-      00245F 0F 02            [ 1]  443     clr (XCOOR,sp)
-      002461 A6 20            [ 1]  444     ld a,#GRID_WIDTH
-      002463 6B 03            [ 1]  445     ld (COL_COUNT,sp),a 
-      002465                        446 2$: ;column loop 
-      002465 1E 01            [ 2]  447     ldw x,(YCOOR,sp)
-      002467 CD 23 0D         [ 4]  448     call cell_index 
-      00246A 6B 07            [ 1]  449     ld (MASK,sp),a 
-      00246C 17 05            [ 2]  450     ldw (INDEX,sp),y
-                                    451 ; reset dest cell 
-      00246E 72 B9 00 08      [ 2]  452     addw y,dest 
-      002472 43               [ 1]  453     cpl a 
-      002473 90 F4            [ 1]  454     and a,(y)
-      002475 90 F7            [ 1]  455     ld (y),a
-                                    456 ; get source cell state        
-      002477 90 CE 00 06      [ 2]  457     ldw y,src
-      00247B 72 F9 05         [ 2]  458     addw y,(INDEX,sp) 
-      00247E 90 F6            [ 1]  459     ld a,(y)
-      002480 14 07            [ 1]  460     and a,(MASK,sp)
-      002482 6B 08            [ 1]  461     ld (STATE,sp),a 
-      002484 90 CE 00 06      [ 2]  462     ldw y,src 
-      002488 CD 24 40         [ 4]  463     call neighbor_count
-      00248B 90 CE 00 08      [ 2]  464     ldw y,dest
-      00248F 72 F9 05         [ 2]  465     addw y,(INDEX,sp) 
-      002492 A1 02            [ 1]  466     cp a,#2
-      002494 27 0A            [ 1]  467     jreq 3$ ; ==2 no cell change  
-      002496 2B 0C            [ 1]  468     jrmi 4$ ; <2 reset cell 
-      002498 A1 04            [ 1]  469     cp a,#4 
-      00249A 2A 08            [ 1]  470     jrpl 4$ ; >=4 reset cell  
-                                    471 ; ==3 set cell     
-      00249C 7B 07            [ 1]  472     ld a,(MASK,sp)
-      00249E 20 05            [ 2]  473     jra 5$ 
-      0024A0                        474 3$: ; no cell change 
-      0024A0 7B 08            [ 1]  475     ld a,(STATE,sp)
-      0024A2 20 01            [ 2]  476     jra 5$      
-      0024A4                        477 4$: ; reset cell 
-      0024A4 4F               [ 1]  478     clr a 
-      0024A5 90 FA            [ 1]  479 5$: or a,(y)
-      0024A7 90 F7            [ 1]  480     ld (y),a ; new state in dest array 
+      002482 0C 01            [ 1]  425     inc (YCOOR,sp)
+      002484 0A 04            [ 1]  426     dec (ROW_COUNT,sp)
+      002486 26 A2            [ 1]  427     jrne 1$     
+      002488                        428     _ldxz gen 
+      002488 BE 04                    1     .byte 0xbe,gen 
+      00248A 5C               [ 1]  429     incw x
+      00248B                        430     _strxz gen 
+      00248B BF 04                    1     .byte 0xbf,gen 
+      00248D                        431     _ldyz src 
+      00248D 90 BE 06                 1     .byte 0x90,0xbe,src 
+      002490                        432     _ldxz dest 
+      002490 BE 08                    1     .byte 0xbe,dest 
+      002492                        433     _strxz src 
+      002492 BF 06                    1     .byte 0xbf,src 
+      002494                        434     _stryz dest 
+      002494 90 BF 08                 1     .byte 0x90,0xbf,dest 
+      002497                        435     _drop VAR_SIZE 
+      002497 5B 08            [ 2]    1     addw sp,#VAR_SIZE 
+      002499 81               [ 4]  436     ret 
+                                    437 
+      00249A 47 45 4E 45 52 41 54   438 gen_str: .asciz "GENERATION: "
+             49 4F 4E 3A 20 00
+      0024A7 63 72 65 61 74 65 20   439 init_str: .asciz "create pattern";
+             70 61 74 74 65 72 6E
+             00
+      0024B6 20 20 20 20 20 20 20   440 erase_str: .asciz "              ";
+             20 20 20 20 20 20 20
+             00
+                                    441 
+                                    442 
+                                    443 ;---------------------
+                                    444 ; user initialize grid 
+                                    445 ; moving cursor around
+                                    446 ;---------------------
+                           000001   447     YCOOR=1
+                           000002   448     XCOOR=YCOOR+1
+                           000003   449     KEY=XCOOR+1 
+                           000003   450     VAR_SIZE=KEY 
+      0024C5                        451 grid_init:
+      0024C5                        452     _vars VAR_SIZE 
+      0024C5 52 03            [ 2]    1     sub sp,#VAR_SIZE 
+      0024C7 0F 03            [ 1]  453     clr (KEY,sp)
+      0024C9 AE 0A 0F         [ 2]  454     ldw x,#(GRID_CNTR_Y<<8)+GRID_CNTR_X
+      0024CC 1F 01            [ 2]  455     ldw (YCOOR,sp),x
+      0024CE CD 06 B5         [ 4]  456     call tv_cls 
+      0024D1 90 AE 24 A7      [ 2]  457     ldw y,#init_str 
+      0024D5 CD 07 D2         [ 4]  458     call tv_puts 
+      0024D8 AE 00 0A         [ 2]  459 1$: ldw x,#10
+      0024DB CD 00 FE         [ 4]  460     call wait_key_release
+      0024DE A6 7F            [ 1]  461     ld a,#BLOCK
+      0024E0 1E 01            [ 2]  462     ldw x,(YCOOR,sp) 
+      0024E2 CD 23 42         [ 4]  463     call display_char  
+      0024E5 CD 00 F8         [ 4]  464     call wait_key 
+      0024E8 6B 03            [ 1]  465     ld (KEY,sp),a 
+      0024EA 1E 01            [ 2]  466     ldw x,(YCOOR,sp)
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 126.
 Hexadecimal [24-Bits]
 
 
 
-      0024A9 1E 01            [ 2]  481     ldw x,(YCOOR,sp)
-      0024AB                        482     _ldyz dest
-      0024AB 90 BE 08                 1     .byte 0x90,0xbe,dest 
-      0024AE CD 23 5A         [ 4]  483     call display_cell
-      0024B1 0C 02            [ 1]  484     inc (XCOOR,sp)
-      0024B3 0A 03            [ 1]  485     dec (COL_COUNT,sp)
-      0024B5 26 AE            [ 1]  486     jrne 2$ 
-      0024B7 0C 01            [ 1]  487     inc (YCOOR,sp)
-      0024B9 0A 04            [ 1]  488     dec (ROW_COUNT,sp)
-      0024BB 26 A2            [ 1]  489     jrne 1$     
-      0024BD                        490     _ldxz gen 
-      0024BD BE 04                    1     .byte 0xbe,gen 
-      0024BF 5C               [ 1]  491     incw x
-      0024C0                        492     _strxz gen 
-      0024C0 BF 04                    1     .byte 0xbf,gen 
-      0024C2                        493     _ldyz src 
-      0024C2 90 BE 06                 1     .byte 0x90,0xbe,src 
-      0024C5                        494     _ldxz dest 
-      0024C5 BE 08                    1     .byte 0xbe,dest 
-      0024C7                        495     _strxz src 
-      0024C7 BF 06                    1     .byte 0xbf,src 
-      0024C9                        496     _stryz dest 
-      0024C9 90 BF 08                 1     .byte 0x90,0xbf,dest 
-      0024CC                        497     _drop VAR_SIZE 
-      0024CC 5B 08            [ 2]    1     addw sp,#VAR_SIZE 
-      0024CE 81               [ 4]  498     ret 
-                                    499 
-      0024CF 47 45 4E 45 52 41 54   500 gen_str: .asciz "GENERATION: "
-             49 4F 4E 3A 20 00
-      0024DC 63 72 65 61 74 65 20   501 init_str: .asciz "create pattern";
-             70 61 74 74 65 72 6E
-             00
-      0024EB 20 20 20 20 20 20 20   502 erase_str: .asciz "              ";
-             20 20 20 20 20 20 20
-             00
-                                    503 
-                                    504 
-                                    505 ;---------------------
-                                    506 ; user initialize grid 
-                                    507 ; moving cursor around
-                                    508 ;---------------------
-                           000001   509     YCOOR=1
-                           000002   510     XCOOR=YCOOR+1
-                           000003   511     KEY=XCOOR+1 
-                           000003   512     VAR_SIZE=KEY 
-      0024FA                        513 grid_init:
-      0024FA                        514     _vars VAR_SIZE 
-      0024FA 52 03            [ 2]    1     sub sp,#VAR_SIZE 
-      0024FC 0F 03            [ 1]  515     clr (KEY,sp)
-      0024FE AE 0A 0F         [ 2]  516     ldw x,#(GRID_CNTR_Y<<8)+GRID_CNTR_X
-      002501 1F 01            [ 2]  517     ldw (YCOOR,sp),x
-      002503 CD 06 B5         [ 4]  518     call tv_cls 
-      002506 90 AE 24 DC      [ 2]  519     ldw y,#init_str 
-      00250A CD 07 D2         [ 4]  520     call tv_puts 
-      00250D AE 00 0A         [ 2]  521 1$: ldw x,#10
+      0024EC                        467     _ldyz src 
+      0024EC 90 BE 06                 1     .byte 0x90,0xbe,src 
+      0024EF CD 23 35         [ 4]  468     call display_cell 
+      0024F2 A6 08            [ 1]  469     ld a,#BTN_UP 
+      0024F4 11 03            [ 1]  470     cp a,(KEY,sp)
+      0024F6 26 08            [ 1]  471     jrne 2$ 
+      0024F8 0D 01            [ 1]  472     tnz (YCOOR,sp)
+      0024FA 27 DC            [ 1]  473     jreq 1$ 
+      0024FC 0A 01            [ 1]  474     dec (YCOOR,sp)
+      0024FE 20 D8            [ 2]  475     jra 1$ 
+      002500 A6 02            [ 1]  476 2$:  ld a,#BTN_DOWN 
+      002502 11 03            [ 1]  477     cp a,(KEY,sp)
+      002504 26 0A            [ 1]  478     jrne 4$
+      002506 A6 15            [ 1]  479     ld a,#GRID_HEIGHT-1 
+      002508 11 01            [ 1]  480     cp a,(YCOOR,sp)
+      00250A 27 CC            [ 1]  481     jreq 1$ 
+      00250C 0C 01            [ 1]  482     inc (YCOOR,sp)
+      00250E 20 C8            [ 2]  483     jra 1$ 
+      002510 A6 01            [ 1]  484 4$: ld a,#BTN_LEFT
+      002512 11 03            [ 1]  485     cp a,(KEY,sp)
+      002514 26 08            [ 1]  486     jrne 6$
+      002516 0D 02            [ 1]  487     tnz (XCOOR,sp)
+      002518 27 BE            [ 1]  488     jreq 1$ 
+      00251A 0A 02            [ 1]  489     dec (XCOOR,sp)
+      00251C 20 BA            [ 2]  490     jra 1$ 
+      00251E A6 04            [ 1]  491 6$: ld a,#BTN_RIGHT 
+      002520 11 03            [ 1]  492     cp a,(KEY,sp)
+      002522 26 0A            [ 1]  493     jrne 8$ 
+      002524 A6 1F            [ 1]  494     ld a,#GRID_WIDTH-1 
+      002526 11 02            [ 1]  495     cp a,(XCOOR,sp) 
+      002528 27 AE            [ 1]  496     jreq 1$ 
+      00252A 0C 02            [ 1]  497     inc (XCOOR,sp)
+      00252C 20 AA            [ 2]  498     jra 1$ 
+      00252E A6 20            [ 1]  499 8$: ld a,#BTN_A
+      002530 11 03            [ 1]  500     cp a,(KEY,sp)
+      002532 26 0E            [ 1]  501     jrne 12$ 
+      002534 90 CE 00 06      [ 2]  502     ldw y,src 
+      002538 1E 01            [ 2]  503     ldw x,(YCOOR,sp)
+      00253A CD 23 4B         [ 4]  504     call toggle_cell
+      00253D CD 23 35         [ 4]  505     call display_cell
+      002540 20 96            [ 2]  506     jra 1$
+      002542 A6 10            [ 1]  507 12$: ld a,#BTN_B 
+      002544 11 03            [ 1]  508      cp a,(KEY,sp)
+      002546 26 90            [ 1]  509      jrne 1$    
+      002548 90 AE 24 B6      [ 2]  510     ldw y,#erase_str
+      00254C 5F               [ 1]  511     clrw x 
+      00254D                        512     _strxz cy 
+      00254D BF F3                    1     .byte 0xbf,cy 
+      00254F CD 07 D2         [ 4]  513     call tv_puts 
+      002552 CD 00 FE         [ 4]  514     call wait_key_release
+      002555                        515     _drop VAR_SIZE
+      002555 5B 03            [ 2]    1     addw sp,#VAR_SIZE 
+      002557 81               [ 4]  516     ret 
+                                    517 
+                                    518 ;---------------------------
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 127.
 Hexadecimal [24-Bits]
 
 
 
-      002510 CD 00 FE         [ 4]  522     call wait_key_release
-      002513 A6 7F            [ 1]  523     ld a,#BLOCK
-      002515 1E 01            [ 2]  524     ldw x,(YCOOR,sp) 
-      002517 CD 23 67         [ 4]  525     call display_char  
-      00251A CD 00 F8         [ 4]  526     call wait_key 
-      00251D 6B 03            [ 1]  527     ld (KEY,sp),a 
-      00251F 1E 01            [ 2]  528     ldw x,(YCOOR,sp)
-      002521                        529     _ldyz src 
-      002521 90 BE 06                 1     .byte 0x90,0xbe,src 
-      002524 CD 23 5A         [ 4]  530     call display_cell 
-      002527 A6 08            [ 1]  531     ld a,#BTN_UP 
-      002529 11 03            [ 1]  532     cp a,(KEY,sp)
-      00252B 26 08            [ 1]  533     jrne 2$ 
-      00252D 0D 01            [ 1]  534     tnz (YCOOR,sp)
-      00252F 27 DC            [ 1]  535     jreq 1$ 
-      002531 0A 01            [ 1]  536     dec (YCOOR,sp)
-      002533 20 D8            [ 2]  537     jra 1$ 
-      002535 A6 02            [ 1]  538 2$:  ld a,#BTN_DOWN 
-      002537 11 03            [ 1]  539     cp a,(KEY,sp)
-      002539 26 0A            [ 1]  540     jrne 4$
-      00253B A6 15            [ 1]  541     ld a,#GRID_HEIGHT-1 
-      00253D 11 01            [ 1]  542     cp a,(YCOOR,sp)
-      00253F 27 CC            [ 1]  543     jreq 1$ 
-      002541 0C 01            [ 1]  544     inc (YCOOR,sp)
-      002543 20 C8            [ 2]  545     jra 1$ 
-      002545 A6 01            [ 1]  546 4$: ld a,#BTN_LEFT
-      002547 11 03            [ 1]  547     cp a,(KEY,sp)
-      002549 26 08            [ 1]  548     jrne 6$
-      00254B 0D 02            [ 1]  549     tnz (XCOOR,sp)
-      00254D 27 BE            [ 1]  550     jreq 1$ 
-      00254F 0A 02            [ 1]  551     dec (XCOOR,sp)
-      002551 20 BA            [ 2]  552     jra 1$ 
-      002553 A6 04            [ 1]  553 6$: ld a,#BTN_RIGHT 
-      002555 11 03            [ 1]  554     cp a,(KEY,sp)
-      002557 26 0A            [ 1]  555     jrne 8$ 
-      002559 A6 1F            [ 1]  556     ld a,#GRID_WIDTH-1 
-      00255B 11 02            [ 1]  557     cp a,(XCOOR,sp) 
-      00255D 27 AE            [ 1]  558     jreq 1$ 
-      00255F 0C 02            [ 1]  559     inc (XCOOR,sp)
-      002561 20 AA            [ 2]  560     jra 1$ 
-      002563 A6 20            [ 1]  561 8$: ld a,#BTN_A
-      002565 11 03            [ 1]  562     cp a,(KEY,sp)
-      002567 26 0E            [ 1]  563     jrne 12$ 
-      002569 90 CE 00 06      [ 2]  564     ldw y,src 
-      00256D 1E 01            [ 2]  565     ldw x,(YCOOR,sp)
-      00256F CD 23 70         [ 4]  566     call toggle_cell
-      002572 CD 23 5A         [ 4]  567     call display_cell
-      002575 20 96            [ 2]  568     jra 1$
-      002577 A6 10            [ 1]  569 12$: ld a,#BTN_B 
-      002579 11 03            [ 1]  570      cp a,(KEY,sp)
-      00257B 26 90            [ 1]  571      jrne 1$    
-      00257D 90 AE 24 EB      [ 2]  572     ldw y,#erase_str
-      002581 5F               [ 1]  573     clrw x 
-      002582                        574     _strxz cy 
-      002582 BF F3                    1     .byte 0xbf,cy 
+                                    519 ; game of life 
+                                    520 ; simulation entry function
+                                    521 ;---------------------------
+      002558                        522 game_of_life:
+      002558 CD 22 F6         [ 4]  523     call life_init
+      00255B 90 AE 25 B1      [ 2]  524     ldw y,#patterns 
+      00255F CD 0A F6         [ 4]  525     call menu 
+      002562 5D               [ 2]  526     tnzw x 
+      002563 26 01            [ 1]  527     jrne 1$
+      002565 81               [ 4]  528     ret 
+      002566 A3 25 6B         [ 2]  529 1$: cpw x,#free_hand 
+      002569 26 29            [ 1]  530     jrne set_pattern 
+      00256B                        531 free_hand:
+      00256B CD 24 C5         [ 4]  532     call grid_init
+      00256E                        533 sim_init:
+      00256E 5F               [ 1]  534     clrw x 
+      00256F                        535     _strxz cy 
+      00256F BF F3                    1     .byte 0xbf,cy 
+      002571 90 AE 24 B6      [ 2]  536     ldw y,#erase_str
+      002575 CD 07 56         [ 4]  537     call tv_putc 
+      002578 5F               [ 1]  538     clrw x 
+      002579                        539     _strxz cy 
+      002579 BF F3                    1     .byte 0xbf,cy 
+      00257B 90 AE 24 9A      [ 2]  540     ldw y,#gen_str
+      00257F CD 07 D2         [ 4]  541     call tv_puts 
+      002582                        542 sim:
+      002582 CD 22 E9         [ 4]  543     call print_gen
+      002585 CD 24 22         [ 4]  544     call next_gen
+      002588 A6 0F            [ 1]  545 ld a,#15 
+      00258A CD 00 33         [ 4]  546 call pause     
+      00258D CD 00 CD         [ 4]  547     call kpad_input 
+      002590 27 F0            [ 1]  548     jreq sim  
+      002592 20 C4            [ 2]  549     jra game_of_life
+                                    550 
+                                    551 ;-------------------------
+                                    552 ; set predefined pattern 
+                                    553 ; input:
+                                    554 ;   x     pattern address 
+                                    555 ;-------------------------
+                           000001   556     PATTERN=1
+                           000002   557     VAR_SIZE=2 
+      002594                        558 set_pattern:
+      002594                        559     _vars VAR_SIZE 
+      002594 52 02            [ 2]    1     sub sp,#VAR_SIZE 
+      002596 90 CE 00 06      [ 2]  560     ldw y,src 
+      00259A 1F 01            [ 2]  561 1$: ldw (PATTERN,sp),x 
+      00259C FE               [ 2]  562     ldw x,(x)
+      00259D A3 FF FF         [ 2]  563     cpw x,#-1 
+      0025A0 27 0A            [ 1]  564     jreq 9$
+      0025A2 CD 23 5A         [ 4]  565     call set_cell
+      0025A5 1E 01            [ 2]  566     ldw x,(PATTERN,sp)
+      0025A7 1C 00 02         [ 2]  567     addw x,#2
+      0025AA 20 EE            [ 2]  568     jra 1$  
+      0025AC                        569 9$: 
+      0025AC                        570     _drop VAR_SIZE 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 128.
 Hexadecimal [24-Bits]
 
 
 
-      002584 CD 07 D2         [ 4]  575     call tv_puts 
-      002587 CD 00 FE         [ 4]  576     call wait_key_release
-      00258A                        577     _drop VAR_SIZE
-      00258A 5B 03            [ 2]    1     addw sp,#VAR_SIZE 
-      00258C 81               [ 4]  578     ret 
-                                    579 
-                                    580 ;---------------------------
-                                    581 ; game of life 
-                                    582 ; simulation entry function
-                                    583 ;---------------------------
-      00258D                        584 game_of_life:
-      00258D CD 22 F6         [ 4]  585     call life_init
-      002590 90 AE 25 E6      [ 2]  586     ldw y,#patterns 
-      002594 CD 0A F6         [ 4]  587     call menu 
-      002597 5D               [ 2]  588     tnzw x 
-      002598 26 01            [ 1]  589     jrne 1$
-      00259A 81               [ 4]  590     ret 
-      00259B A3 25 A0         [ 2]  591 1$: cpw x,#free_hand 
-      00259E 26 29            [ 1]  592     jrne set_pattern 
-      0025A0                        593 free_hand:
-      0025A0 CD 24 FA         [ 4]  594     call grid_init
-      0025A3                        595 sim_init:
-      0025A3 5F               [ 1]  596     clrw x 
-      0025A4                        597     _strxz cy 
-      0025A4 BF F3                    1     .byte 0xbf,cy 
-      0025A6 90 AE 24 EB      [ 2]  598     ldw y,#erase_str
-      0025AA CD 07 56         [ 4]  599     call tv_putc 
-      0025AD 5F               [ 1]  600     clrw x 
-      0025AE                        601     _strxz cy 
-      0025AE BF F3                    1     .byte 0xbf,cy 
-      0025B0 90 AE 24 CF      [ 2]  602     ldw y,#gen_str
-      0025B4 CD 07 D2         [ 4]  603     call tv_puts 
-      0025B7                        604 sim:
-      0025B7 CD 22 E9         [ 4]  605     call print_gen
-      0025BA CD 24 57         [ 4]  606     call next_gen
-      0025BD A6 0F            [ 1]  607 ld a,#15 
-      0025BF CD 00 33         [ 4]  608 call pause     
-      0025C2 CD 00 CD         [ 4]  609     call kpad_input 
-      0025C5 27 F0            [ 1]  610     jreq sim  
-      0025C7 20 C4            [ 2]  611     jra game_of_life
-                                    612 
-                                    613 ;-------------------------
-                                    614 ; set predefined pattern 
-                                    615 ; input:
-                                    616 ;   x     pattern address 
-                                    617 ;-------------------------
-                           000001   618     PATTERN=1
-                           000002   619     VAR_SIZE=2 
-      0025C9                        620 set_pattern:
-      0025C9                        621     _vars VAR_SIZE 
-      0025C9 52 02            [ 2]    1     sub sp,#VAR_SIZE 
-      0025CB 90 CE 00 06      [ 2]  622     ldw y,src 
-      0025CF 1F 01            [ 2]  623 1$: ldw (PATTERN,sp),x 
-      0025D1 FE               [ 2]  624     ldw x,(x)
-      0025D2 A3 FF FF         [ 2]  625     cpw x,#-1 
+      0025AC 5B 02            [ 2]    1     addw sp,#VAR_SIZE 
+      0025AE CC 25 6E         [ 2]  571     jp sim_init
+                                    572 
+                                    573 
+                                    574 ; liste de configuration prédéfinie 
+      0025B1                        575 patterns:
+      0025B1 46 52 45 45 20 48 41   576 .asciz "FREE HAND"
+             4E 44 00
+      0025BB 25 6B                  577 .word free_hand 
+      0025BD 47 4C 49 44 45 52 00   578 .asciz "GLIDER"
+      0025C4 25 F6                  579 .word glider 
+      0025C6 43 4C 4F 43 4B 00      580 .asciz "CLOCK"
+      0025CC 26 02                  581 .word clock
+      0025CE 50 45 4E 54 41 44 45   582 .asciz "PENTADECATHLON"
+             43 41 54 48 4C 4F 4E
+             00
+      0025DD 26 4A                  583 .word pentadecathon
+      0025DF 50 45 4E 54 4F 4D 49   584 .asciz "PENTOMINO R"
+             4E 4F 20 52 00
+      0025EB 26 64                  585 .word pento_r 
+      0025ED 45 58 49 54 00         586 .asciz "EXIT" 
+      0025F2 00 00                  587 .word  0  
+      0025F4 00 00                  588 .word 0 
+                                    589 
+                                    590   .macro _coord x,y 
+                                    591   .word ((y+GRID_CNTR_Y)<<8)+x+GRID_CNTR_X   
+                                    592   .endm 
+                                    593 
+                           00FFFF   594 PATTERN_END=0XFFFF   
+      0025F6                        595 glider: 
+      0025F6                        596     _coord 1,0 
+      0025F6 0A 10                    1   .word ((0+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      0025F8                        597     _coord 2,1
+      0025F8 0B 11                    1   .word ((1+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
+      0025FA                        598     _coord 2,2 
+      0025FA 0C 11                    1   .word ((2+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
+      0025FC                        599     _coord 1,2
+      0025FC 0C 10                    1   .word ((2+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      0025FE                        600     _coord 0,2 
+      0025FE 0C 0F                    1   .word ((2+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
+      002600 FF FF                  601     .word PATTERN_END 
+                                    602 
+      002602                        603 clock:
+      002602                        604     _coord 6,0
+      002602 0A 15                    1   .word ((0+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
+      002604                        605     _coord 7,0
+      002604 0A 16                    1   .word ((0+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
+      002606                        606     _coord 6,1
+      002606 0B 15                    1   .word ((1+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
+      002608                        607     _coord 7,1
+      002608 0B 16                    1   .word ((1+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
+      00260A                        608     _coord 4,3
+      00260A 0D 13                    1   .word ((3+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
+      00260C                        609     _coord 5,3
+      00260C 0D 14                    1   .word ((3+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 129.
 Hexadecimal [24-Bits]
 
 
 
-      0025D5 27 0A            [ 1]  626     jreq 9$
-      0025D7 CD 23 7F         [ 4]  627     call set_cell
-      0025DA 1E 01            [ 2]  628     ldw x,(PATTERN,sp)
-      0025DC 1C 00 02         [ 2]  629     addw x,#2
-      0025DF 20 EE            [ 2]  630     jra 1$  
-      0025E1                        631 9$: 
-      0025E1                        632     _drop VAR_SIZE 
-      0025E1 5B 02            [ 2]    1     addw sp,#VAR_SIZE 
-      0025E3 CC 25 A3         [ 2]  633     jp sim_init
-                                    634 
-                                    635 
-                                    636 ; liste de configuration prédéfinie 
-      0025E6                        637 patterns:
-      0025E6 46 52 45 45 20 48 41   638 .asciz "FREE HAND"
-             4E 44 00
-      0025F0 25 A0                  639 .word free_hand 
-      0025F2 47 4C 49 44 45 52 00   640 .asciz "GLIDER"
-      0025F9 26 2B                  641 .word glider 
-      0025FB 43 4C 4F 43 4B 00      642 .asciz "CLOCK"
-      002601 26 37                  643 .word clock
-      002603 50 45 4E 54 41 44 45   644 .asciz "PENTADECATHLON"
-             43 41 54 48 4C 4F 4E
-             00
-      002612 26 7F                  645 .word pentadecathon
-      002614 50 45 4E 54 4F 4D 49   646 .asciz "PENTOMINO R"
-             4E 4F 20 52 00
-      002620 26 99                  647 .word pento_r 
-      002622 45 58 49 54 00         648 .asciz "EXIT" 
-      002627 00 00                  649 .word  0  
-      002629 00 00                  650 .word 0 
-                                    651 
-                                    652   .macro _coord x,y 
-                                    653   .word ((y+GRID_CNTR_Y)<<8)+x+GRID_CNTR_X   
-                                    654   .endm 
-                                    655 
-                           00FFFF   656 PATTERN_END=0XFFFF   
-      00262B                        657 glider: 
-      00262B                        658     _coord 1,0 
-      00262B 0A 10                    1   .word ((0+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      00262D                        659     _coord 2,1
-      00262D 0B 11                    1   .word ((1+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
-      00262F                        660     _coord 2,2 
-      00262F 0C 11                    1   .word ((2+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
-      002631                        661     _coord 1,2
-      002631 0C 10                    1   .word ((2+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      002633                        662     _coord 0,2 
-      002633 0C 0F                    1   .word ((2+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
-      002635 FF FF                  663     .word PATTERN_END 
-                                    664 
-      002637                        665 clock:
-      002637                        666     _coord 6,0
-      002637 0A 15                    1   .word ((0+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
-      002639                        667     _coord 7,0
-      002639 0A 16                    1   .word ((0+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
-      00263B                        668     _coord 6,1
+      00260E                        610     _coord 6,3
+      00260E 0D 15                    1   .word ((3+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
+      002610                        611     _coord 7,3
+      002610 0D 16                    1   .word ((3+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
+      002612                        612     _coord 0,4
+      002612 0E 0F                    1   .word ((4+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
+      002614                        613     _coord 1,4
+      002614 0E 10                    1   .word ((4+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      002616                        614     _coord 3,4
+      002616 0E 12                    1   .word ((4+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
+      002618                        615     _coord 6,4
+      002618 0E 15                    1   .word ((4+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
+      00261A                        616     _coord 8,4
+      00261A 0E 17                    1   .word ((4+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
+      00261C                        617     _coord 0,5 
+      00261C 0F 0F                    1   .word ((5+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
+      00261E                        618     _coord 1,5
+      00261E 0F 10                    1   .word ((5+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      002620                        619     _coord 3,5
+      002620 0F 12                    1   .word ((5+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
+      002622                        620     _coord 5,5 
+      002622 0F 14                    1   .word ((5+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
+      002624                        621     _coord 8,5
+      002624 0F 17                    1   .word ((5+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
+      002626                        622     _coord 3,6
+      002626 10 12                    1   .word ((6+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
+      002628                        623     _coord 5,6
+      002628 10 14                    1   .word ((6+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
+      00262A                        624     _coord 8,6
+      00262A 10 17                    1   .word ((6+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
+      00262C                        625     _coord 10,6
+      00262C 10 19                    1   .word ((6+GRID_CNTR_Y)<<8)+10+GRID_CNTR_X   
+      00262E                        626     _coord 11,6
+      00262E 10 1A                    1   .word ((6+GRID_CNTR_Y)<<8)+11+GRID_CNTR_X   
+      002630                        627     _coord 3,7
+      002630 11 12                    1   .word ((7+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
+      002632                        628     _coord 8,7
+      002632 11 17                    1   .word ((7+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
+      002634                        629     _coord 10,7
+      002634 11 19                    1   .word ((7+GRID_CNTR_Y)<<8)+10+GRID_CNTR_X   
+      002636                        630     _coord 11,7
+      002636 11 1A                    1   .word ((7+GRID_CNTR_Y)<<8)+11+GRID_CNTR_X   
+      002638                        631     _coord 4,8
+      002638 12 13                    1   .word ((8+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
+      00263A                        632     _coord 5,8
+      00263A 12 14                    1   .word ((8+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
+      00263C                        633     _coord 6,8
+      00263C 12 15                    1   .word ((8+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
+      00263E                        634     _coord 7,8 
+      00263E 12 16                    1   .word ((8+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
+      002640                        635     _coord 4,10
+      002640 14 13                    1   .word ((10+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
+      002642                        636     _coord 5,10
+      002642 14 14                    1   .word ((10+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
+      002644                        637     _coord 4,11 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 130.
 Hexadecimal [24-Bits]
 
 
 
-      00263B 0B 15                    1   .word ((1+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
-      00263D                        669     _coord 7,1
-      00263D 0B 16                    1   .word ((1+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
-      00263F                        670     _coord 4,3
-      00263F 0D 13                    1   .word ((3+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
-      002641                        671     _coord 5,3
-      002641 0D 14                    1   .word ((3+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
-      002643                        672     _coord 6,3
-      002643 0D 15                    1   .word ((3+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
-      002645                        673     _coord 7,3
-      002645 0D 16                    1   .word ((3+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
-      002647                        674     _coord 0,4
-      002647 0E 0F                    1   .word ((4+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
-      002649                        675     _coord 1,4
-      002649 0E 10                    1   .word ((4+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      00264B                        676     _coord 3,4
-      00264B 0E 12                    1   .word ((4+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
-      00264D                        677     _coord 6,4
-      00264D 0E 15                    1   .word ((4+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
-      00264F                        678     _coord 8,4
-      00264F 0E 17                    1   .word ((4+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
-      002651                        679     _coord 0,5 
-      002651 0F 0F                    1   .word ((5+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
-      002653                        680     _coord 1,5
-      002653 0F 10                    1   .word ((5+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      002655                        681     _coord 3,5
-      002655 0F 12                    1   .word ((5+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
-      002657                        682     _coord 5,5 
-      002657 0F 14                    1   .word ((5+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
-      002659                        683     _coord 8,5
-      002659 0F 17                    1   .word ((5+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
-      00265B                        684     _coord 3,6
-      00265B 10 12                    1   .word ((6+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
-      00265D                        685     _coord 5,6
-      00265D 10 14                    1   .word ((6+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
-      00265F                        686     _coord 8,6
-      00265F 10 17                    1   .word ((6+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
-      002661                        687     _coord 10,6
-      002661 10 19                    1   .word ((6+GRID_CNTR_Y)<<8)+10+GRID_CNTR_X   
-      002663                        688     _coord 11,6
-      002663 10 1A                    1   .word ((6+GRID_CNTR_Y)<<8)+11+GRID_CNTR_X   
-      002665                        689     _coord 3,7
-      002665 11 12                    1   .word ((7+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
-      002667                        690     _coord 8,7
-      002667 11 17                    1   .word ((7+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
-      002669                        691     _coord 10,7
-      002669 11 19                    1   .word ((7+GRID_CNTR_Y)<<8)+10+GRID_CNTR_X   
-      00266B                        692     _coord 11,7
-      00266B 11 1A                    1   .word ((7+GRID_CNTR_Y)<<8)+11+GRID_CNTR_X   
-      00266D                        693     _coord 4,8
-      00266D 12 13                    1   .word ((8+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
-      00266F                        694     _coord 5,8
-      00266F 12 14                    1   .word ((8+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
-      002671                        695     _coord 6,8
-      002671 12 15                    1   .word ((8+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
+      002644 15 13                    1   .word ((11+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
+      002646                        638     _coord 5,11
+      002646 15 14                    1   .word ((11+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
+      002648 FF FF                  639     .word PATTERN_END 
+                                    640 
+      00264A                        641 pentadecathon:
+      00264A                        642     _coord 2,0
+      00264A 0A 11                    1   .word ((0+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
+      00264C                        643     _coord 7,0
+      00264C 0A 16                    1   .word ((0+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
+      00264E                        644     _coord 0,1
+      00264E 0B 0F                    1   .word ((1+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
+      002650                        645     _coord 1,1
+      002650 0B 10                    1   .word ((1+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      002652                        646     _coord 3,1
+      002652 0B 12                    1   .word ((1+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
+      002654                        647     _coord 4,1
+      002654 0B 13                    1   .word ((1+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
+      002656                        648     _coord 5,1
+      002656 0B 14                    1   .word ((1+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
+      002658                        649     _coord 6,1
+      002658 0B 15                    1   .word ((1+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
+      00265A                        650     _coord 8,1
+      00265A 0B 17                    1   .word ((1+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
+      00265C                        651     _coord 9,1
+      00265C 0B 18                    1   .word ((1+GRID_CNTR_Y)<<8)+9+GRID_CNTR_X   
+      00265E                        652     _coord 2,2 
+      00265E 0C 11                    1   .word ((2+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
+      002660                        653     _coord 7,2
+      002660 0C 16                    1   .word ((2+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
+      002662 FF FF                  654     .word PATTERN_END 
+                                    655 
+      002664                        656 pento_r:
+      002664                        657     _coord 1,0
+      002664 0A 10                    1   .word ((0+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      002666                        658     _coord 1,1 
+      002666 0B 10                    1   .word ((1+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      002668                        659     _coord 2,1
+      002668 0B 11                    1   .word ((1+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
+      00266A                        660     _coord 0,2
+      00266A 0C 0F                    1   .word ((2+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
+      00266C                        661     _coord 1,2
+      00266C 0C 10                    1   .word ((2+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
+      00266E FF FF                  662     .word PATTERN_END 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 131.
-Hexadecimal [24-Bits]
-
-
-
-      002673                        696     _coord 7,8 
-      002673 12 16                    1   .word ((8+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
-      002675                        697     _coord 4,10
-      002675 14 13                    1   .word ((10+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
-      002677                        698     _coord 5,10
-      002677 14 14                    1   .word ((10+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
-      002679                        699     _coord 4,11 
-      002679 15 13                    1   .word ((11+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
-      00267B                        700     _coord 5,11
-      00267B 15 14                    1   .word ((11+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
-      00267D FF FF                  701     .word PATTERN_END 
-                                    702 
-      00267F                        703 pentadecathon:
-      00267F                        704     _coord 2,0
-      00267F 0A 11                    1   .word ((0+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
-      002681                        705     _coord 7,0
-      002681 0A 16                    1   .word ((0+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
-      002683                        706     _coord 0,1
-      002683 0B 0F                    1   .word ((1+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
-      002685                        707     _coord 1,1
-      002685 0B 10                    1   .word ((1+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      002687                        708     _coord 3,1
-      002687 0B 12                    1   .word ((1+GRID_CNTR_Y)<<8)+3+GRID_CNTR_X   
-      002689                        709     _coord 4,1
-      002689 0B 13                    1   .word ((1+GRID_CNTR_Y)<<8)+4+GRID_CNTR_X   
-      00268B                        710     _coord 5,1
-      00268B 0B 14                    1   .word ((1+GRID_CNTR_Y)<<8)+5+GRID_CNTR_X   
-      00268D                        711     _coord 6,1
-      00268D 0B 15                    1   .word ((1+GRID_CNTR_Y)<<8)+6+GRID_CNTR_X   
-      00268F                        712     _coord 8,1
-      00268F 0B 17                    1   .word ((1+GRID_CNTR_Y)<<8)+8+GRID_CNTR_X   
-      002691                        713     _coord 9,1
-      002691 0B 18                    1   .word ((1+GRID_CNTR_Y)<<8)+9+GRID_CNTR_X   
-      002693                        714     _coord 2,2 
-      002693 0C 11                    1   .word ((2+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
-      002695                        715     _coord 7,2
-      002695 0C 16                    1   .word ((2+GRID_CNTR_Y)<<8)+7+GRID_CNTR_X   
-      002697 FF FF                  716     .word PATTERN_END 
-                                    717 
-      002699                        718 pento_r:
-      002699                        719     _coord 1,0
-      002699 0A 10                    1   .word ((0+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      00269B                        720     _coord 1,1 
-      00269B 0B 10                    1   .word ((1+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      00269D                        721     _coord 2,1
-      00269D 0B 11                    1   .word ((1+GRID_CNTR_Y)<<8)+2+GRID_CNTR_X   
-      00269F                        722     _coord 0,2
-      00269F 0C 0F                    1   .word ((2+GRID_CNTR_Y)<<8)+0+GRID_CNTR_X   
-      0026A1                        723     _coord 1,2
-      0026A1 0C 10                    1   .word ((2+GRID_CNTR_Y)<<8)+1+GRID_CNTR_X   
-      0026A3 FF FF                  724     .word PATTERN_END 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 132.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7321,7 +7254,7 @@ Symbol Table
     CLK_ECKR=  000001     |     CLK_HSIT=  0050CC     |     CLK_ICKR=  0050C0 
     CLK_ICKR=  000002     |     CLK_ICKR=  000000     |     CLK_ICKR=  000001 
     CLK_ICKR=  000003     |     CLK_ICKR=  000004     |     CLK_ICKR=  000005 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 133.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 132.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7381,7 +7314,7 @@ Symbol Table
     FLASH_NF=  000001     |     FLASH_NF=  000002     |     FLASH_NF=  000003 
     FLASH_NF=  000004     |     FLASH_NF=  000005     |     FLASH_PU=  005062 
     FLASH_PU=  000056     |     FLASH_PU=  0000AE     |     FLASH_SI=  010000 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 134.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 133.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7441,7 +7374,7 @@ Symbol Table
     INT_VECT=  008060     |     INT_VECT=  00800C     |     INT_VECT=  008028 
     INT_VECT=  00802C     |     INT_VECT=  008010     |     INT_VECT=  008014 
     INT_VECT=  008018     |     INT_VECT=  00801C     |     INT_VECT=  008020 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 135.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 134.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7501,7 +7434,7 @@ Symbol Table
     PE      =  000014     |     PE_BASE =  005014     |     PE_CR1  =  005017 
     PE_CR2  =  005018     |     PE_DDR  =  005016     |     PE_IDR  =  005015 
     PE_ODR  =  005014     |     PF      =  000019     |     PF_BASE =  005019 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 136.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 135.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7561,7 +7494,7 @@ Symbol Table
     TIM1_CCM=  000003     |     TIM1_CCM=  00525A     |     TIM1_CCM=  000000 
     TIM1_CCM=  000001     |     TIM1_CCM=  000004     |     TIM1_CCM=  000005 
     TIM1_CCM=  000006     |     TIM1_CCM=  000007     |     TIM1_CCM=  000002 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 137.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 136.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7621,7 +7554,7 @@ Symbol Table
     TIM3_CCM=  000004     |     TIM3_CCM=  000003     |     TIM3_CCM=  000000 
     TIM3_CCM=  000004     |     TIM3_CCM=  000003     |     TIM3_CCR=  00532D 
     TIM3_CCR=  00532E     |     TIM3_CCR=  00532F     |     TIM3_CCR=  005330 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 138.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 137.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7681,7 +7614,7 @@ Symbol Table
     VAR_SIZE=  000002     |     VBUFF_SI=  0012C0     |     VIDEO_LI=  0000C0 
     VPULSE  =  0001B4     |     VRES    =  0000C0     |     VSIZE   =  000002 
     VT      =  00000B     |     WDGOPT  =  004805     |     WDGOPT_I=  000002 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 139.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 138.
 Hexadecimal [24-Bits]
 
 Symbol Table
@@ -7694,65 +7627,64 @@ Symbol Table
     Y1      =  000004     |     YCOOR   =  000001     |   6 Z0         0022A0 R
   6 Z1         0022A6 R   |   5 acc16      0000E4 GR  |   5 acc8       0000E5 GR
   8 app_vari   000004 R   |   6 beep       00007C R   |   6 bit_mask   0006CC R
-  6 bottom_c   002403 R   |   6 cell_ind   00230D R   |   8 chrono     000007 R
-  6 chrono_d   0020CF R   |   6 chrono_r   0020B0 R   |   6 clock      002637 R
-  6 clock_in   000004 R   |   6 cold_sta   000115 R   |   6 copy_cel   002346 R
-  6 cright     000A7C R   |   6 crlf       00073D R   |   6 cursor_r   00074D R
-  5 cx         0000F4 R   |   5 cy         0000F3 R   |   6 dbg_nl     000156 R
-  6 dbg_prin   000154 R   |   6 dbg_prin   000155 R   |   5 delay_ti   0000E2 R
-  9 dest       000008 R   |   6 display_   00235A R   |   6 display_   002367 R
-  6 draw_hea   001EC0 R   |   6 draw_sna   001ECE R   |   6 draw_spr   001EB6 R
-  6 draw_wal   001E8F R   |   6 draw_wel   0022BC R   |   6 erase_st   0024EB R
-  6 fall       0022E2 R   |   6 fall_ini   0022DB R   |   6 fill       0009F9 R
-  5 flags      0000EA GR  |   5 fmstr      0000E6 GR  |   6 font_6x8   0001BD R
-  6 font_end   0004F5 R   |   6 food_col   001F0F R   |   8 food_coo   00000D R
-  6 free_han   0025A0 R   |   8 game_fla   00000A R   |   6 game_of_   00258D R
-  6 game_ove   0021D8 R   |   9 gen        000004 R   |   6 gen_str    0024CF R
-  6 get_cell   002326 R   |   6 glider     00262B R   |   6 gover      002215 R
-  9 grid1      00000A R   |   9 grid2      000062 R   |   6 grid_ini   0024FA R
-  6 img_data   000BA2 R   |   6 init_str   0024DC R   |   6 invert_p   00070E R
-  6 jitter_c   000669 R   |   6 kpad_inp   0000CD R   |   6 left_4pi   00093B R
-  6 life_ini   0022F6 R   |   6 line       000802 R   |   6 load_bmp   000A01 R
-  6 main       000A9B R   |   8 max_scor   000008 R   |   6 max_str    002160 R
-  6 menu       000AF6 R   |   6 move       0009B5 GR  |   6 move_arr   001FB7 R
-  6 move_dow   0009D5 R   |   6 move_exi   0009F4 R   |   6 move_loo   0009DA R
-  6 move_sna   001FC5 R   |   6 move_up    0009C7 R   |   6 neighbor   002440 R
-  6 new_food   0020E6 R   |   6 next_gen   002457 R   |   6 next_hea   001F96 R
-  6 noise      0000A6 R   |   5 ntsc_fla   0000EF R   |   6 ntsc_ini   0004F5 R
-  5 ntsc_pha   0000F0 R   |   6 ntsc_syn   000575 R   |   6 ntsc_vid   000652 R
-  6 patterns   0025E6 R   |   6 pause      000033 R   |   6 pentadec   00267F R
-  6 pento_r    002699 R   |   6 pixel_ad   0006DB R   |   6 post_vid   00062E R
-  6 print_ge   0022E9 R   |   6 prng       000181 GR  |   6 prog_lis   000B88 R
-  6 prompt     002229 R   |   6 prt_info   002119 R   |   5 ptr16      0000E8 GR
-  5 ptr8       0000E9 R   |   6 put_cell   002335 R   |   6 put_spri   000875 R
-  6 put_uint   0007DE R   |   6 put_vers   000A46 R   |   6 read_key   0000D5 R
-  6 reset_ce   00238E R   |   6 reset_pi   000707 R   |   6 right_4p   000974 R
-  6 rotate_h   00202D R   |   6 row_coun   0023D7 R   |   5 scan_lin   0000F1 R
+  6 bottom_c   0023CE R   |   6 cell_ind   00230D R   |   8 chrono     000007 R
+  6 chrono_d   0020CF R   |   6 chrono_r   0020B0 R   |   6 clock      002602 R
+  6 clock_in   000004 R   |   6 cold_sta   000115 R   |   6 cright     000A7C R
+  6 crlf       00073D R   |   6 cursor_r   00074D R   |   5 cx         0000F4 R
+  5 cy         0000F3 R   |   6 dbg_nl     000156 R   |   6 dbg_prin   000154 R
+  6 dbg_prin   000155 R   |   5 delay_ti   0000E2 R   |   9 dest       000008 R
+  6 display_   002335 R   |   6 display_   002342 R   |   6 draw_hea   001EC0 R
+  6 draw_sna   001ECE R   |   6 draw_spr   001EB6 R   |   6 draw_wal   001E8F R
+  6 draw_wel   0022BC R   |   6 erase_st   0024B6 R   |   6 fall       0022E2 R
+  6 fall_ini   0022DB R   |   6 fill       0009F9 R   |   5 flags      0000EA GR
+  5 fmstr      0000E6 GR  |   6 font_6x8   0001BD R   |   6 font_end   0004F5 R
+  6 food_col   001F0F R   |   8 food_coo   00000D R   |   6 free_han   00256B R
+  8 game_fla   00000A R   |   6 game_of_   002558 R   |   6 game_ove   0021D8 R
+  9 gen        000004 R   |   6 gen_str    00249A R   |   6 get_cell   002326 R
+  6 glider     0025F6 R   |   6 gover      002215 R   |   9 grid1      00000A R
+  9 grid2      000062 R   |   6 grid_ini   0024C5 R   |   6 img_data   000BA2 R
+  6 init_str   0024A7 R   |   6 invert_p   00070E R   |   6 jitter_c   000669 R
+  6 kpad_inp   0000CD R   |   6 left_4pi   00093B R   |   6 life_ini   0022F6 R
+  6 line       000802 R   |   6 load_bmp   000A01 R   |   6 main       000A9B R
+  8 max_scor   000008 R   |   6 max_str    002160 R   |   6 menu       000AF6 R
+  6 move       0009B5 GR  |   6 move_arr   001FB7 R   |   6 move_dow   0009D5 R
+  6 move_exi   0009F4 R   |   6 move_loo   0009DA R   |   6 move_sna   001FC5 R
+  6 move_up    0009C7 R   |   6 neighbor   00240B R   |   6 new_food   0020E6 R
+  6 next_gen   002422 R   |   6 next_hea   001F96 R   |   6 noise      0000A6 R
+  5 ntsc_fla   0000EF R   |   6 ntsc_ini   0004F5 R   |   5 ntsc_pha   0000F0 R
+  6 ntsc_syn   000575 R   |   6 ntsc_vid   000652 R   |   6 patterns   0025B1 R
+  6 pause      000033 R   |   6 pentadec   00264A R   |   6 pento_r    002664 R
+  6 pixel_ad   0006DB R   |   6 post_vid   00062E R   |   6 print_ge   0022E9 R
+  6 prng       000181 GR  |   6 prog_lis   000B88 R   |   6 prompt     002229 R
+  6 prt_info   002119 R   |   5 ptr16      0000E8 GR  |   5 ptr8       0000E9 R
+  6 put_spri   000875 R   |   6 put_uint   0007DE R   |   6 put_vers   000A46 R
+  6 read_key   0000D5 R   |   6 reset_pi   000707 R   |   6 right_4p   000974 R
+  6 rotate_h   00202D R   |   6 row_coun   0023A2 R   |   5 scan_lin   0000F1 R
   8 score      000004 R   |   6 score_st   002152 R   |   6 scroll_8   000A32 R
   6 scroll_d   000902 R   |   6 scroll_l   000964 R   |   6 scroll_r   0009A5 R
   6 scroll_t   000714 R   |   6 scroll_u   0008C9 R   |   5 seedx      0000EB R
-  5 seedy      0000ED R   |   6 select_m   000B7E R   |   6 set_cell   00237F R
-  6 set_patt   0025C9 R   |   6 set_pixe   000701 R   |   6 set_seed   0001A3 R
-  6 sim        0025B7 R   |   6 sim_init   0025A3 R   |   6 sll_xy_3   000173 R
+  5 seedy      0000ED R   |   6 select_m   000B7E R   |   6 set_cell   00235A R
+  6 set_patt   002594 R   |   6 set_pixe   000701 R   |   6 set_seed   0001A3 R
+  6 sim        002582 R   |   6 sim_init   00256E R   |   6 sll_xy_3   000173 R
   6 snake      00219D R   |   8 snake_bo   00000F R   |   8 snake_di   00000C R
   6 snake_in   002165 R   |   8 snake_le   00000B R   |   6 snake_po   001EF6 R
   5 sound_ti   0000E3 R   |   8 speed      000006 R   |   6 speed_st   002159 R
   9 src        000006 R   |   6 srl_xy_3   00017A R   |   2 stack_fu   001780 GR
   2 stack_un   001800 R   |   6 sync_exi   00064F R   |   6 test_pre   0005E1 R
   5 ticks      0000E0 R   |   6 timeout    0021C7 R   |   6 timeout_   002220 R
-  6 timer3_i   00001A R   |   6 toggle_c   002370 R   |   6 tone       00003F R
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 140.
+  6 timer3_i   00001A R   |   6 toggle_c   00234B R   |   6 tone       00003F R
+  6 top_coun   002369 R   |   6 tune       000089 R   |   2 tv_buffe   0004C0 R
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 139.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-  6 top_coun   00239E R   |   6 tune       000089 R   |   2 tv_buffe   0004C0 R
   6 tv_cls     0006B5 R   |   6 tv_putc    000756 R   |   6 tv_puts    0007D2 R
   6 user_inp   002062 R   |   6 user_sel   000B2E R   |   6 version_   000A68 R
   6 video_on   00055C R   |   6 wait_key   0000F8 R   |   6 wait_key   0000FE R
   6 xor_seed   000157 R
 
-ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 141.
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (STMicroelectronics STM8), page 140.
 Hexadecimal [24-Bits]
 
 Area Table
@@ -7763,7 +7695,7 @@ Area Table
    3 HOME       size     80   flags    0
    4 DATA       size      0   flags    8
    5 DATA1      size     15   flags    8
-   6 CODE       size   26A5   flags    0
+   6 CODE       size   2670   flags    0
    7 G_DATA     size      0   flags    8
    8 G_DATA2    size     4B   flags    8
    9 G_DATA3    size     B6   flags    8

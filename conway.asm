@@ -118,48 +118,6 @@ get_cell_state:
     popw x
     ret 
 
-;--------------------
-; put cell state 
-; input:
-;   A    cell state 
-;   XL   xcoord 
-;   XH   ycoord 
-; output:
-;   X    unchanged 
-;   Y    unchanged
-;-------------------- 
-put_cell:
-    pushw x 
-    pushw y 
-    push a 
-    call cell_index 
-    pop a 
-    addw y,(2,sp)
-    ld (y),a 
-    popw y 
-    popw x 
-    ret 
-
-;---------------------
-; copy cell state 
-; from src to dest 
-; input:
-;    XL    x coord 
-;    XL    y coord 
-; output:
-;    A    unknown 
-;    X    index 
-;    Y    unchanged 
-;---------------------
-copy_cell:
-    pushw y 
-    ldw y,src 
-    call get_cell_state 
-    or a,([dest],x)
-    ld ([dest],x),a 
-    popw y 
-    ret 
-
 ;-------------------------
 ; put cell state to display
 ; input:
@@ -220,26 +178,6 @@ set_cell:
     call cell_index 
     addw y,(1,sp)
     or a,(y)
-    ld (y),a 
-    popw y 
-    ret 
-
-;---------------------
-; reset cell bit in array 
-; input:
-;   XL   xcoord 
-;   XH   ycoord 
-;   Y    array addr 
-; output:
-;   X    unchanged 
-;   y    unchanged  
-;------------------------ 
-reset_cell:
-    pushw y 
-    call cell_index 
-    addw y,(1,sp)
-    cpl a 
-    and a,(y)
     ld (y),a 
     popw y 
     ret 

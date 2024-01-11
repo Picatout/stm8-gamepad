@@ -25,7 +25,7 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000080  l_HOME                          
      000000B6  l_G_DATA3                       
      00001340  l_SSEG0                         
-     000026A5  l_CODE                          
+     00002670  l_CODE                          
      00008000  s_HOME                          
      00008080  s_CODE                          
 ASxxxx Linker V03.00 + NoICE + sdld,  page 2.
@@ -68,7 +68,7 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    000026A5 =        9893. bytes (REL,CON)
+CODE                                00008080    00002670 =        9840. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------

@@ -1,3 +1,9 @@
+### 2024-01-11
+
+* Travail sur [fall.asm](fall.asm).
+
+* Optimisation de [conway.asm](conway.asm).
+
 ### 2024-01-10
 
 * Ajouter d'un menu avec des configurations prédéfinies dans [conway.asm](conway.asm). 
