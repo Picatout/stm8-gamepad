@@ -4,3 +4,4 @@ build/*.lst
 build/*.map
 build/*.rel 
 build/*.rst 
+KiCAD/stm8-gamepad/
