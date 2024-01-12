@@ -84,12 +84,16 @@ fall_init:
     call tv_puts 
     ldw x,#(11<<8)+6
     _strxz cy 
-    ldw y,#name_in_lenght
+    ldw y,#name_in_length
     call tv_puts
     ld a,#2
     call roll_up
     call tv_cls 
     call draw_well 
+    ldw y,#korobeniki
+    call tune
+    ldw x,#255 
+    call wait_key_release 
     ret 
 
 fall:
@@ -97,5 +101,51 @@ fall:
     call wait_key 
     ret 
 
-name_in_lenght:
-.asciz "Ce n'est pas TETRIS." 
+name_in_length:
+.asciz "Ce n'est pas TETRIS (R)." 
+
+korobeniki:
+    _note MI4,HALF+QUARTER
+    _note SOLD4,QUARTER
+    _note SI4,HALF 
+    _note SOL4,QUARTER
+    _note MI4,QUARTER 
+
+    _note LA4,HALF+QUARTER 
+    _note DOD5,QUARTER 
+    _note MI5,HALF 
+    _note RE5,QUARTER 
+    _note DO5,QUARTER 
+    
+    _note SI4,HALF+QUARTER 
+    _note DO5,QUARTER 
+    _note RE5,HALF 
+    _note MI5,HALF 
+
+    _note DO5,HALF 
+    _note LA4, HALF 
+    _note LA4, WHOLE 
+
+    _note FA5, HALF+QUARTER 
+    _note SOL5, QUARTER 
+    _note LA5, HALF 
+    _note SOL5, QUARTER 
+    _note FA5, QUARTER 
+
+    _note MI5, HALF+QUARTER 
+    _note FA5, QUARTER 
+    _note MI5, HALF 
+    _note RE5, QUARTER
+    _note DO5, QUARTER 
+
+    _note SI4, HALF+QUARTER 
+    _note DO5, QUARTER 
+    _note RE5, HALF 
+    _note MI5, HALF 
+
+    _note DO5, HALF 
+    _note LA4, HALF 
+    _note LA4, WHOLE 
+
+    _note 0,0
+

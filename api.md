@@ -202,7 +202,8 @@ user_input:
 * **wait_key** Attend qu'un bouton soit enfoncé et retourne l'état dans le registre **A**. 
 <hr>
 
-* **wait _key_release** Attend que tous les boutons soient relâchés.  
+* **wait _key_release** Attend que tous les boutons soient relâchés.  Un délais d'expiration de l'attente doit-être founis dans **X**.
+    * **X**  délais d'expiration de l'attente en 60ième de seconde.
 
 <a href="#index">index</a>
 
@@ -246,6 +247,15 @@ courante du curseur texte. Avance le curseur à la position suivante.
 
 * **put_uint16**  Affiche à la position du curseur la valeur entière non signée contenue dans le registre **X**.
     * **X** Entier à afficher.
+<hr>
+
+* **scroll_text**  Déroule l'affichage vers le haut d'une ligne de texte et efface la dermière ligne. 
+
+<hr>
+
+* **roll_up** déroule l'affichage vers le haut jusqu'à ce qu'il soit vide ou qu'une touche du kpad soit enfoncée.
+    * **A**  délais contrôlant la vitesse de déroulement. Le délais est en 60ième de secondes.
+
 <hr>
 
 * **line**  Trace une ligne droite entre les coordonnées **{x0,y0}** et **{x1,y1}** excluant ce dernier point.

@@ -283,7 +283,7 @@ select_mark:
 prog_list:
 ; tetris like game, but it's not. 
 fall_name:
-.asciz "CENEPAT"
+.asciz "FALL"
 .word fall
 ; a snake game variation
 .asciz "SNAKE"
