@@ -1,3 +1,12 @@
+### 2024-01-12
+
+* Travail sur un nouveau jeu appellé *CADENA*. Il s'agit d'une variante du jeu mastermind. Un nombre aléatoire de 4 chiffres est généré et le joueur doit deviner la combinaison en un nombre minimum de d'essais. 
+    * Si 1 ou plusieurs chiffres qu'il a choisi font parti de la combinaison un __*__ apparaît à droite de la rangée.
+    * Si 1 ou plusieurs chiffres apparaît en bonne position un **+** apparaît à droite de la rangée.
+    * Si aucun chiffre ne fait parti de la combinaison aune indication n'est donnée. 
+Le joueur dispose d'un maximum de 12 essais.
+
+
 ### 2024-01-11
 
 * Travail sur [fall.asm](fall.asm).

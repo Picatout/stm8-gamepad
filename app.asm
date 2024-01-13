@@ -281,6 +281,10 @@ select_mark:
 
 
 prog_list:
+; mastermind variant game 
+lock_name:
+.asciz "CADENA"
+.word lock_game 
 ; tetris like game, but it's not. 
 fall_name:
 .asciz "FALL"
