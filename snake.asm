@@ -642,18 +642,12 @@ game_over:
     _ldxz score 
     call put_uint16
     call crlf 
-    ldw y,#prompt 
-    call tv_puts 
-6$:
-    call wait_key 
+    ldw x,#(3<<8)
+    call again  
     cp a,#BTN_A 
     jreq snake 
-    cp a,#BTN_B 
-    jreq 9$
-    jra 6$
 9$:     
     ret 
 
 gover: .asciz "game over\r"
 timeout_str: .asciz "TIME OUT" 
-prompt: .asciz "A new game\rB exit"

@@ -300,6 +300,7 @@ wait_key:
     DLY=1
     VAR_SIZE=2
 wait_key_release:
+	push a 
     _vars VAR_SIZE
     addw x,ticks
 	ldw (DLY,sp),x 
@@ -311,7 +312,8 @@ wait_key_release:
     jrne 1$ 
 9$:
     _drop VAR_SIZE 
-    ret 
+    pop a 
+	ret 
 
 ;-------------------------------------
 ;  initialization entry point 

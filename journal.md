@@ -1,3 +1,8 @@
+### 2024-01-13
+
+* Travail sur jeu [cadena.asm](cadena.asm).
+* Ajout de la routine *again*  dans [app.asm](app.asm).
+
 ### 2024-01-12
 
 * Travail sur un nouveau jeu appellé *CADENA*. Il s'agit d'une variante du jeu mastermind. Un nombre aléatoire de 4 chiffres est généré et le joueur doit deviner la combinaison en un nombre minimum de d'essais. 

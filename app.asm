@@ -127,6 +127,41 @@ put_version:
 version_str: .asciz "STM8 game console, "
 cright: .asciz "(C) Jacques Deschenes, 2023,24"
 
+;------------------------
+; display prompt asking 
+; player for another 
+; round or quit.
+;  input: text position  
+;    XL   xcoord 
+;    XH   ycoord 
+;------------------------
+ask_str:
+.asciz "A) Play again"
+.asciz "B) main menu"
+
+again:
+	pushw x 
+	_strxz cy 
+	ldw y,#ask_str 
+	call tv_puts 
+	incw y 
+	popw x 
+	addw x,#(1<<8)
+	_strxz cy 
+	call tv_puts
+1$: ldw x,#255 
+	call wait_key_release
+	call wait_key  
+	cp a,#BTN_A 
+	jreq 9$
+	cp a,#BTN_B 
+	jrne 1$ 
+9$: 
+	ldw x,#255 
+	call wait_key_release 
+	ret 
+
+
 SCROLL_DLY=2
 ;--------------------------
 ; application entry point 
