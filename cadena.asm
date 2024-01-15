@@ -44,7 +44,7 @@ FRAME_TOP=10 ; grid top coord
 FRAME_LEFT=90 ; grid left coord
 CELL_SIDE=12 ; square cell size
 HINT_LEFT=FRAME_LEFT+4*CELL_SIDE+2 ; hint grid left coordinate
-SCORE_TOP=3 ;
+SCORE_TOP=2 ;
 PLAYER_NO_LEFT=3
 SCORE_LEFT=9 
 CURSOR_ROW=FONT_HEIGHT
@@ -644,7 +644,6 @@ draw_frame:
     ld a,set 
     ld xl,a 
     call put_uint16
-    call crlf 
 ; display players list 
 ; with their score 
     ldw y,#HEADER_STR 
