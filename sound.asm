@@ -181,3 +181,41 @@ noise:
 	popw x 
 	ret 
 
+;---------------------------
+; sound rapidly increasing 
+; in frequency 
+;---------------------------
+laser: 
+	ldw x,#200 
+	pushw x 
+1$:	ld a,#1 
+	call tone 
+	ldw x,(1,sp)
+	ld a,#8
+	div x,a 
+	addw x,(1,sp)
+	ldw (1,sp),x 
+	cpw x,#5000
+	jrmi 1$
+	_drop 2	
+	ret 
+
+;---------------------------
+; dropping tonality 
+;-------------------------
+drop:
+	ldw x,#5000
+	pushw x 
+1$: ld a,#1 
+	call tone 
+	ldw x,(1,sp)
+	ld a,#8 
+	div x,a 
+	subw x,(1,sp)
+	negw x 
+	ldw (1,sp),x 
+	cpw x,#200 
+	jrpl 1$ 
+	_drop 2
+	ret 
+	

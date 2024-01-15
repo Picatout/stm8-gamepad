@@ -38,45 +38,67 @@
     .area G_DATA 
     .org 4 
 
+MAX_PLAYERS=4
+MAX_TRIES=12
+FRAME_TOP=10 ; grid top coord
+FRAME_LEFT=90 ; grid left coord
+CELL_SIDE=12 ; square cell size
+HINT_LEFT=FRAME_LEFT+4*CELL_SIDE+2 ; hint grid left coordinate
+SCORE_TOP=3 ;
+PLAYER_NO_LEFT=3
+SCORE_LEFT=9 
+CURSOR_ROW=FONT_HEIGHT
+GAME_SETS=3 ; number of sets per game 
+
+
 lock: .blkb 4 ; lock digits 
 try: .blkb 4 ; player last try digits 
 tries: .blkb 1 ; number of player tries 
-scores: .blkb 4 ; players score
+scores: .blkb MAX_PLAYERS ; players score
 set: .blkb 1 ; a game is 3 set 
-nbr_players: .blkb 1 ; number of players {1..4}
+nbr_players: .blkb 1 ; number of players {1..MAX_PLAYERS}
 play_turn: .blkb 1 ; active player 
 
-FRAME_TOP=10 ; grid top coord
-FRAME_LEFT=58 ; grid left coord
-CELL_SIDE=10 ; square cell size
-HINT_LEFT=FRAME_LEFT+4*CELL_SIDE+2 ; hint grid left coordinate
 
     .area CODE 
 
+;--------------------------
+;  game initialization
+;--------------------------
 lock_init:
     _clrz tries 
+    ld a,#1 
+    _straz set
+    _straz play_turn  
     ldw x,#try
     push #4 
-    clr a 
 1$: ; clear try digits     
-    ld (x),a 
+    clr (x) 
     incw x 
     dec (1,sp)
     jrne 1$ 
+; clear players score 
+    ld a,#MAX_PLAYERS 
+    ldw x,#scores
+    ld (1,sp),a 
+2$: clr (x)
+    incw x
+    dec (1,sp)
+    jrne 2$ 
+; generate lock hidden number     
     ld a,#4 
     ld (1,sp),a 
     call prng 
     ldw y,#lock
-2$: ; set random lock number     
+4$: ; set lock array     
     ld a,#10 
     div x,a 
     ld (y),a 
     incw y 
     dec (1,sp)
-    jrne 2$  
+    jrne 4$  
     _drop 1 
     ret 
-
 
 ;----------------------
 ; return digit at 
@@ -142,24 +164,13 @@ display_try:
     _vars VAR_SIZE 
     ld a,#4 
     ld (COUNT,sp),a 
-    ldw y,#try 
-; compute Y coordinate
-; same for all digits     
-    ld a,tries
-    ld xl,a 
-    ld a,#CELL_SIDE 
-    mul x,a 
-    addw x,#FRAME_TOP+1 
-    ld a,xl 
-    ld (ROWY,sp),a 
-; x coordinate change for each digit
-; left digit x coord 
-    ld a,#FRAME_LEFT+2
-    ld (ROWX,sp),a 
-    ldw x,(ROWY,sp)
+    clr a 
+    call compute_digit_coords
+    ldw y,#try
 1$: ld a,(y)
     call display_digit
-    addw x,#CELL_SIDE 
+    addw x,#CELL_SIDE
+    incw y 
     dec (COUNT,sp)
     jrne 1$  
     _drop VAR_SIZE 
@@ -172,7 +183,7 @@ display_try:
 ;-----------------
 ; diplay cursor 
 ; in cell 
-; input:
+; input: digit coords
 ;     XL  xcoord 
 ;     XH  ycoord 
 ;-------------------
@@ -181,6 +192,7 @@ CURSOR_HEIGHT=2
 display_cursor:
     pushw x 
     pushw y
+    addw x,#(CURSOR_ROW<<8); underscore digit
     ldw y,#CURSOR_SHAPE 
     ld a,#CURSOR_HEIGHT 
     call put_sprite 
@@ -219,7 +231,6 @@ get_digit:
     ld a,(DIGIT,sp)
     ldw x,(YCOOR,sp)
     call display_digit  
-    addw x,#(FONT_HEIGHT-1)<<8
     call display_cursor 
     call wait_key 
     ld (KEY,sp),a 
@@ -228,7 +239,6 @@ get_digit:
     ld a,(DIGIT,sp)
     ldw x,(YCOOR,sp)
     call display_digit 
-    addw x,#(FONT_HEIGHT-1)<<8
     call display_cursor 
     ld a,(KEY,sp)
     cp a,#BTN_UP 
@@ -263,20 +273,20 @@ get_digit:
 compute_digit_coords:
     ldw x,#CELL_SIDE 
     mul x,a 
-    addw x,#FRAME_LEFT+2 
-    pushw x
-    ld a,try 
+    addw x,#FRAME_LEFT+3 
+    pushw x  ; xcoord 
+    ld a,tries
     ldw x,#CELL_SIDE 
     mul x,a 
     addw x,#FRAME_TOP+2
-    swapw x 
+    swapw x ; ycoord 
     addw x,(1,sp)
     _drop 2 
     ret 
 
 
 ;----------------------
-; get user input try 
+; get player input try 
 ;----------------------
     YCOOR=1
     XCOOR=YCOOR+1
@@ -284,15 +294,16 @@ compute_digit_coords:
     IDIGIT=CPOS+1 ; digit set value
     KEY=IDIGIT+1
     VAR_SIZE=KEY 
-get_user_try:
+player_try:
     _vars VAR_SIZE 
     clrw x 
     ldw (CPOS,sp),x 
 1$:
+    call display_try ; show digits
     ld a,(CPOS,sp)
     call compute_digit_coords
+    ldw (YCOOR,sp),x 
     call display_cursor ; show cursor
-    call display_try ; show digits
 2$: ; user input 
     ldw x,#30
     call wait_key_release
@@ -300,7 +311,7 @@ get_user_try:
     ld (KEY,sp),a 
     call display_try ; erase digits 
     ld a,(CPOS,sp)
-    call compute_digit_coords 
+    ldw x,(YCOOR,sp) 
     call display_cursor ; hide cursor 
     ld a,(KEY,sp)
     cp a,#BTN_UP
@@ -349,6 +360,7 @@ get_user_try:
 10$:    
     cp a,#BTN_A 
     jrne 1$ 
+    call display_try
     ldw x,#255
     call wait_key_release
     _drop VAR_SIZE 
@@ -359,8 +371,9 @@ get_user_try:
 ; and display hint 
 ; at active row 
 ;---------------------
-display_hint:
+eval_try:
 
+    _incz tries 
     ret 
 
 
@@ -440,12 +453,12 @@ draw_hlines:
     _drop VAR_SIZE 
     ret 
 
+
 ;------------------------
-; draw game frame 
+; draw game grid 
 ;------------------------
 ARG_SIZE=5 ; space reserved on stack for draw_grid parameters
-draw_frame:
-    call tv_cls
+draw_grid:
     ldw x,#FRAME_LEFT/FONT_WIDTH + 1
     _strxz cy  
     ldw y,#lock_name 
@@ -492,6 +505,14 @@ draw_frame:
 ; players 
 ;---------------------
 TEXT_LINES=6
+rules: 
+.asciz "Une variante du jeu Mastermind.\r"
+.asciz "Il faut deviner la combinaison.\r"
+.asciz "une parti dure 3 manches.\r" 
+.asciz "'C', 1+ chiffre est bon.\r"
+.asciz "'P', 1+ chiffre est en position.\r\r"  
+.asciz "Combien de joueurs (1..4)? "
+
 display_rules:
     pushw x 
     pushw y 
@@ -528,27 +549,160 @@ display_rules:
     popw x  
     ret
 
-rules: 
-.asciz "Une variante du jeu Mastermind.\r"
-.asciz "Il faut deviner la combinaison.\r"
-.asciz "une parti dure 3 manches.\r" 
-.asciz "'C', 1+ chiffre est bon.\r"
-.asciz "'P', 1+ chiffre est en position.\r\r"  
-.asciz "Combien de joueurs (1..4)? "
-.word 0
+;-----------------
+; reset variables 
+; next player 
+; move pointer 
+;-----------------
+player_reset:
+    _clrz tries
+    push #4 
+    ldw x,#try 
+1$: clr (x)
+    incw x 
+    dec (1,sp)
+    jrne 1$ 
+    _drop 1 
+; erase previous pointer  
+    _ldaz play_turn 
+    cp a,#1 
+    jreq 2$
+    dec a 
+    add a,#SCORE_TOP
+    _straz cy 
+    _clrz cx
+    ld a,#SPACE 
+    call tv_putc 
+    _ldaz play_turn 
+2$: ; put new pointer 
+    add a,#SCORE_TOP 
+    _straz cy 
+    _clrz cx
+    ld a,#'>
+    call tv_putc  
+    ret 
+;-----------------
+; evaluate player score
+;----------------------
+eval_score:
+
+    ret 
+
+;------------------
+; set game for 
+; next try 
+;------------------
+next_try:
+    inc tries 
+    ld a,#MAX_TRIES 
+    cp a,tries 
+    jrpl next_player 
+    ret 
+
+;--------------------
+; set game for next 
+; player 
+;--------------------
+next_player:
+    call eval_score 
+    inc play_turn 
+    ld a,nbr_players 
+    cp a,play_turn 
+    jrpl next_set  
+    jra player_reset      
+
+;---------------------
+; set game for next  
+; set 
+;--------------------
+next_set:
+    ld a,set 
+    cp a,#GAME_SETS
+    jreq lock_game_over 
+    _incz set 
+jra .    
+    ret 
+
+lock_game_over:
+jra .
+    ret 
+
+;--------------
+; display 
+; game frame
+;--------------
+SET_STR: .asciz "MANCHE:"
+HEADER_STR: .asciz "\r\rJOUEUR POINTS\r"
+draw_frame:
+    pushw x 
+    pushw y
+    call tv_cls 
+; display set number 
+    ldw y,#SET_STR 
+    call tv_puts 
+    clrw x 
+    ld a,set 
+    ld xl,a 
+    call put_uint16
+    call crlf 
+; display players list 
+; with their score 
+    ldw y,#HEADER_STR 
+    call tv_puts 
+    push #0
+    ldw y,#scores 
+1$:
+    mov cx, #PLAYER_NO_LEFT 
+    clrw x 
+    inc (1,sp)
+    ld a,(1,sp)
+    ld xl,a 
+    call put_uint16
+    mov cx, #SCORE_LEFT  
+    ld a,(y)
+    incw y
+    call put_uint16
+    call crlf 
+    ld a,nbr_players
+    cp a,(1,sp)
+    jrne 1$ 
+    _drop 1 
+; draw separator line 
+    ldw x,#((FONT_WIDTH*6+2)<<8)+(FONT_WIDTH*6+2)
+    ld a,nbr_players 
+    inc a 
+    ldw y,#FONT_HEIGHT 
+    mul y,a 
+    addw y,#((SCORE_TOP*FONT_HEIGHT)<<8)+(SCORE_TOP*FONT_HEIGHT)
+    call line  
+    call draw_grid
+    popw y
+    popw x 
+    ret 
 
 ;----------------------
 ; game entry point 
 ;----------------------
 lock_game:
     call display_rules 
-1$: ldw x,#255 
-    call wait_key_release
-    call lock_init 
+0$: ; new game 
+    call lock_init
+1$: ; new player
     call draw_frame
-    call get_user_try
+    call player_reset 
+2$: ; player loop 
+    ldw x,#255 
+    call wait_key_release
+    call player_try
+    call eval_try 
+    _ldaz tries 
+    cp a,#MAX_TRIES 
+    jrmi 2$ 
+    call next_player 
+    jra 2$ 
+
+4$: ; end of game 
+    call again     
     cp a,#BTN_A 
     jreq 1$ 
-    cp a,#BTN_B 
-    jrne lock_game   
     ret 
