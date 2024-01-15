@@ -1,5 +1,7 @@
 ### 2024-01-14 
 
+**A FAIRE**  **eval_try** aglorithme complexe.
+
 * Travail sur jeu [cadena.asm](cadena.asm).
 
 ### 2024-01-13

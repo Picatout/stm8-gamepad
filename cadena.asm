@@ -84,10 +84,13 @@ lock_init:
 2$: clr (x)
     incw x
     dec (1,sp)
-    jrne 2$ 
+    jrne 2$
+    _drop 1  
+new_lock:     
 ; generate lock hidden number     
-    ld a,#4 
-    ld (1,sp),a 
+    push #4 
+    clrw x 
+    call set_seed 
     call prng 
     ldw y,#lock
 4$: ; set lock array     
@@ -285,6 +288,7 @@ compute_digit_coords:
     ret 
 
 
+
 ;----------------------
 ; get player input try 
 ;----------------------
@@ -371,9 +375,49 @@ player_try:
 ; and display hint 
 ; at active row 
 ;---------------------
+    P=1
+    C=P+1
+    COUNT=C+1
+    POS=COUNT+1
+    VAR_SIZE=POS+1  
 eval_try:
+    _vars VAR_SIZE 
+    ldw x,#0 
+    ldw (P,sp),x
+    ldw (POS,sp),x 
+    ld a,#4 
+    ld (COUNT,sp),a
+    ldw y,#lock 
+    ldw x,#try  
+2$: addw y,(POS,sp)  
+    ld a,(x)
+    cp a,(y)
+    jrne 3$ 
+    inc (P,sp);digit at position 
+    incw x
+    ld a,(POS+1,sp)
+    inc a 
+    and a,#3 
+    ld (POS+1,sp),a
+    dec (COUNT,sp)
+    jrne 2$ 
+3$: ; count digits at other position 
+    dec (COUNT,sp)
+4$:    
+    ld a,(POS+1,sp)
+    inc a 
+    and a,#3 
+    ld (POS+1,sp),a
+    addw y,(POS,sp)
+    ld a,(y)
+    cp a,(x)
+    jrne 5$ 
+    inc (C,sp)
+5$: dec (COUNT,sp)
+    jrne 4$ 
 
     _incz tries 
+    _drop VAR_SIZE 
     ret 
 
 
@@ -556,6 +600,7 @@ display_rules:
 ;-----------------
 player_reset:
     _clrz tries
+    call new_lock 
     push #4 
     ldw x,#try 
 1$: clr (x)
@@ -585,7 +630,17 @@ player_reset:
 ; evaluate player score
 ;----------------------
 eval_score:
-
+    pushw x
+    clrw x
+    _ldaz play_turn
+    dec a 
+    ld xl,a 
+    addw x,#scores  
+    ld a,#MAX_TRIES 
+    sub a,tries 
+    add a,(x)
+    ld (x),a 
+    popw x 
     ret 
 
 ;------------------
@@ -605,10 +660,11 @@ next_try:
 ;--------------------
 next_player:
     call eval_score 
-    inc play_turn 
-    ld a,nbr_players 
-    cp a,play_turn 
-    jrpl next_set  
+    _ldaz play_turn 
+    cp a,nbr_players 
+    jreq next_set 
+    _incz play_turn 
+    _straz play_turn 
     jra player_reset      
 
 ;---------------------
