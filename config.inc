@@ -32,7 +32,7 @@
 DEBUG=1
 
 ; set to 1 when using NUCLEO-8S207K8 
-NUCLEO=1
+NUCLEO=0
 
 ; master clock frequency in hz 
 	FMSTR=16000000 

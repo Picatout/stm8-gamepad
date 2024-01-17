@@ -370,7 +370,7 @@ roll_up:
 	call pause 
 	dec (ROWS,sp)
 	jreq 9$ 
-	call kpad_input
+	call read_keypad
 	jreq 1$ 
 9$:	ldw x,#255
     call wait_key_release
@@ -461,6 +461,53 @@ line:
 9$:
     _drop VAR_SIZE 
     ret 
+
+
+;----------------------------
+; draw rectangle 
+; {x0,y0} top left corner 
+; {x1,y1} down right corner 
+;
+; input:
+;    XH   x0 
+;    XL   x1 
+;    YH   Y0 
+;    YL   Y1 
+;---------------------------
+    Y0=1
+    Y1=Y0+1 
+    X0=Y1+1
+    X1=X0+1
+rectangle:
+    pushw x 
+    pushw y 
+; top horizontal     
+    ld a,yh 
+    ld yl,a 
+    call line 
+; bottom horizontal     
+    ldw x,(X0,sp)
+    ld a,(Y1,sp)
+    ld yh,a 
+    ld yl,a 
+    call line 
+; left vertical     
+    ldw y,(Y0,sp)
+    ld a,(X0,sp)
+    ld xh,a 
+    ld xl,a 
+    call line 
+; right vertical     
+    ldw y,(Y0,sp)
+    incw y 
+    ld a,(X1,sp)
+    ld xh,a
+    ld xl,a 
+    call line 
+    popw y 
+    popw x 
+    ret 
+
 
 ;--------------------------------------
 ; use invert_pixel 

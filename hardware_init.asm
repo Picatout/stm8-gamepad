@@ -234,21 +234,20 @@ pause:
 	btjt flags,#F_GAME_TMR,1$ 
 	ret 
 
-;------------------------
-; reading keypad 
-; without debouncing 
+;-------------------------
+; read kpad 
 ; output:
-;     A   reading 
-;-----------------------
+;     A   kpad value 
+;-------------------------
 kpad_input:
 	ld a,KPAD_IDR 
 	and a,#BTN_MASK 
 	xor a,#BTN_MASK  
 	ret 
 
-
-;-------------------------
-; read keypad
+;------------------------
+; reading keypad 
+; with debouncing 
 ; ouput:
 ;    A 
 ;       BTN_A -> bit 0 (1)
@@ -258,26 +257,30 @@ kpad_input:
 ;       BTN_DOWN -> bit 6 (64)
 ;       BNT_UP -> bit 7  (128)
 ;    Z   set no key 
-;-------------------------
-	DEBOUNCE=1
-	BUTTONS=DEBOUNCE+2
-	VAR_SIZE=BUTTONS 
+;-----------------------
+	PAD=1
+	COUNT=PAD+1
+	VAR_SIZE=COUNT 
 read_keypad:
 	pushw x 
-	_vars VAR_SIZE
-	call kpad_input 
-1$:	ld (BUTTONS,sp),a  
-    ldw x,ticks 
-	addw x,#1
-	ldw (DEBOUNCE,sp),x 	
-2$: call kpad_input 
-	cp a,(BUTTONS,sp)
-	jrne 1$
-	ldw x,ticks 
-	cpw x,(DEBOUNCE,sp)
-	jrne 2$
-	_drop VAR_SIZE  
-	popw x
+	_vars VAR_SIZE 
+	clrw x 
+	ldw (PAD,sp),x 
+0$: inc (COUNT,sp)
+	ld a,#10 
+	cp a,(COUNT,sp)
+	jrmi 4$
+1$: _usec 500
+	call kpad_input
+	cp a,(PAD,sp)
+	jreq 0$ 
+	ld (PAD,sp),a 
+	clr (COUNT,sp)
+	jra 1$ 
+4$: 
+	ld a,(PAD,sp) 
+	_drop VAR_SIZE 
+	popw x 
 	tnz a 
 	ret 
 
@@ -300,19 +303,14 @@ wait_key:
     DLY=1
     VAR_SIZE=2
 wait_key_release:
-	push a 
-    _vars VAR_SIZE
-    addw x,ticks
-	ldw (DLY,sp),x 
-1$: 
-    ldw x,ticks 
-    cpw x,(DLY,sp)
-    jrpl 9$     
-    call kpad_input
-    jrne 1$ 
-9$:
-    _drop VAR_SIZE 
-    pop a 
+	addw x,ticks 
+	pushw x 
+1$:	call read_keypad 
+	jreq 2$
+	ldw x,ticks 
+	cpw x,(DLY,sp)
+	jrmi 1$
+2$:	_drop 2 
 	ret 
 
 ;-------------------------------------

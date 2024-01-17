@@ -23,15 +23,6 @@
 ;
 ;--------------------------------------
 
-    ; microseconds delay 
-    .macro usec n, ?loop 
-        ldw x,#4*n 
-    loop:
-        decw x 
-        nop 
-        jrne loop
-    .endm 
-
     ; reserve space on stack
     ; for local variables
     .macro _vars n 

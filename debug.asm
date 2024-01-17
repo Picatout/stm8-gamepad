@@ -99,8 +99,6 @@ dbg_print:
 ;-----------------------
 dbg_print_hex:
 .if DEBUG 
-	_clrz cy 
-	mov cx,#26
 	push a 
 	swap a 
 	call hex_digit 

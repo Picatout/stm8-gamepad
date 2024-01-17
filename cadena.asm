@@ -40,10 +40,12 @@
 
 MAX_PLAYERS=4
 MAX_TRIES=12
-FRAME_TOP=10 ; grid top coord
-FRAME_LEFT=90 ; grid left coord
 CELL_SIDE=12 ; square cell size
-HINT_LEFT=FRAME_LEFT+4*CELL_SIDE+2 ; hint grid left coordinate
+LOCK_LEFT=90 ; lock display left coord 
+LOCK_TOP=0 ; lock display top coord 
+TRIES_TOP=LOCK_TOP+CELL_SIDE+2 ; grid top coord
+TRIES_LEFT=90 ; grid left coord
+HINT_LEFT=TRIES_LEFT+4*CELL_SIDE+2 ; hint grid left coordinate
 SCORE_TOP=2 ;
 PLAYER_NO_LEFT=3
 SCORE_LEFT=9 
@@ -51,8 +53,10 @@ CURSOR_ROW=FONT_HEIGHT
 GAME_SETS=3 ; number of sets per game 
 
 
-lock: .blkb 4 ; lock digits 
-try: .blkb 4 ; player last try digits 
+lock: .blkb 4 ; lock digits array 
+try: .blkb 4 ; player last try array  
+lcpy: .blkb 4 ; lock array copy 
+tcpy: .blkb 4 ; try array copy 
 tries: .blkb 1 ; number of player tries 
 scores: .blkb MAX_PLAYERS ; players score
 set: .blkb 1 ; a game is 3 set 
@@ -99,7 +103,8 @@ new_lock:
     ld (y),a 
     incw y 
     dec (1,sp)
-    jrne 4$  
+    jrne 4$
+    call draw_stars   
     _drop 1 
     ret 
 
@@ -140,12 +145,8 @@ set_digit:
 display_digit:
     pushw y
     pushw x 
-    add a,#'0-SPACE 
-    ldw y,#FONT_HEIGHT 
-    mul y,a 
-    addw y,#font_6x8
-    ld a,#FONT_HEIGHT-1 
-    call put_sprite
+    add a,#'0
+    call draw_char  
     popw x 
     popw y 
     ret 
@@ -276,12 +277,12 @@ get_digit:
 compute_digit_coords:
     ldw x,#CELL_SIDE 
     mul x,a 
-    addw x,#FRAME_LEFT+3 
+    addw x,#TRIES_LEFT+3 
     pushw x  ; xcoord 
     ld a,tries
     ldw x,#CELL_SIDE 
     mul x,a 
-    addw x,#FRAME_TOP+2
+    addw x,#TRIES_TOP+2
     swapw x ; ycoord 
     addw x,(1,sp)
     _drop 2 
@@ -370,52 +371,168 @@ player_try:
     _drop VAR_SIZE 
     ret 
 
+;----------------------
+; draw character using 
+; put_sprite 
+; input:
+;     A  character 
+;     X   coordinates 
+; output:
+;     X  unchanged 
+;------------------------
+draw_char:
+    pushw y
+    pushw x  
+    sub a,#SPACE 
+    ldw y,#FONT_HEIGHT
+    mul y,a 
+    addw y,#font_6x8
+    ld a,#FONT_HEIGHT
+    call put_sprite 
+    popw x 
+    popw y 
+    ret 
+
+;-----------------------
+; compute hint position
+; input:
+;    A    grid column {0,1}
+; output:
+;     XL  xcoord 
+;     XH  ycoord 
+;-----------------------
+hint_coord: 
+    ldw x,#CELL_SIDE 
+    mul x,a 
+    addw x,#(HINT_LEFT+3)
+    pushw x 
+    ld a,tries 
+    ldw x,#CELL_SIDE 
+    mul x,a 
+    addw x,#TRIES_TOP+2
+    swapw x 
+    addw x,(1,sp)
+    _drop 2 
+    ret 
+
+;-----------------------
+; display hint 
+; input:
+;    XL   C value 
+;    XH   P value 
+;-------------------------
+    P=1 
+    C=P+1 
+    VAR_SIZE=C    
+display_hint:
+    _vars VAR_SIZE 
+    ldw (P,sp),x
+; display P in hint grid 
+    clr a 
+    call hint_coord
+    ld a,(P,sp)
+    add a,#'0 
+    call draw_char  
+; display C in hint grid 
+    ld a,#1
+    call hint_coord 
+    ld a,(C,sp)
+    add a,#'0 
+    call draw_char  
+    _drop VAR_SIZE 
+    ret 
+
 ;---------------------
 ; evaluate user input
 ; and display hint 
 ; at active row 
 ;---------------------
-    P=1
-    C=P+1
-    COUNT=C+1
-    POS=COUNT+1
-    VAR_SIZE=POS+1  
+    P=1   ; count digit in position 
+    C=P+1 ; count digit in lock 
+    COUNT=C+1 ; digit counter 
+    LPOS=COUNT+1 ; 'lcpy' array index  
+    TPOS=LPOS+2 ; 'try' array index 
+    VAR_SIZE=TPOS+1  
 eval_try:
     _vars VAR_SIZE 
-    ldw x,#0 
+    clrw x 
     ldw (P,sp),x
-    ldw (POS,sp),x 
-    ld a,#4 
+    ldw (LPOS,sp),x 
+    ldw (TPOS,sp),x 
+; copy 'lock' and 'try array in 
+; 'lcpy' and 'tcpy'
+    ld a,#8 
     ld (COUNT,sp),a
     ldw y,#lock 
-    ldw x,#try  
-2$: addw y,(POS,sp)  
+    ldw x,#lcpy 
+0$:
+    ld a,(y)
+    ld (x),a 
+    incw y 
+    incw x 
+    dec (COUNT,sp)
+    jrne 0$ 
+; each 'tcpy' digit must be compared 
+; with each 'lcpy' digit. 
+; each digit in right position increment 
+; 'P' and if present elsewhere increment 'C'.
+;
+; count 'P' 
+    ldw y,#lcpy 
+    ldw x,#tcpy
+    ld a,#4 
+    ld (COUNT,sp),a   
+1$: 
     ld a,(x)
     cp a,(y)
-    jrne 3$ 
-    inc (P,sp);digit at position 
-    incw x
-    ld a,(POS+1,sp)
-    inc a 
-    and a,#3 
-    ld (POS+1,sp),a
-    dec (COUNT,sp)
     jrne 2$ 
-3$: ; count digits at other position 
+    inc (P,sp);digit at position 
+; two avoid recounting it in 'C' phase 
+; change their values 
+    ld a,#255
+    ld (y),a 
+    ld (x),a 
+2$: incw y 
+    incw x 
     dec (COUNT,sp)
+    jrne 1$ 
+;    
+; count 'C' digits           
+    ld a,(TPOS+1,sp)
+3$:
+    inc a 
+    and a,#3      
+    ld (LPOS+1,sp),a 
+    ldw x,#tcpy 
+    ld a,#3 ; number of compare 
+    ld (COUNT,sp),a 
+    addw x,(TPOS,sp)
 4$:    
-    ld a,(POS+1,sp)
+    ldw y,#lcpy
+    addw y,(LPOS,sp)
+    ld a,(x)
+    jrmi 6$
+    cp a,(y)
+    jrne 5$ ; no match 
+    inc (C,sp) 
+    ld a,#255 
+    ld (y),a 
+    jra 6$
+5$: ; compare to next lock digit 
+    ld a,(LPOS+1,sp)
     inc a 
     and a,#3 
-    ld (POS+1,sp),a
-    addw y,(POS,sp)
-    ld a,(y)
-    cp a,(x)
-    jrne 5$ 
-    inc (C,sp)
-5$: dec (COUNT,sp)
-    jrne 4$ 
-
+    ld (LPOS+1,sp),a 
+    dec (COUNT,sp)
+    jrne 4$
+6$:
+    inc (TPOS+1,sp)
+    ld a,(TPOS+1,sp)
+    cp a,#4 
+    jrmi 3$  
+8$: ; display hint
+    ldw x,(P,sp)
+    call display_hint 
     _incz tries 
     _drop VAR_SIZE 
     ret 
@@ -499,21 +616,27 @@ draw_hlines:
 
 
 ;------------------------
-; draw game grid 
+; draw game grids 
 ;------------------------
-ARG_SIZE=5 ; space reserved on stack for draw_grid parameters
-draw_grid:
-    ldw x,#FRAME_LEFT/FONT_WIDTH + 1
-    _strxz cy  
-    ldw y,#lock_name 
-    call tv_puts 
+draw_grids:
+; draw lock grid 
+; horizontal lines 
+    ldw x,#(LOCK_TOP<<8)+LOCK_LEFT 
+    ldw y,#(CELL_SIDE<<8)+4*CELL_SIDE 
+    ld a,#2
+    call draw_hlines 
+; vertical lines 
+    ldw x,#(LOCK_TOP<<8)+LOCK_LEFT 
+    ldw y,#(CELL_SIDE<<8)+CELL_SIDE 
+    ld a,#5 
+    call draw_vlines
 ; draw tries grid
 ; horizontal lines 
     ld a,#CELL_SIDE*4 
     ld yl,a ; line length 
     ld a,#CELL_SIDE 
     ld yh,a ; step  
-    ldw x,#(FRAME_TOP<<8)+FRAME_LEFT
+    ldw x,#(TRIES_TOP<<8)+TRIES_LEFT
     ld a,#13 ; count 
     CALL draw_hlines 
 ; vertical lines    
@@ -521,7 +644,7 @@ draw_grid:
     ld yl,a ; line length 
     ld a,#CELL_SIDE 
     ld yh,a ; line step 
-    ldw x,#(FRAME_TOP<<8)+FRAME_LEFT 
+    ldw x,#(TRIES_TOP<<8)+TRIES_LEFT 
     ld a,#5
     call draw_vlines
 ; draw hint grid 
@@ -530,7 +653,7 @@ draw_grid:
     ld yl,a 
     ld a,#CELL_SIDE 
     ld yh,a 
-    ldw x,#(FRAME_TOP<<8)+HINT_LEFT 
+    ldw x,#(TRIES_TOP<<8)+HINT_LEFT 
     ld a,#13
     call draw_hlines 
 ;vertical lines 
@@ -538,10 +661,63 @@ draw_grid:
     ld yl,a ; line length 
     ld a,#CELL_SIDE 
     ld yh,a ; line step 
-    ldw x,#(FRAME_TOP<<8)+HINT_LEFT  
+    ldw x,#(TRIES_TOP<<8)+HINT_LEFT  
     ld a,#3
     call draw_vlines
+    ldw x,#((LOCK_TOP+2)<<8)+HINT_LEFT+3
+    pushw x 
+    ldw y,#font_6x8
+    addw y,#('P-SPACE)*FONT_HEIGHT
+    ld a,#FONT_HEIGHT 
+    call put_sprite 
+    popw x 
+    addw x,#CELL_SIDE 
+    ldw y,#font_6x8
+    addw y,#('C-SPACE)*FONT_HEIGHT
+    ld a,#FONT_HEIGHT 
+    call put_sprite 
     ret
+
+;----------------------
+; show lock code 
+;------------------------
+    DIGIT=1
+    COUNT=DIGIT+2
+    VAR_SIZE=COUNT 
+show_code:
+    _vars VAR_SIZE
+    clrw x 
+    ldw (DIGIT,sp),x
+    ldw x,#((LOCK_TOP+2)<<8)+LOCK_LEFT+3 
+    ld a,#4
+    ld (COUNT,sp),a
+1$: 
+    ldw y,#lock 
+    addw y,(DIGIT,sp)
+    ld a,(y)
+    add a,#'0 
+    call draw_char
+    addw x,#CELL_SIDE 
+    inc (DIGIT+1,SP)
+    dec (COUNT,sp)
+    jrne 1$           
+    _drop VAR_SIZE 
+    ret 
+
+;----------------------
+; draw '*' in lock grid 
+;----------------------
+draw_stars:
+    push #4 
+    ldw x,#((LOCK_TOP+2)<<8)+LOCK_LEFT+3
+1$:
+    ld a,#'* 
+    call draw_char 
+    addw x,#CELL_SIDE
+    dec (1,sp)
+    jrne 1$ 
+    _drop 1 
+    ret 
 
 ;---------------------
 ; display game rules
@@ -629,7 +805,9 @@ player_reset:
 ;-----------------
 ; evaluate player score
 ;----------------------
-eval_score:
+player_score:
+    call draw_stars 
+    call show_code 
     pushw x
     clrw x
     _ldaz play_turn
@@ -640,6 +818,15 @@ eval_score:
     sub a,tries 
     add a,(x)
     ld (x),a 
+    clrw x 
+    ld xl,a 
+    ld a,#SCORE_TOP 
+    add a,play_turn 
+    _straz cy 
+    mov cx,#SCORE_LEFT
+    call put_uint16
+    ldw x,#255 
+    call wait_key_release
     popw x 
     ret 
 
@@ -651,21 +838,32 @@ next_try:
     inc tries 
     ld a,#MAX_TRIES 
     cp a,tries 
-    jrpl next_player 
+    jrpl 2$
     ret 
+2$: 
+    call draw_stars
+    call show_code 
+    jra next_player 
+    
 
 ;--------------------
 ; set game for next 
 ; player 
 ;--------------------
+NEXT: .asciz "key next player"
 next_player:
-    call eval_score 
+    ldw y,#NEXT 
+    _clrz cx 
+    mov cy,#23 
+    call tv_puts 
+    call wait_key 
+    call wait_key_release
     _ldaz play_turn 
     cp a,nbr_players 
     jreq next_set 
     _incz play_turn 
     _straz play_turn 
-    jra player_reset      
+    jp player_reset      
 
 ;---------------------
 ; set game for next  
@@ -730,7 +928,7 @@ draw_frame:
     mul y,a 
     addw y,#((SCORE_TOP*FONT_HEIGHT)<<8)+(SCORE_TOP*FONT_HEIGHT)
     call line  
-    call draw_grid
+    call draw_grids
     popw y
     popw x 
     ret 
@@ -753,7 +951,8 @@ lock_game:
     _ldaz tries 
     cp a,#MAX_TRIES 
     jrmi 2$ 
-    call next_player 
+    call player_score 
+    call next_player  
     jra 2$ 
 
 4$: ; end of game 

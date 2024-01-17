@@ -149,7 +149,7 @@ tune:
     call tone
     ld a,#4
     call pause  
-	call kpad_input 
+	call read_keypad 
     jrne 9$
     addw y,#3
 	jra tune

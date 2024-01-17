@@ -544,7 +544,7 @@ sim:
     call next_gen
 ld a,#15 
 call pause     
-    call kpad_input 
+    call read_keypad
     jreq sim  
     jra game_of_life
 

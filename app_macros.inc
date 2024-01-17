@@ -27,13 +27,21 @@
 ;   assembler flags 
 ;-------------------------------------
 
-    ; assume 16 Mhz Fcpu 
-     .macro _usec_dly n 
-    ldw x,#(16*n-2)/4 ; 2 cy 
-    decw x  ; 1 cy 
-    nop     ; 1 cy 
-    jrne .-2 ; 2 cy 
+    ; microseconds delay {1..16384}
+    ; Fmstr=16Mhz 
+    ; overhead 7 cy 
+    ; loop 4cy*n 
+    .macro _usec n, ?loop 
+        pushw x
+        ldw x,#n*4  
+    loop: ; 4 cy 
+        decw x 
+        nop 
+        jrne loop
+        popw x 
     .endm 
+
+
 
 ;----------------------------------
 ; functions arguments access 
