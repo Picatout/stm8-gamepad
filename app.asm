@@ -141,7 +141,12 @@ ask_str:
 
 again:
 	pushw x 
-	_strxz cy 
+	_strxz cy
+	ld a,xl 
+	call clr_text_line
+	_ldaz cy 
+	inc a 
+	call clr_text_line  
 	ldw y,#ask_str 
 	call tv_puts 
 	incw y 

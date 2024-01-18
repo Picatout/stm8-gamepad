@@ -1,3 +1,7 @@
+### 2024-01-18
+
+* Correction mineure à la routine *again* dans le fichier [app.asm](app.asm). Version V1.2R1
+
 ### 2024-01-17
 
 * version **V1.2R0**. 

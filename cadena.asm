@@ -808,7 +808,7 @@ player_reset:
 ;-----------------
 ; evaluate player score
 ;----------------------
-NEXT_STR: .asciz "A) NEXT PLAYER"
+NEXT_STR: .asciz "A) JOUEUR SUIVANT"
 player_score:
     pushw x
     call draw_stars 
