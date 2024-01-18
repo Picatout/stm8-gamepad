@@ -25,7 +25,7 @@
 ;  information 
 ;-----------------------
 	MAJOR=1
-	MINOR=1
+	MINOR=2
 	REV=0
 
 ; set to 1 to add dbg_print code 

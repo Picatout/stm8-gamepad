@@ -1,5 +1,18 @@
 ### 2024-01-17
 
+* version **V1.2R0**. 
+
+* Jeu Cadena Débogué.
+
+* Ajout de 2 routines dans [display.asm](display.asm)
+    * **clr_text_line**  efface une ligne de texte.
+        * **A**  contient no. de ligne  à effacé. 
+    * **rectangle**   Dessine un rectangle. 
+        * **XL**  coordonnée X0 
+        * **XH**  coordonnée X1 
+        * **YL**  coordonnée Y0 
+        * **YH**  coordonnée Y1
+
 * Travail sur jeu [cadena.asm](cadena.asm).
 
 * Modifié routines de lecture du  keypad. 
