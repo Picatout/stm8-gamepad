@@ -254,10 +254,6 @@ courante du curseur texte. Avance le curseur à la position suivante.
     * **X** Entier à afficher.
 <hr>
 
-* **scroll_text**  Déroule l'affichage vers le haut d'une ligne de texte et efface la dermière ligne. 
-
-<hr>
-
 * **roll_up** déroule l'affichage vers le haut jusqu'à ce qu'il soit vide ou qu'une touche du kpad soit enfoncée.
     * **A**  délais contrôlant la vitesse de déroulement. Le délais est en 60ième de secondes.
 
