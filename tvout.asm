@@ -47,6 +47,7 @@ F_EVEN=0 ; odd/even field flag
 F_CURSOR=1 ; tv cursor active 
 F_CUR_VISI=2 ; tv cursor state, 1 visible 
 F_VIDEO=4 ; enable video output 
+F_NO_SCROLL=5 ; don't scroll text when at bottom 
 
 ;-------------------------------
     .area CODE 

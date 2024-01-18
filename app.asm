@@ -185,7 +185,7 @@ main:
 	call load_bmp
 	ld a,#60 
 	call pause 
-	call scroll_text
+	call scroll_text_up 
 	ld a,#LINE_PER_SCREEN-1 
 	_straz cy 
 	_clrz cx 
@@ -194,7 +194,7 @@ main:
 	call put_version
 	ld a,#8*SCROLL_DLY 
 	call pause 
-	call scroll_text 
+	call scroll_text_up   
 	ld a,#8*SCROLL_DLY
 	call pause  
 	ld a,#LINE_PER_SCREEN-1

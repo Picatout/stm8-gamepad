@@ -303,6 +303,9 @@ player_try:
     _vars VAR_SIZE 
     clrw x 
     ldw (CPOS,sp),x 
+    ldw x,#try 
+    ld a,(x)
+    ld (IDIGIT,sp),a 
 1$:
     call display_try ; show digits
     ld a,(CPOS,sp)
@@ -328,11 +331,10 @@ player_try:
 3$: inc a 
 32$:
     ld (IDIGIT,sp),a
-    ld xl,a 
+    clrw x 
     ld a,(CPOS,sp)
-    ld xh,a
-    clr a 
-    rrwa x  
+    ld xl,a
+    ld a,(IDIGIT,sp)
     call set_digit 
     jra 1$ 
 4$:
@@ -532,8 +534,8 @@ eval_try:
     jrmi 3$  
 8$: ; display hint
     ldw x,(P,sp)
-    call display_hint 
-    _incz tries 
+    call display_hint
+    ld a,(P,sp) 
     _drop VAR_SIZE 
     ret 
 
@@ -800,15 +802,17 @@ player_reset:
     _straz cy 
     _clrz cx
     ld a,#'>
-    call tv_putc  
+    call tv_putc
+    call beep   
     ret 
 ;-----------------
 ; evaluate player score
 ;----------------------
+NEXT_STR: .asciz "A) NEXT PLAYER"
 player_score:
+    pushw x
     call draw_stars 
     call show_code 
-    pushw x
     clrw x
     _ldaz play_turn
     dec a 
@@ -825,6 +829,11 @@ player_score:
     _straz cy 
     mov cx,#SCORE_LEFT
     call put_uint16
+    _clrz cx 
+    mov cy,#23
+    ldw y,#NEXT_STR 
+    call tv_puts 
+    call wait_key
     ldw x,#255 
     call wait_key_release
     popw x 
@@ -850,36 +859,29 @@ next_try:
 ; set game for next 
 ; player 
 ;--------------------
-NEXT: .asciz "key next player"
 next_player:
-    ldw y,#NEXT 
-    _clrz cx 
-    mov cy,#23 
-    call tv_puts 
-    call wait_key 
-    call wait_key_release
+    _clrz tries 
     _ldaz play_turn 
     cp a,nbr_players 
-    jreq next_set 
-    _incz play_turn 
-    _straz play_turn 
-    jp player_reset      
+    jreq 9$
+    _incz play_turn
+9$:
+    ret 
 
 ;---------------------
 ; set game for next  
 ; set 
 ;--------------------
 next_set:
+    ld a,#1 
+    _straz play_turn 
     ld a,set 
     cp a,#GAME_SETS
-    jreq lock_game_over 
-    _incz set 
-jra .    
+    jreq 9$ 
+    _incz set
+9$:
     ret 
 
-lock_game_over:
-jra .
-    ret 
 
 ;--------------
 ; display 
@@ -914,6 +916,8 @@ draw_frame:
     mov cx, #SCORE_LEFT  
     ld a,(y)
     incw y
+    clrw x 
+    ld xl,a 
     call put_uint16
     call crlf 
     ld a,nbr_players
@@ -933,6 +937,76 @@ draw_frame:
     popw x 
     ret 
 
+;--------------------
+; game over 
+;--------------------
+WINNER_STR: .asciz "GAGNANT: JOUEUR "
+DRAW_STR: .asciz "PARTIE NULLE " 
+SCORE_STR: .asciz " POINTS" 
+
+    P_COUNT=1
+    MAX_SCORE=P_COUNT+1
+    WINNER=MAX_SCORE+1
+    DRAW=WINNER+1
+    VAR_SIZE=DRAW  
+show_winner:
+    _vars VAR_SIZE 
+    clrw x 
+    ldw (MAX_SCORE,sp),x 
+    clr (DRAW,sp)
+    _ldaz nbr_players
+    ld (P_COUNT,sp),a 
+    ldw x,#scores
+1$: 
+    ld a,(x)
+    jreq 3$ 
+    cp a,(MAX_SCORE,sp)
+    jreq 2$ 
+    jrmi 3$ 
+    ld (MAX_SCORE,sp),a
+    _ldaz nbr_players
+    sub a,(P_COUNT,sp)
+    ld (WINNER,sp),a
+    jra 3$
+2$:  
+; 2 players have same score 
+; set draw flag
+    cpl (DRAW,sp)
+3$: incw x 
+    dec (P_COUNT,sp)
+    jrne 1$ 
+; display game result 
+    _clrz cx 
+    mov cy,#20 
+    tnz (MAX_SCORE,sp)
+    jreq 4$ 
+    tnz (DRAW,sp)
+    jreq 5$
+4$:
+    ldw y,#DRAW_STR
+    call tv_puts 
+    jra 6$ 
+5$:    
+    ldw y,#WINNER_STR
+    call tv_puts
+    clrw x 
+    ld a,(WINNER,sp)
+    inc a 
+    ld xl,a 
+    call put_uint16
+    ld a,#SPACE 
+    call tv_putc  
+6$: 
+    clrw x 
+    ld a,(MAX_SCORE,sp)
+    ld xl,a 
+    call put_uint16
+    ldw y,#SCORE_STR 
+    call tv_puts 
+    _drop VAR_SIZE 
+    ret 
+
+
 ;----------------------
 ; game entry point 
 ;----------------------
@@ -948,15 +1022,23 @@ lock_game:
     call wait_key_release
     call player_try
     call eval_try 
+    cp a,#4 ; number of digits in position 
+    jreq 3$
+    _incz tries 
     _ldaz tries 
     cp a,#MAX_TRIES 
     jrmi 2$ 
+3$: ; got code 
     call player_score 
     call next_player  
-    jra 2$ 
+    jrne 1$ 
+    call next_set 
+    jrne 1$ 
+    call show_winner 
 
 4$: ; end of game 
+    ldw x,#(22<<8)
     call again     
     cp a,#BTN_A 
-    jreq 1$ 
+    jreq 0$ 
     ret 

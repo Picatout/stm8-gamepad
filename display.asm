@@ -41,6 +41,25 @@ tv_cls:
     popw y 
     ret 
 
+;----------------------
+; clear text line 
+; input:
+;     A  line# 
+;-----------------------
+clr_text_line: 
+    pushw x
+    pushw y  
+    ldw x,#FONT_HEIGHT*BYTES_PER_LINE 
+    ldw y,x 
+    mul y,a 
+    addw y,#tv_buffer 
+    clr a 
+    call fill 
+    popw y 
+    popw x 
+    ret 
+
+
 ;------------------------
 ; build bitmask from 
 ; bit position 
@@ -156,11 +175,8 @@ scroll_text_up:
     addw y,#BYTES_PER_LINE*FONT_HEIGHT 
     call move 
 ; clear bottom text line 
-    clr a 
-    ldw x,#(FONT_HEIGHT*BYTES_PER_LINE) 
-    ldw y,#tv_buffer 
-    subw y,#VBUFF_SIZE-(FONT_HEIGHT*BYTES_PER_LINE)
-    call fill 
+    ld a,#LINE_PER_SCREEN-1
+    call clr_text_line
     popw y 
     popw x 
     pop a 
@@ -318,36 +334,6 @@ put_uint16:
     call tv_puts 
     _drop VAR_SIZE 
     popw y 
-    ret 
-
-;------------------------
-; scroll text up 1 line  
-;------------------------
-scroll_text:
-    push a 
-    pushw y 
-    pushw x 
-	ldw x,#BYTES_PER_IMG_ROW
-    ld a,#FONT_HEIGHT 
-    mul x,a
-    pushw x 
-    ldw x,#VBUFF_SIZE
-    subw x,(1,sp)
-    _strxz acc16 
-    ldw y,(1,sp)   
-    addw y,#tv_buffer
-    ldw x,#tv_buffer 
-    call move 
-    popw x
-    _strxz acc16 
-    ldw y,#tv_buffer
-    addw y,#VBUFF_SIZE
-    subw y,acc16
-    clr a 
-    call fill
-	popw x 
-    popw y 
-    pop a 
     ret 
 
 ;-----------------------

@@ -303,6 +303,7 @@ wait_key:
     DLY=1
     VAR_SIZE=2
 wait_key_release:
+	push a 
 	addw x,ticks 
 	pushw x 
 1$:	call read_keypad 
@@ -310,7 +311,8 @@ wait_key_release:
 	ldw x,ticks 
 	cpw x,(DLY,sp)
 	jrmi 1$
-2$:	_drop 2 
+2$:	_drop 2
+	pop a 
 	ret 
 
 ;-------------------------------------
