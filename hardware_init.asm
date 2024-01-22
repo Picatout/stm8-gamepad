@@ -235,7 +235,7 @@ pause:
 	ret 
 
 ;-------------------------
-; read kpad 
+; read kpad no debounce 
 ; output:
 ;     A   kpad value 
 ;-------------------------

@@ -1,3 +1,26 @@
+### 2024-01-21
+
+* Trvail sur [fall.asm](fall.asm).
+
+* Corrigé bogue dans routine *again* du fichier [app.asm](app.asm).
+
+### 2024-01-20
+
+* Trvail sur [fall.asm](fall.asm).
+
+* Ajout de la routine *strlen* dans [display.asm](display.asm).
+
+### 2024-01-19 
+
+* Trvail sur [fall.asm](fall.asm) [display.asm](display.asm)
+    * **rectangle**   Dessine un rectangle. 
+        * **XL**  coordonnée gauche 
+        * **XH**  coordonnée haut 
+        * **YL**  largeur 
+        * **YH**  hauteur 
+
+* Modification de *rectangle* dans 
+
 ### 2024-01-18
 
 * Correction mineure à la routine *again* dans le fichier [app.asm](app.asm). Version V1.2R1
@@ -11,6 +34,7 @@
 * Ajout de 2 routines dans [display.asm](display.asm)
     * **clr_text_line**  efface une ligne de texte.
         * **A**  contient no. de ligne  à effacé. 
+
     * **rectangle**   Dessine un rectangle. 
         * **XL**  coordonnée X0 
         * **XH**  coordonnée X1 

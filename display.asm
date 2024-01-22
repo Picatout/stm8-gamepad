@@ -307,6 +307,23 @@ tv_puts:
 9$:
     ret
 
+;--------------------------
+; center align text
+; on display  
+; input:
+;     Y   *string ; len {0..CHAR_PER_LINE}
+; output:
+;     Y   to terminating 0
+;--------------------------
+center_align:
+    call strlen 
+    sub a,#CHAR_PER_LINE
+    neg a 
+    srl a 
+    _straz cx 
+    call tv_puts 
+    ret 
+
 ;----------------------------
 ; print unsigned integer 
 ; input:
@@ -455,40 +472,56 @@ line:
 ; {x1,y1} down right corner 
 ;
 ; input:
-;    XH   x0 
-;    XL   x1 
-;    YH   Y0 
-;    YL   Y1 
+;    XH   top   ycoord 
+;    XL   left  xcoord 
+;    YH   heigth
+;    YL   width   
 ;---------------------------
-    Y0=1
-    Y1=Y0+1 
-    X0=Y1+1
-    X1=X0+1
+    HEIGHT =1
+    WIDTH=HEIGHT+1 
+    TOP=WIDTH+1
+    LEFT=TOP+1
 rectangle:
     pushw x 
     pushw y 
 ; top horizontal     
-    ld a,yh 
-    ld yl,a 
+    swapw x 
+    ld a,xh  ; x0  
+    add a,(WIDTH,sp)
+    ld xl,a ; x1 
+    ld a,(TOP,sp)
+    ld yh,a ; y0 
+    ld yl,a ; y1 
     call line 
 ; bottom horizontal     
-    ldw x,(X0,sp)
-    ld a,(Y1,sp)
-    ld yh,a 
-    ld yl,a 
+    ld a,(LEFT,sp)
+    ld xh,a ; x0 
+    add a,(WIDTH,sp)
+    ld xl,a ; x1 
+    ld a,(TOP,sp)
+    add a,(HEIGHT,sp)
+    ld yh,a ; y0
+    ld yl,a ; y1 
     call line 
-; left vertical     
-    ldw y,(Y0,sp)
-    ld a,(X0,sp)
-    ld xh,a 
-    ld xl,a 
+; left vertical
+    ld a,(LEFT,sp)
+    ld xh,a ; x0 
+    ld xl,a ; x1 
+    ld a,(TOP,sp)
+    ld yh,a ; y0 
+    add a,(HEIGHT,sp)
+    ld yl,a ; y1 
     call line 
 ; right vertical     
-    ldw y,(Y0,sp)
-    incw y 
-    ld a,(X1,sp)
-    ld xh,a
-    ld xl,a 
+    ld a,(LEFT,sp)
+    add a,(WIDTH,sp)
+    ld xh,a ; x0 
+    ld xl,a ; x1 
+    ld a,(TOP,sp)
+    ld yh,a ; y0 
+    add a,(HEIGHT,sp)
+    inc a 
+    ld yl,a ; y1  
     call line 
     popw y 
     popw x 

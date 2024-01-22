@@ -65,6 +65,27 @@ fill:
 	jrne 1$
 9$:	ret 
 
+;----------------------
+; .asciz string length 
+; input:
+;    Y    *string 
+; output:
+;    A    length 
+;    Y    unchanged 
+;----------------------
+strlen:
+	pushw y 
+	push #0
+1$: ld a,(y)
+	jreq 2$
+	inc (1,sp)
+	incw y 
+	jra 1$ 
+2$:  
+	pop a 
+	popw y 
+	ret 
+
 ;------------------------
 ; load bitmap data in 
 ; tv_buffer 
@@ -136,24 +157,19 @@ cright: .asciz "(C) Jacques Deschenes, 2023,24"
 ;    XH   ycoord 
 ;------------------------
 ask_str:
-.asciz "A) Play again"
-.asciz "B) main menu"
+.asciz "A) Play again\rB) main menu"
 
 again:
 	pushw x 
 	_strxz cy
-	ld a,xl 
+	ld a,xh  
 	call clr_text_line
-	_ldaz cy 
+	ld a,(1,sp) 
 	inc a 
 	call clr_text_line  
 	ldw y,#ask_str 
 	call tv_puts 
-	incw y 
-	popw x 
-	addw x,#(1<<8)
-	_strxz cy 
-	call tv_puts
+	_drop 2 
 1$: ldw x,#255 
 	call wait_key_release
 	call wait_key  
@@ -321,14 +337,14 @@ select_mark:
 
 
 prog_list:
-; mastermind variant game 
-lock_name:
-.asciz "CADENA"
-.word lock_game 
 ; tetris like game, but it's not. 
 fall_name:
 .asciz "FALL"
 .word fall
+; mastermind variant game 
+lock_name:
+.asciz "CADENA"
+.word lock_game 
 ; a snake game variation
 .asciz "SNAKE"
 .word snake

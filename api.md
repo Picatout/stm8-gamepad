@@ -246,8 +246,13 @@ courante du curseur texte. Avance le curseur à la position suivante.
     * **A**  caractère à affiché.
 <hr>
 
-* **tv_puts** Affiche une chaîne ce caractères ASCII zéro terminée à la position actuelle du curseur.
-    * **Y** adresse de la chaîne ASCII. 
+* **tv_puts** Affiche une chaîne ce caractères ASCII zéro terminée à la position actuelle du curseur. Àprès l'impression **Y** pointe sur le zéro terminal de la chaîne.
+    * **Y** adresse de la chaîne ASCIZ. 
+<hr>
+
+* **center_align**  affiche une ligne de texte centrée horizontalement. Àprès l'impression **Y** pointe sur le zéro terminal de la chaîne. 
+    * **Y** adresse de la chaîne ASCIZ.
+
 <hr>
 
 * **put_uint16**  Affiche à la position du curseur la valeur entière non signée contenue dans le registre **X**.
@@ -267,10 +272,10 @@ courante du curseur texte. Avance le curseur à la position suivante.
 <hr>
 
 * **rectangle** Dessine un rectangle dont les coordonnées des coins supérieur gauche et inférieur droit sont données.
-    * **XL** coordonnée **x0** [0..HRES[
-    * **XH** coordonnée **x1** [0..HRES[
-    * **YL** coordonnée **y0**  [0..VRES[
-    * **YH** coordonnée **y1** [0..VRES[
+    * **XL** coordonnée **x** [0..HRES[  coordonée gauche 
+    * **XH** coordonnée **y** [0..VRES[  coordonnnée haut  
+    * **YL** coordonnée **width**  [0..HRES[ largeur 
+    * **YH** coordonnée **height** [0..VRES[ hauteur 
 
 <hr>
 
