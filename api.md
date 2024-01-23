@@ -212,6 +212,19 @@ user_input:
 * **tv_cls**  Efface l'affichage au complet.
 <hr>
 
+* **get_pixel** retourne l'état du pixel dans le registre **A**.
+    * **XL** coordonnée X du pixel [0..HRES[.
+    * **XH** coordonnée Y du pixel [0..VRES[. 
+
+<hr>
+
+* **put_pixel** met le pixel dans l'état déterminé par le contenu du registre **A**
+    * **A**  **0** -&gt; éteint le pixel. Autre allume le pixel.
+    * **XL** coordonnée X du pixel [0..HRES[.
+    * **XH** coordonnée Y du pixel [0..VRES[. 
+
+<hr>
+
 * **set_pixel** Allume un pixel. Les paramètres sont passés dans le registre **X**.
     * **XL** coordonnée X du pixel [0..HRES[.
     * **XH** coordonnée Y du pixel [0..VRES[. 

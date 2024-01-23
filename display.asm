@@ -119,6 +119,17 @@ pixel_addr:
     _drop VAR_SIZE  
     ret 
 
+;-----------------------------
+; return pixel state 
+; input:
+;      A    pixel state 
+;     XH    y coord {0..63}
+;     XL    x coord (0..95)
+;---------------------------
+put_pixel:
+    tnz a 
+    jreq reset_pixel
+
 ;-------------------------
 ; set pixel 
 ; input:
@@ -154,6 +165,17 @@ invert_pixel:
     call pixel_addr 
     xor a,(x)
     ld (x),a 
+    ret 
+
+;-----------------------------
+; return pixel state 
+; input:
+;     XH    y coord {0..63}
+;     XL    x coord (0..95)
+;---------------------------
+get_pixel:
+    call pixel_addr 
+    and a,(x)
     ret 
 
 

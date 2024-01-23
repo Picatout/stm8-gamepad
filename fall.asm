@@ -40,6 +40,12 @@ NEXT_LEFT=WELL_RIGHT+2
 NEXT_TOP=WELL_TOP 
 NEXT_COORDS=((NEXT_TOP+2)<<8)+NEXT_LEFT+2
 
+; score gain as row drop 
+ONE_ROW=100
+TWO_ROWS=250
+THREE_ROWS=450
+FOUR_ROWS=800
+
     .area G_DATA 
     .org 4 
 
@@ -55,6 +61,8 @@ fall_dly: .blkb 1 ; falling speed delay
 
     .area CODE 
 ; basic sprite 
+
+FALL_GAIN: .word 0,ONE_ROW,TWO_ROWS,THREE_ROWS,FOUR_ROWS 
 
 TBLOCK: .byte 0xF0,0xF0,0xF0,0xF0,0xF0,0xF0
 
@@ -264,19 +272,26 @@ korobeniki:
 
 ;-------------------------
 ; draw tetramino 
+; at each block check 
+; for collision. 
+; if collision stop drawing 
+; return collision flag   
 ; input:
 ;    X  position {xl,xh}
 ;    Y  tetra pointer 
+; output:
+;    A   0 -> no collision 
+;        -1 -> collision 
 ;-------------------------
-    TPOS=1
-    TLIST=TPOS+2
-    BCNT=TLIST+2
-    COLLIDED=BCNT+1
-    VAR_SIZE=COLLIDED 
+    TPOS=1 ; tetramino top-left position  
+    TLIST=TPOS+2 ; blocks list pointer 
+    BCNT=TLIST+2 ; block counter 
+    COLLISION=BCNT+1
+    VAR_SIZE=COLLISION 
 draw_tetra:
-    push #0 ; COLLIDED 
+    push #0 ;collision flag 
     push #4 ; block counter 
-    pushw y  ;block list 
+    pushw y  ;block list pointer 
     pushw x  ; top-left position 
 1$: ldw x,y
     ldw x,(x)
@@ -284,16 +299,18 @@ draw_tetra:
     ldw y,#TBLOCK 
     ld a,#DY 
     call put_sprite
-    or a,(COLLIDED,sp)
-    ld (COLLIDED,sp),a  
+    jreq 2$ 
+    ld a,#-1
+    ld (COLLISION,sp),a 
+2$: 
     ldw y,(TLIST,sp)
     addw y,#2 
     ldw (TLIST,sp),y 
     dec (BCNT,sp)
     jrne 1$ 
-    ld a,(COLLIDED,sp)
+9$:
+    ld a,(COLLISION,sp)
     _drop VAR_SIZE 
-    tnz a 
     ret 
 
 ;-------------------------------
@@ -451,6 +468,92 @@ right_bound:
     add a,tetra_x 
     ret 
 
+;-------------------------
+; drop tetramino to 
+; lowest possible position 
+; without delay 
+;-------------------------
+    COOR=1 
+    VAR_SIZE=2 
+tetra_free_fall:
+    _vars VAR_SIZE 
+0$:
+    _ldxz tetra_y 
+    ldw (COOR,sp),x 
+    call draw_current_tetra ; erase it 
+1$: ldw x,(COOR,sp)
+    addw x,#(BLOCK_HEIGHT<<8) 
+    _strxz tetra_y 
+    call draw_current_tetra
+    jrne 4$ ; collision  
+    jra 0$
+4$: ; collision, back off 
+    call draw_current_tetra ; erase it 
+    ldw x,(COOR,sp) ; previous coordinates 
+    _strxz tetra_y 
+    call draw_current_tetra 
+    _drop VAR_SIZE 
+    ret 
+
+;--------------------
+; move tetramino 
+; 1 block 
+; input:
+;    X    BLOCK_WIDTH shift right 
+;         -BLOCK_WIDTH shift left  
+;--------------------
+    COOR=1
+    SHIFT=COOR+2 
+    VAR_SIZE=SHIFT+1
+tetra_shift:
+    _vars VAR_SIZE 
+    ldw (SHIFT,sp),x 
+    _ldxz tetra_y 
+    ldw (COOR,sp),x 
+    call draw_current_tetra ; erase it 
+    ldw x,(COOR,sp)
+    addw x,(SHIFT,sp)
+    _strxz tetra_y 
+    call draw_current_tetra 
+    jreq 9$ 
+; collision back off
+    call draw_current_tetra ; erase it 
+    ldw x,(COOR,sp)
+    _strxz tetra_y 
+    call draw_current_tetra ; back to original position 
+9$:
+    _drop VAR_SIZE 
+    ret 
+
+;---------------------
+; rotate tetramino 
+; 90 degree 
+; input:
+;    A    1 rotate right 
+;        -1 rotate left  
+;---------------------
+    ORG=1
+    ROT=2
+    VAR_SIZE=2
+tetra_rotate:
+    push a 
+    call draw_current_tetra ; erase it 
+    _ldaz tetra_rot
+    push a  
+    add a,(ROT,sp) 
+    and a,#3 
+    _straz tetra_rot 
+    call draw_current_tetra
+    jreq 9$ 
+; collision cancel rotation 
+    call draw_current_tetra ; erate it 
+    ld a,(ORG,sp)
+    _straz tetra_rot 
+    call draw_current_tetra ; restore original 
+9$: _drop VAR_SIZE 
+    ret 
+
+
 ;---------------------
 ; read keypad 
 ; and update 
@@ -461,71 +564,179 @@ right_bound:
 ; BTN_LEFT move left 
 ; BTN_RIGHT move right 
 ;---------------------
-    KEY=1 
+
 fall_player_input:
-    push #0 
     call read_keypad 
-    ld (KEY,sp),a 
-    call draw_current_tetra ; erase it 
-    tnz (KEY,sp)
     jreq 9$ 
-    ld a,(KEY,sp) 
+1$:    
     cp a,#BTN_A 
     jrne 2$ 
-    _ldaz tetra_rot 
-    inc a 
-    and a,#3 
-    _straz tetra_rot 
-    jra 3$ 
+    ld a,#1 
+    call tetra_rotate 
+    jra 9$ 
 2$:
     cp a,#BTN_B 
     jrne 4$
-    _ldaz tetra_rot 
-    dec a 
-    and a,#3 
-    _straz tetra_rot 
-3$: ; check tetramino for right wall collision 
-    ; shift it left is so.
-    call right_bound 
-    cp a,#WELL_LEFT+WELL_WIDTH 
-    jrmi 8$ 
-    push a 
-    ld a,#WELL_RIGHT 
-    sub a,(1,sp)
-    _straz tetra_x 
-    _drop 1 
-    jra 8$ 
+    ld a,#-1 
+    call tetra_rotate 
+    jra 9$ 
 4$:
     cp a,#BTN_LEFT 
     jrne 6$
-    _ldaz tetra_x
-    cp a,#WELL_LEFT+1  
-    jreq 8$ 
-    sub a,#BLOCK_WIDTH 
-    _straz tetra_x 
-    jra 8$ 
+    ldw x,#-BLOCK_WIDTH
+    call tetra_shift 
+    jra 9$ 
 6$:
     cp a,#BTN_RIGHT 
     jrne 8$ 
-    call right_bound 
-    cp a,#WELL_LEFT+WELL_WIDTH 
-    jrpl 8$ 
-    _ldaz tetra_x 
-    add a,#BLOCK_WIDTH
-    _straz tetra_x 
+    ldw x,#BLOCK_WIDTH
+    call tetra_shift 
 8$: 
+    cp a,#BTN_DOWN 
+    jrne 9$ 
+    call tetra_free_fall 
+9$:     
     ldw x,#1 
     call wait_key_release
-9$: _drop 1    
     ret 
 
 ;--------------------------
-; update tetra position 
+; update tetra position
+; down  
 ;--------------------------
+    YCOOR=1
+    COLLISION=1
+    VAR_SIZE=1  
 fall_update:
+    call draw_current_tetra ; erase it 
     _ldaz tetra_y 
+    push a 
     add a,#BLOCK_HEIGHT 
     _straz tetra_y 
+    call draw_current_tetra ; draw at new position 
+    jrne  1$
+    ld (COLLISION,sp),a 
+    _ldaz tetra_y 
+    cp a,top_y 
+    jrpl 9$
+    mov top_y,tetra_y 
+    jra 9$  
+1$: ; collision back off 
+    call draw_current_tetra ; erase new position 
+    ld a,(YCOOR,sp)
+    _straz tetra_y 
+    call draw_current_tetra ; draw at original position 
+    ld a,#-1 ; collision flag
+    ld (COLLISION,sp),a  
+9$: 
+    ld a,(COLLISION,sp)
+    _drop VAR_SIZE 
+    ret 
+
+
+;-------------------
+; move well containt 
+; 1 row down 
+; input:
+;    A   Ycoor row from 
+;-------------------
+    SCANL_CNTR=1 ; scan lines to move 
+    PIXEL_CNTR=SCANL_CNTR+1
+    R_FROM=PIXEL_CNTR+1 ; start at this row  
+    R_TO=R_FROM+1 ; move to this row 
+    LEFT=R_TO+1  ; left coord 
+    RIGHT=LEFT+1 ; right bound 
+    PIXEL_STATE=RIGHT+1 
+    VAR_SIZE=PIXEL_STATE  
+row_down:
+    _vars VAR_SIZE 
+    ld (R_FROM,sp),a 
+    sub a,top_y 
+    ld (SCANL_CNTR,sp),a 
+    add a,#BLOCK_HEIGHT 
+    ld (R_TO,sp),a 
+    ld a,#WELL_RIGHT-1
+    ld (RIGHT,sp),a 
+1$: ; scan line loop 
+    ld a,#WELL_LEFT+1 
+    ld (LEFT,sp),a
+    ld a,#BLOCK_WIDTH*10
+    ld (PIXEL_CNTR,sp),a  
+2$: ; pixel_loop
+    ld a,(LEFT,sp)
+    ld xl,a 
+    ld a,(R_FROM,sp)
+    ld xh,a 
+    call get_pixel 
+    ld (PIXEL_STATE,sp),a 
+    ld a,(LEFT,sp)
+    ld xl,a 
+    ld a,(R_TO,sp)
+    ld xh,a 
+    ld a,(PIXEL_STATE,sp)
+    call put_pixel 
+    inc (LEFT,sp)
+    dec (PIXEL_CNTR,sp)
+    jrne 2$
+    dec (R_FROM,sp)
+    dec (R_TO,sp)
+    dec (SCANL_CNTR,sp)
+    jrne 1$
+    _drop VAR_SIZE 
+    ret 
+
+;---------------------------
+; check for full row 
+; remove them 
+; adjust score 
+;----------------------------
+    FULL_ROWS=1 ; how many full rows {0..4}
+    YCOOR=FULL_ROWS+1 ; scan start y  
+    XCOOR=YCOOR+1  ; scan start x 
+    PIXEL_CNTR=XCOOR+1 ; pixels per scan line 
+    VAR_SIZE=PIXEL_CNTR+1 
+full_row:
+    _vars VAR_SIZE 
+    clr (FULL_ROWS,sp)
+    ld a,#WELL_BOTTOM-BLOCK_HEIGHT
+    ld (YCOOR,sp),a 
+1$: ; row loop 
+    ld a,#BLOCK_WIDTH*10 
+    ld (PIXEL_CNTR,sp),a  
+    ld a,#WELL_LEFT+1
+    ld (XCOOR,sp),a  
+2$: ; pixel loop
+    ldw x,(YCOOR,sp)
+    call get_pixel 
+    jreq 5$ 
+    inc (XCOOR,sp)
+    dec (PIXEL_CNTR,sp)
+    jrne 2$ 
+    inc (FULL_ROWS,sp)
+    ld a,(YCOOR,sp)
+    dec a 
+    call row_down
+    _ldaz top_y 
+    add a,#BLOCK_HEIGHT
+    _straz top_y 
+    jra 1$
+5$: ; row not full 
+    ld a,(YCOOR,sp)
+    sub a,#BLOCK_HEIGHT 
+    ld (YCOOR,sp),a 
+    cp a,top_y 
+    jrpl 1$ 
+; adjust score 
+    clrw x 
+    ld a,(FULL_ROWS,sp)
+    addw x,#FALL_GAIN 
+    ld a,(x)
+    add a,score
+    _straz score 
+    ld a,(FULL_ROWS,sp)
+    add a,lines_dropped
+    _straz lines_dropped     
+    _drop VAR_SIZE 
     ret 
 
 ;----------------------
@@ -546,31 +757,19 @@ fall:
     _movz cur_tetra,next_tetra     
 ; generate new next_tetra     
     call new_tetra
-    call draw_current_tetra  
-2$: ; falling loop
-    call fall_player_input 
-    call fall_update 
     call draw_current_tetra
-    jrne 4$  
+    jreq 2$ 
+    call draw_current_tetra ; erase it 
+    jra 9$    
+2$: ; falling loop
     _ldaz fall_dly 
     call pause 
-    jra 2$    
-4$: ; fall tetramino collided with bottom or other tetramino
-    call draw_current_tetra ; erase_hit 
-    ;rewind up 
-    _ldaz tetra_y 
-    sub a,#BLOCK_HEIGHT
-    _straz tetra_y 
-    cp a,top_y 
-    jrpl 5$
-    _straz top_y
-    cp a,#WELL_TOP+1
-    jreq 9$  
-5$:
-    call draw_current_tetra
-    jra 1$ 
+    call fall_player_input 
+    call fall_update 
+    jreq 2$  
+    call full_row 
+    jra 1$    
 9$: ; well full, game end 
-    call draw_current_tetra
     ldw x,#(4<<8)
     call again 
     cp a,#BTN_A 

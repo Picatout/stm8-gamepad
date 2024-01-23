@@ -136,6 +136,9 @@ HEIGHT=7
 ;   Y   score_list 
 ;-----------------------
 tune:
+	bset flags,#F_ST_ABORT 
+1$:
+	btjf flags,#F_ST_ABORT,9$   
 	ldw x,y
 	ldw x,(x)
 	ld a,(2,y)
@@ -144,15 +147,14 @@ tune:
 	jrne 2$
 	call pause 
 	addw y,#3
-	jra tune  
+	jra 1$
 2$:	
     call tone
     ld a,#4
     call pause  
-	call read_keypad 
-    jrne 9$
+
     addw y,#3
-	jra tune
+	jra 1$
 9$:
 	ret 
 

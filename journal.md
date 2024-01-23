@@ -1,3 +1,14 @@
+### 2024-01-23
+
+* Modifié routine *tune* dans [sound.asm](sound.asm) pour que la mélodie puisse être interrompue sans délais.
+
+* Modification de la routine kpad_input. Maintenant gérée par une interruption externe. L'état des boutons est enregistré dans la variable *keyin*.
+    * Ajout de la variable *keyin*. 
+
+* Ajout d'indicateurs booléens dans la variable *flags* 
+    * **F_ST_ABORT**  mis à 1 par la routine *tune* interrompt la mélodie si un bouton du keypad est enfoncé.
+    * **F_GT_ABORT**  mis à 1 par une routine interrompt *pause* si un bouton du keypad est enfoncé.
+
 ### 2024-01-21
 
 * Trvail sur [fall.asm](fall.asm).

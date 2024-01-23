@@ -22,7 +22,9 @@
     F_GAME_TMR=7 ; game timer expired reset 
     F_SOUND_TMR=6 ; sound timer expired reset  
     F_DISP_MODE=5 ; display mode 0->text,1->graphic 
-    
+    F_ST_ABORT=4 ; keypad btn down abort sound timer 
+    F_GT_ABORT=3 ; keypad btn down abort game timer 
+
 ;--------------------------------------
 ;   assembler flags 
 ;-------------------------------------

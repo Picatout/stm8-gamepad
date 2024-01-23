@@ -55,7 +55,7 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int1 AWU   auto wake up from halt
 	int NonHandledInterrupt ;int2 CLK   clock controller
 	int NonHandledInterrupt ;int3 EXTI0 gpio A external interrupts
-	int NonHandledInterrupt ;int4 EXTI1 gpio B external interrupts
+	int KeypadIntHandler    ;int4 EXTI1 gpio B external interrupts
 	int NonHandledInterrupt ;int5 EXTI2 gpio C external interrupts
 	int NonHandledInterrupt ;int6 EXTI3 gpio D external interrupts
 	int NonHandledInterrupt ;int7 EXTI4 gpio E external interrupts
@@ -120,6 +120,9 @@ scan_line: .blkw 1 ; video lines {0..262}
 cy: .blkb 1 ; text cursor y coord {0..7} 
 cx: .blkb 1 ; text cursor y coord {0..15}
 
+; keypad variables 
+keyin: .blkb 1 ; keypad value read within KeypadIntHandler 
+
 .if NUCLEO 
 .if DEBUG 
 RX_QUEUE_SIZE=8 
@@ -137,6 +140,26 @@ rx1_queue: .blkb 8
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NonHandledInterrupt:
 	_swreset ; see "inc/gen_macros.inc"
+
+
+;------------------------------
+; EXTI1 interrupt handler 
+; respond to GPIOB keypad input 
+; on both edge 
+;------------------------------ 
+KeypadIntHandler:
+	ld a,KPAD_IDR 
+	and a,#BTN_MASK 
+	xor a,#BTN_MASK  
+	_straz keyin
+	btjf flags,#F_ST_ABORT,1$ 
+	bres flags,#F_SOUND_TMR
+	bres flags,#F_ST_ABORT 
+1$: btjf flags,#F_GT_ABORT,2$ 
+	bres flags,#F_GAME_TMR
+	bres flags,#F_GT_ABORT
+2$:
+	iret  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    peripherals initialization
@@ -170,6 +193,20 @@ timer3_init:
 	bres TIM3_CCER1,#TIM3_CCER1_CC2E
 	ret 
  
+ ;--------------------
+; initialize keypad 
+; gpio with EXTI1 
+; set on both edge
+;--------------------
+keypad_init:
+	ld a,#(3<<2) ; both edge trigger interrupt 
+	or a,EXTI_CR1 
+	ld EXTI_CR1,a 
+	ld a,KPAD_PORT+GPIO_CR2 
+	or a,#BTN_MASK ; enable exti on keypad buttons inputs 
+	ld KPAD_PORT+GPIO_CR2,a  
+	ret 
+
 .if 0
 ;--------------------------
 ; set software interrupt 
@@ -234,17 +271,6 @@ pause:
 	btjt flags,#F_GAME_TMR,1$ 
 	ret 
 
-;-------------------------
-; read kpad no debounce 
-; output:
-;     A   kpad value 
-;-------------------------
-kpad_input:
-	ld a,KPAD_IDR 
-	and a,#BTN_MASK 
-	xor a,#BTN_MASK  
-	ret 
-
 ;------------------------
 ; reading keypad 
 ; with debouncing 
@@ -271,7 +297,7 @@ read_keypad:
 	cp a,(COUNT,sp)
 	jrmi 4$
 1$: _usec 500
-	call kpad_input
+	_ldaz keyin
 	cp a,(PAD,sp)
 	jreq 0$ 
 	ld (PAD,sp),a 
@@ -315,6 +341,7 @@ wait_key_release:
 	pop a 
 	ret 
 
+
 ;-------------------------------------
 ;  initialization entry point 
 ;-------------------------------------
@@ -343,6 +370,7 @@ cold_start:
 	ld PH_CR1,a 
 	ld PI_CR1,a 
 	call clock_init	
+	call keypad_init 
 	call timer3_init
 .if DEBUG 
 .if NUCLEO
