@@ -279,16 +279,18 @@ courante du curseur texte. Avance le curseur à la position suivante.
 
 * **line**  Trace une ligne droite entre les coordonnées **{x0,y0}** et **{x1,y1}** excluant ce dernier point.
     * **XL** coordonnée **x0** [0..HRES[
-    * **XH** coordonnée **x1** [0..HRES[
-    * **YL** coordonnée **y0**  [0..VRES[
+    * **XH** coordonnée **y0** [0..VRES[
+    * **YL** coordonnée **x1**  [0..HRES[
     * **YH** coordonnée **y1** [0..VRES[
 <hr>
 
 * **rectangle** Dessine un rectangle dont les coordonnées des coins supérieur gauche et inférieur droit sont données.
-    * **XL** coordonnée **x** [0..HRES[  coordonée gauche 
-    * **XH** coordonnée **y** [0..VRES[  coordonnnée haut  
-    * **YL** coordonnée **width**  [0..HRES[ largeur 
-    * **YH** coordonnée **height** [0..VRES[ hauteur 
+    * **X**  coordonnées coin supérieur gauche,
+        * **XH**  ycoord y0 [0..VRES[   
+        * **XL**  xcoord x0 [0..HRES[
+    * **Y** coordonnées coin inférieur droit,    
+        * **YH**  ycoord y1 [0..VRES[ 
+        * **YL**  xcoord x1 [0..HRES[
 
 <hr>
 

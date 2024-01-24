@@ -96,20 +96,20 @@ CHRONO_BAR:    .byte CB_WIDTH,CB_HEIGHT,0x70
 ;---------------------
 draw_walls:
 ; top fence  
-    ldw x,#RIGHT_BORDER+1 
-    ldw y,#(TOP_BORDER<<8)+TOP_BORDER  
+    ldw x,#(TOP_BORDER<<8)
+    ldw y,#(TOP_BORDER<<8)+RIGHT_BORDER+1  
     call line
 ; bottom fence  
-    ldw x,#RIGHT_BORDER+1 
-    ldw y,#(BOTTOM_BORDER<<8)+BOTTOM_BORDER
+    ldw x,#(BOTTOM_BORDER<<8) 
+    ldw y,#(BOTTOM_BORDER<<8)+RIGHT_BORDER+1
     call line 
 ; left fence     
-    clrw x 
-    ldw y,#((TOP_BORDER+1)<<8)+BOTTOM_BORDER
+    ldw x,#(TOP_BORDER<<8)
+    ldw y,#(BOTTOM_BORDER<<8)
     call line 
 ; right fence
-    ldw x,#(RIGHT_BORDER<<8)+RIGHT_BORDER
-    ldw y,#((TOP_BORDER+1)<<8)+BOTTOM_BORDER
+    ldw x,#(TOP_BORDER<<8)+RIGHT_BORDER
+    ldw y,#(BOTTOM_BORDER<<8)+RIGHT_BORDER
     call line 
     ret 
 

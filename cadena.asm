@@ -563,12 +563,12 @@ draw_vlines:
     pushw x 
     push a 
 1$: ld a,(XPOS,sp)
-    ld xh,a 
     ld xl,a 
+    ld yl,a  
     ld a,(YPOS,sp)
-    ld yh,a 
+    ld xh,a 
     add a,(LEN,sp)
-    ld yl,a 
+    ld yh,a 
     call line 
     ld a,(XPOS,sp)
     add a,(STEP,sp)
@@ -601,12 +601,12 @@ draw_hlines:
     pushw x ; top,left 
     push a ; count  
 1$: ld a,(XPOS,sp)
-    ld xh,a 
-    add a,(LEN,sp)
     ld xl,a 
-    ld a,(YPOS,sp)
-    ld yh,a 
+    add a,(LEN,sp)
     ld yl,a 
+    ld a,(YPOS,sp)
+    ld xh,a 
+    ld yh,a 
     call line 
     ld a,(YPOS,sp)
     add a,(STEP,sp)
@@ -925,12 +925,13 @@ draw_frame:
     jrne 1$ 
     _drop 1 
 ; draw separator line 
-    ldw x,#((FONT_WIDTH*6+2)<<8)+(FONT_WIDTH*6+2)
+    ldw x,#((SCORE_TOP*FONT_HEIGHT)<<8)+(FONT_WIDTH*6+2)
     ld a,nbr_players 
     inc a 
     ldw y,#FONT_HEIGHT 
     mul y,a 
-    addw y,#((SCORE_TOP*FONT_HEIGHT)<<8)+(SCORE_TOP*FONT_HEIGHT)
+    swapw y 
+    addw y,#((SCORE_TOP*FONT_HEIGHT)<<8)+(FONT_WIDTH*6+2)
     call line  
     call draw_grids
     popw y

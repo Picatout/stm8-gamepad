@@ -773,6 +773,12 @@ check_score:
     ldw x,(x)
     addw x,fall_score
     _strxz fall_score 
+    ldw y,#10000
+    divw x,y 
+    ld a,xl 
+    sub a,#INIT_DLY 
+    neg a 
+    _straz fall_dly 
     clrw x 
     ld a,(FULL_ROWS,sp)
     ld xl,a 

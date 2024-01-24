@@ -404,30 +404,30 @@ roll_up:
 
 ;-------------------------------
 ; line drawing 
-;  X0<=X1 
-;  Y0<=Y1 
+;  X0<X1 
+;  Y0<Y1 
 ; input:
-;     XH  x0 
-;     XL  x1 
-;     YH  y0 
-;     YL  y1 
+;     XH  y0 
+;     XL  x0 
+;     YH  y1 
+;     YL  x1 
 ;--------------------------------
-    X0=1  ; int8 
-    X1=2  ; int8 
-    Y0=3  ; int8 
-    Y1=4  ; int8 
-    DX=5   ; int16 
-    DY=7   ; int16 
-    DELTA=9 ; int16 
+    Y0=1  ; uint8 
+    X0=2  ; uint8 
+    Y1=3  ; uint8 
+    X1=4  ; uint8 
+    DX=5   ; uint16 
+    DY=7   ; uint16 
+    DELTA=9 ; uint16 
     VAR_SIZE=10
 line:
     _vars VAR_SIZE 
-    ldw (X0,sp),x
-    ldw (Y0,sp),y
-    ld a,xh 
+    ldw (Y0,sp),x
+    ldw (Y1,sp),y
+    ld a,xl ; x0 
     cp a,(X1,sp)
     jreq 3$ ; vertical line 
-    ld a,yh 
+    ld a,xh ; y0  
     cp a,(Y1,sp)
     jreq 4$ ; horizontal line
     ld a,(X1,sp)
@@ -496,55 +496,40 @@ line:
 ; input:
 ;    XH   top   ycoord 
 ;    XL   left  xcoord 
-;    YH   down 
-;    YL   right    
+;    YH   down  ycoord 
+;    YL   right xcoord    
 ;---------------------------
     BOTTOM =1
     RIGHT=BOTTOM+1 
     TOP=RIGHT+1
     LEFT=TOP+1
+    VAR_SIZE=LEFT 
 rectangle:
     pushw x
     pushw y 
 ; top horizontal
     ld a,xh 
-    ld yh,a ; y0
-    ld yl,a ; y1
-    swapw x ; XH=x0  
-    ld a,(RIGHT,sp)
-    ld xl,a ; x1  
+    ld yh,a ; y1==y0 
     call line 
-; bottom horizontal     
-    ld a,(LEFT,sp)
-    ld xh,a ; x0 
-    ld a,(RIGHT,sp)
-    ld xl,a ; x1   
-    ld a,(BOTTOM,sp)
-    ld yh,a ; y0 
-    ld yl,a ; y1
+; bottom horizontal 
+    ldw x,(TOP,sp)
+    ldw y,(BOTTOM,sp)    
+    ld a,yh 
+    ld xh,a 
     call line 
 ; left vertical
-    ld a,(LEFT,sp)
-    ld xh,a ; x0 
-    ld xl,a ; x1 
-    ld a,(TOP,sp)
-    ld yh,a ; y0 
-    ld a,(BOTTOM,sp)
-    inc a 
-    ld yl,a ; y1 
+    ldw x,(TOP,sp)
+    ldw y,(BOTTOM,sp)
+    ld a,xl 
+    ld yl,a 
     call line 
 ; right vertical     
-    ld a,(RIGHT,sp)
-    ld xh,a ; x0 
-    ld xl,a ; x1 
-    ld a,(TOP,sp)
-    ld yh,a ; y0 
-    ld a,(BOTTOM,sp)
-    inc a 
-    ld yl,a ; y1  
+    ldw x,(TOP,sp)
+    ldw y,(BOTTOM,sp)
+    ld a,yl 
+    ld xl,a 
     call line 
-    popw y 
-    popw x 
+    _drop VAR_SIZE
     ret 
 
 
