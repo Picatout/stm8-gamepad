@@ -490,40 +490,38 @@ line:
 
 ;----------------------------
 ; draw rectangle 
-; {x0,y0} top left corner 
-; {x1,y1} down right corner 
+; X={x0,y0} top left corner 
+; Y={x1,y1} down right corner 
 ;
 ; input:
 ;    XH   top   ycoord 
 ;    XL   left  xcoord 
-;    YH   heigth
-;    YL   width   
+;    YH   down 
+;    YL   right    
 ;---------------------------
-    HEIGHT =1
-    WIDTH=HEIGHT+1 
-    TOP=WIDTH+1
+    BOTTOM =1
+    RIGHT=BOTTOM+1 
+    TOP=RIGHT+1
     LEFT=TOP+1
 rectangle:
-    pushw x 
+    pushw x
     pushw y 
-; top horizontal     
-    swapw x 
-    ld a,xh  ; x0  
-    add a,(WIDTH,sp)
-    ld xl,a ; x1 
-    ld a,(TOP,sp)
-    ld yh,a ; y0 
-    ld yl,a ; y1 
+; top horizontal
+    ld a,xh 
+    ld yh,a ; y0
+    ld yl,a ; y1
+    swapw x ; XH=x0  
+    ld a,(RIGHT,sp)
+    ld xl,a ; x1  
     call line 
 ; bottom horizontal     
     ld a,(LEFT,sp)
     ld xh,a ; x0 
-    add a,(WIDTH,sp)
-    ld xl,a ; x1 
-    ld a,(TOP,sp)
-    add a,(HEIGHT,sp)
-    ld yh,a ; y0
-    ld yl,a ; y1 
+    ld a,(RIGHT,sp)
+    ld xl,a ; x1   
+    ld a,(BOTTOM,sp)
+    ld yh,a ; y0 
+    ld yl,a ; y1
     call line 
 ; left vertical
     ld a,(LEFT,sp)
@@ -531,17 +529,17 @@ rectangle:
     ld xl,a ; x1 
     ld a,(TOP,sp)
     ld yh,a ; y0 
-    add a,(HEIGHT,sp)
+    ld a,(BOTTOM,sp)
+    inc a 
     ld yl,a ; y1 
     call line 
 ; right vertical     
-    ld a,(LEFT,sp)
-    add a,(WIDTH,sp)
+    ld a,(RIGHT,sp)
     ld xh,a ; x0 
     ld xl,a ; x1 
     ld a,(TOP,sp)
     ld yh,a ; y0 
-    add a,(HEIGHT,sp)
+    ld a,(BOTTOM,sp)
     inc a 
     ld yl,a ; y1  
     call line 

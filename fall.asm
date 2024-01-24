@@ -18,7 +18,7 @@
 
 ;-------------------
 ; FALL 
-; TRETIS  inspired  
+; TRETIS  variant
 ;-------------------
 ; block dimensions
 DX=4
@@ -27,18 +27,22 @@ BLOCK_WIDTH=4
 BLOCK_HEIGHT=6 
 
 ; well dimensions and position 
-WELL_WIDTH=BLOCK_WIDTH*10+1
-WELL_HEIGHT=BLOCK_HEIGHT*22+1
+WELL_WIDTH=BLOCK_WIDTH*10
+WELL_HEIGHT=BLOCK_HEIGHT*22
 WELL_BOTTOM=VRES-BLOCK_HEIGHT  
 WELL_TOP=WELL_BOTTOM-WELL_HEIGHT-1
 WELL_LEFT=(HRES-WELL_WIDTH)/2
-WELL_RIGHT=WELL_LEFT+WELL_WIDTH 
+WELL_RIGHT=WELL_LEFT+WELL_WIDTH+1 
 ; next tetramino box dimensions and position 
 NEXT_WIDTH=4*BLOCK_WIDTH+4
 NEXT_HEIGHT=4*BLOCK_HEIGHT+4
 NEXT_LEFT=WELL_RIGHT+2 
 NEXT_TOP=WELL_TOP 
+NEXT_BOTTOM=NEXT_TOP+NEXT_HEIGHT+1 
+NEXT_RIGHT=NEXT_LEFT+NEXT_WIDTH+1
 NEXT_COORDS=((NEXT_TOP+2)<<8)+NEXT_LEFT+2
+
+INIT_DLY=12 
 
 ; score gain as row drop 
 ONE_ROW=100
@@ -359,7 +363,7 @@ LINES_STR: .asciz "LINES:\r\rSCORE:"
  
 
 fall_init:
-    ld a,#15 
+    ld a,#INIT_DLY  
     _straz fall_dly 
     ld a,#VRES-1
     _straz top_y
@@ -371,11 +375,11 @@ fall_init:
     call tv_puts 
 ; draw well 
     ldw x,#(WELL_TOP<<8)+WELL_LEFT 
-    ldw y,#(WELL_HEIGHT<<8)+WELL_WIDTH
+    ldw y,#((WELL_BOTTOM)<<8)+WELL_RIGHT 
     call rectangle 
 ; draw next tetramino box 
     ldw x,#(#NEXT_TOP<<8)+NEXT_LEFT 
-    ldw y,#(NEXT_HEIGHT<<8)+NEXT_WIDTH  
+    ldw y,#(NEXT_BOTTOM<<8)+NEXT_RIGHT 
     call rectangle 
     clrw x 
     call set_seed 
@@ -747,7 +751,7 @@ check_score:
     ld (YCOOR,sp),a 
     ldw x,(YCOOR,sp)
     ld a,xh 
-    cp a,top_y  
+    cp a,#WELL_TOP+BLOCK_HEIGHT   
     jruge 1$ 
     jra 4$ 
 2$: ; this row is full 
