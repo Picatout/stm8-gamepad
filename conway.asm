@@ -448,7 +448,7 @@ erase_str: .asciz "              ";
     XCOOR=YCOOR+1
     KEY=XCOOR+1 
     VAR_SIZE=KEY 
-grid_init:
+free_hand:
     _vars VAR_SIZE 
     clr (KEY,sp)
     ldw x,#(GRID_CNTR_Y<<8)+GRID_CNTR_X
@@ -515,38 +515,39 @@ grid_init:
     _drop VAR_SIZE
     ret 
 
-;---------------------------
-; game of life 
-; simulation entry function
-;---------------------------
-game_of_life:
-    call life_init
-    ldw y,#patterns 
-    call menu 
-    tnzw x 
-    jrne 1$
+;------------------------
+; random fill grid 
+;------------------------
+    YCOOR=1 
+    XCOOR=YCOOR+1 
+    CELL_CNTR=XCOOR+1 
+    VAR_SIZE=CELL_CNTR+1
+rnd_fill:
+    _vars VAR_SIZE 
+    clrw x 
+    call set_seed 
+    ldw x,#GRID_WIDTH/2 
+    ld a,#GRID_HEIGHT 
+    mul x,a 
+    ldw (CELL_CNTR,sp),x
+1$:
+    call prng 
+    ld a,#GRID_WIDTH 
+    div x,a 
+    ld (XCOOR,sp),a 
+    call prng 
+    ld a,#GRID_HEIGHT 
+    div x,a 
+    ld (YCOOR,sp),a 
+    ldw x,(YCOOR,sp)
+    ldw y,src 
+    call set_cell 
+    ldw x,(CELL_CNTR,sp)
+    decw x 
+    ldw (CELL_CNTR,sp),x
+    jrne 1$ 
+    _drop VAR_SIZE 
     ret 
-1$: cpw x,#free_hand 
-    jrne set_pattern 
-free_hand:
-    call grid_init
-sim_init:
-    clrw x 
-    _strxz cy 
-    ldw y,#erase_str
-    call tv_putc 
-    clrw x 
-    _strxz cy 
-    ldw y,#gen_str
-    call tv_puts 
-sim:
-    call print_gen
-    call next_gen
-ld a,#15 
-call pause     
-    call read_keypad
-    jreq sim  
-    jra game_of_life
 
 ;-------------------------
 ; set predefined pattern 
@@ -568,11 +569,50 @@ set_pattern:
     jra 1$  
 9$: 
     _drop VAR_SIZE 
-    jp sim_init
+    ret 
+
+;---------------------------
+; game of life 
+; simulation entry function
+;---------------------------
+game_of_life:
+    call life_init
+    ldw y,#patterns 
+    call menu 
+    tnzw x 
+    jrne 1$
+    ret 
+1$: cpw x,#free_hand 
+    jreq call_x  
+    cpw x,#rnd_fill 
+    jreq call_x  
+    call set_pattern 
+    jra sim_init 
+call_x:
+    call (x)
+sim_init:
+    clrw x 
+    _strxz cy 
+    ldw y,#erase_str
+    call tv_putc 
+    clrw x 
+    _strxz cy 
+    ldw y,#gen_str
+    call tv_puts 
+sim:
+    call print_gen
+    call next_gen
+    ld a,#15 
+    call pause     
+    call read_keypad
+    jreq sim  
+    jra game_of_life
 
 
 ; liste de configuration prédéfinie 
 patterns:
+.asciz "RANDOM FILL" 
+.word rnd_fill 
 .asciz "FREE HAND"
 .word free_hand 
 .asciz "GLIDER"
@@ -582,7 +622,7 @@ patterns:
 .asciz "PENTADECATHLON"
 .word pentadecathon
 .asciz "PENTOMINO R"
-.word pento_r 
+.word pento_r
 .asciz "EXIT" 
 .word  0  
 .word 0 

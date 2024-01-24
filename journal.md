@@ -1,5 +1,7 @@
 ### 2024-01-24
 
+* Ajout de l'option **RANDOM FILL** au menu de [conway.asm](conway.asm).
+
 * Travail sur [fall.asm](fall.asm) pour ajusté la vitesse: 
     * **fall_dly = INIT_DLY-fall_score/1000**
 
