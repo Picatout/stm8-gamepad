@@ -638,7 +638,11 @@ fall_update:
 ; move well containt 
 ; 1 row down 
 ; input:
-;    A   Ycoor row from 
+;    A   ycoor bottom row 
+;        all lines from up 
+;        to this row 
+;        are move down 
+;        1 block 
 ;-------------------
     SCANL_CNTR=1 ; scan lines to move 
     PIXEL_CNTR=SCANL_CNTR+1
@@ -646,15 +650,15 @@ fall_update:
     R_TO=R_FROM+1 ; move to this row 
     LEFT=R_TO+1  ; left coord 
     RIGHT=LEFT+1 ; right bound 
-    PIXEL_STATE=RIGHT+1 
-    VAR_SIZE=PIXEL_STATE  
+    VAR_SIZE=RIGHT   
 row_down:
     _vars VAR_SIZE 
     ld (R_FROM,sp),a 
-    sub a,top_y 
-    ld (SCANL_CNTR,sp),a 
     add a,#BLOCK_HEIGHT 
     ld (R_TO,sp),a 
+    ld a,(R_FROM,sp)
+    sub a,#WELL_TOP 
+    ld (SCANL_CNTR,sp),a 
     ld a,#WELL_RIGHT-1
     ld (RIGHT,sp),a 
 1$: ; scan line loop 
@@ -668,12 +672,7 @@ row_down:
     ld a,(R_FROM,sp)
     ld xh,a 
     call get_pixel 
-    ld (PIXEL_STATE,sp),a 
-    ld a,(LEFT,sp)
-    ld xl,a 
-    ld a,(R_TO,sp)
-    ld xh,a 
-    ld a,(PIXEL_STATE,sp)
+    ldw x,(R_TO,sp)
     call put_pixel 
     inc (LEFT,sp)
     dec (PIXEL_CNTR,sp)
@@ -685,33 +684,74 @@ row_down:
     _drop VAR_SIZE 
     ret 
 
+;-------------------------
+; check if the row is 
+; full a row is 10 blocks 
+; wide and only 1 pixel 
+; per block need to be 
+; sampled.
+; input:
+;    XL  xcoord 
+;    XL  ycoord 
+;    coordinate of left
+;    block corner.
+; output:
+;    A    boolean flag true
+;         if row full 
+;    Z    set if not full 
+;-------------------------
+    YCOOR=1
+    XCOOR=YCOOR+1 
+    FULL=XCOOR+1
+    BLK_CNT=FULL+1
+    VAR_SIZE=BLK_CNT 
+row_full:
+    push #10 ; count pixels to sample
+    push #0 ; flag false 
+    pushw x ; 
+1$: call get_pixel  
+    jreq  9$ ; empty block 
+    ld a,(XCOOR,sp)
+    add a,#BLOCK_WIDTH
+    ld (XCOOR,sp),a
+    ldw x,(YCOOR,sp)
+    dec (BLK_CNT,sp)
+    jrne 1$
+    cpl (FULL,sp)
+9$: ld a,(FULL,sp)
+    _drop VAR_SIZE 
+    ret 
+
 ;---------------------------
 ; check for full row 
 ; remove them 
 ; adjust score 
 ;----------------------------
-    FULL_ROWS=1 ; how many full rows {0..4}
-    YCOOR=FULL_ROWS+1 ; scan start y  
+    YCOOR=1 ; scan start y  
     XCOOR=YCOOR+1  ; scan start x 
-    PIXEL_CNTR=XCOOR+1 ; pixels per scan line 
-    VAR_SIZE=PIXEL_CNTR+1 
-full_row:
+    FULL_ROWS=XCOOR+1 ; how many full rows {0..4}
+    VAR_SIZE=FULL_ROWS 
+check_score:
     _vars VAR_SIZE 
     clr (FULL_ROWS,sp)
     ld a,#WELL_BOTTOM-BLOCK_HEIGHT
     ld (YCOOR,sp),a 
-1$: ; row loop 
-    ld a,#BLOCK_WIDTH*10 
-    ld (PIXEL_CNTR,sp),a  
     ld a,#WELL_LEFT+1
     ld (XCOOR,sp),a  
-2$: ; pixel loop
+1$: ; row loop 
     ldw x,(YCOOR,sp)
-    call get_pixel 
-    jreq 5$ 
-    inc (XCOOR,sp)
-    dec (PIXEL_CNTR,sp)
+    call row_full
     jrne 2$ 
+    ld a,(YCOOR,sp)
+    sub a,#BLOCK_HEIGHT 
+    ld (YCOOR,sp),a 
+    ldw x,(YCOOR,sp)
+    ld a,xh 
+    cp a,top_y  
+    jruge 1$ 
+    jra 4$ 
+2$: ; this row is full 
+    ; drop it. 
     inc (FULL_ROWS,sp)
     ld a,(YCOOR,sp)
     dec a 
@@ -720,22 +760,20 @@ full_row:
     add a,#BLOCK_HEIGHT
     _straz top_y 
     jra 1$
-5$: ; row not full 
-    ld a,(YCOOR,sp)
-    sub a,#BLOCK_HEIGHT 
-    ld (YCOOR,sp),a 
-    cp a,top_y 
-    jrpl 1$ 
-; adjust score 
+4$: ; adjust score 
     clrw x 
     ld a,(FULL_ROWS,sp)
+    sll a 
+    ld xl,a 
     addw x,#FALL_GAIN 
-    ld a,(x)
-    add a,score
-    _straz score 
+    ldw x,(x)
+    addw x,fall_score
+    _strxz fall_score 
+    clrw x 
     ld a,(FULL_ROWS,sp)
-    add a,lines_dropped
-    _straz lines_dropped     
+    ld xl,a 
+    addw x,lines_dropped
+    _strxz lines_dropped     
     _drop VAR_SIZE 
     ret 
 
@@ -767,7 +805,7 @@ fall:
     call fall_player_input 
     call fall_update 
     jreq 2$  
-    call full_row 
+    call check_score 
     jra 1$    
 9$: ; well full, game end 
     ldw x,#(4<<8)
