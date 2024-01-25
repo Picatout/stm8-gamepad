@@ -1,5 +1,7 @@
 ### 2024-01-24
 
+* Correction à la routine *rectangle*, le pixel du coin inférieur droit était manquant. V1.3R1.
+
 * Ajout de l'option **RANDOM FILL** au menu de [conway.asm](conway.asm).
 
 * Travail sur [fall.asm](fall.asm) pour ajusté la vitesse: 

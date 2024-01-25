@@ -528,6 +528,7 @@ rectangle:
     ldw y,(BOTTOM,sp)
     ld a,yl 
     ld xl,a 
+    addw y,#0x100
     call line 
     _drop VAR_SIZE
     ret 
