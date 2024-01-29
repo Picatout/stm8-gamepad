@@ -294,6 +294,20 @@ courante du curseur texte. Avance le curseur à la position suivante.
 
 <hr>
 
+* **cercle**  Dessine un cercle avec correction *ASPECT_RATIO* 
+    * **A**   rayon 
+    * **XL**  xcoord 
+    * **XH**  ycooord 
+
+Les constantes pour corriger l'*ASPTECT RATIO* sont dans le fichier [config.inc](config.inc)
+
+* **ASPECT_MUL=59**
+* **ASPECT_DIV=36** 
+
+Ces valeurs peuvent dépendre du moniteur utilisé.
+
+<hr>
+
 * **put_sprite** Affiche un petit graphique d'au maximum 8 pixels en largeur et un maximum de **VRES** pixels en hauteur. Chaque rangé du sprite est représenté par un seul octet et le sprite comprend autant d'octets que sa hauteur. La fonction logique **XOR** est utilisée pour afficher les sprites. Cette méthode permet de détecter automatiquement les collisions. La fonction retourne une valeur dand **A** et ajuste le drapeau **Z** en fonction de cette valeur.
 
 Entrées:

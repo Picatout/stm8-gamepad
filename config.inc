@@ -25,8 +25,14 @@
 ;  information 
 ;-----------------------
 	MAJOR=1
-	MINOR=3
-	REV=1
+	MINOR=4
+	REV=0
+
+; display aspect ratio 
+; these numbers are used in 
+; circle drawing 
+ASPECT_MULT=59
+ASPECT_DIV=36
 
 ; set to 1 to add dbg_print code 
 DEBUG=0

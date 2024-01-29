@@ -1,3 +1,13 @@
+### 2024-01-28
+
+* Nouveau tag V1.4R0 
+
+* Ajout de la routine graphique *cercle*. 
+    * **cercle**  
+        * **A**   rayon 
+        * **XL**  xcoord 
+        * **XH**  ycooord 
+
 ### 2024-01-24
 
 * Correction à la routine *rectangle*, le pixel du coin inférieur droit était manquant. V1.3R1.

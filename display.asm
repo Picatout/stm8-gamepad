@@ -796,3 +796,141 @@ scroll_right:
     popw x 
     ret 
 
+;------------------------
+; sqaure root 
+; ref: https://fr.wikipedia.org/wiki/Extraction_de_racine_carr%C3%A9e#M%C3%A9thode_informatique_par_d%C3%A9calage_des_bits 
+; input:
+;    X    uint16
+;------------------------
+    VA=1
+    B=VA+2
+    C=B+2
+    D=C+2
+    VAR_SIZE=D+1
+sqrt:
+    _vars VAR_SIZE
+    ldw (B,sp),x 
+    clrw x 
+    ldw (VA,sp),x 
+    ldw x,#0x4000
+    ldw (C,sp),x 
+1$:
+    ldw x,(VA,sp)
+    addw x,(C,sp)
+    ldw (D,sp),x 
+    ldw x,(VA,sp)
+    srlw x 
+    ldw (VA,sp),x 
+    ldw x,(B,sp)
+    cpw x,(D,sp)
+    jrmi 2$ 
+    subw x,(D,sp)
+    ldw (B,sp),x 
+    ldw x,(VA,sp)
+    addw x,(C,sp)
+    ldw (VA,sp),x 
+2$:
+    ldw x,(C,sp)
+    srlw x 
+    srlw x 
+    ldw (C,sp),x 
+    tnzw x 
+    jrne 1$
+    ldw x,(VA,sp)    
+    _drop VAR_SIZE 
+    ret 
+
+;-------------------------
+; draw circle 
+; input:
+;    A   radius 
+;    XL   xcoord 
+;    XH   ycoord 
+;-------------------------
+    YCOOR=1 
+    XCOOR=YCOOR+1 
+    RAD=XCOOR+1
+    RAD_SQR=RAD+1
+    PREV_Y=RAD_SQR+2 
+    VAR_SIZE=PREV_Y 
+cercle:
+    _vars VAR_SIZE 
+    ld (RAD,sp),a 
+    clr (PREV_Y,sp)
+    ldw (YCOOR,sp),x 
+    ld xl,a 
+    mul x,a ; radius^2 
+    ldw (RAD_SQR,sp),x 
+1$:
+    ld a,(RAD,sp)
+    ld xl,a 
+    mul x,a  ; X^2
+    _strxz acc16 
+    ldw x,(RAD_SQR,sp)
+    subw x,acc16 ; Y^2=R^2-X^2
+    call sqrt 
+    ld a,#ASPECT_MULT 
+    mul x,a 
+    ld a,#ASPECT_DIV
+    div x,a
+    cp a,#18 
+    jrmi 2$ 
+    incw x 
+2$: 
+    ld a,xl 
+    sub a,(PREV_Y,sp)
+    cp a,#2
+    jrmi 3$
+    inc (RAD,sp)
+    inc (PREV_Y,sp)
+    ld a,(PREV_Y,sp)
+    ld xl,a
+3$:
+    swapw x 
+    ld a,xh 
+    ld (PREV_Y,sp),a
+    ld a,(RAD,sp)
+    ld xl,a  
+    addw x,(YCOOR,sp)
+    pushw x 
+    call put_pixel 
+    popw x 
+    ld a,xh 
+    sub a,(YCOOR,sp)
+    sub a,(YCOOR,sp)
+    neg a 
+    ld xh,a 
+    pushw x 
+    call put_pixel 
+    popw x 
+    ld a,xl 
+    sub a,(XCOOR,sp)
+    sub a,(XCOOR,sp)
+    neg a 
+    ld xl,a 
+    pushw x 
+    call put_pixel 
+    popw x 
+    ld a,xh 
+    sub a,(YCOOR,sp)
+    neg a 
+    add a,(YCOOR,sp)
+    ld xh,a 
+    call put_pixel 
+    dec (RAD,sp)
+    jrne 1$
+    clrw x 
+    ld a,(PREV_Y,sp)
+    ld xh,a 
+    addw x,(YCOOR,sp)
+    pushw x 
+    call put_pixel 
+    popw x 
+    ld a,xh 
+    sub a,(YCOOR,sp)
+    sub a,(YCOOR,sp)
+    neg a 
+    ld xh,a 
+    call put_pixel 
+    _drop VAR_SIZE 
+    ret 
