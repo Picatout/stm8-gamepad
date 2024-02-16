@@ -39,3 +39,15 @@ L'ensemble tient sur une seule carte.
 
 La carte des boutons est enfichée par dessus la carte du circuit principal. De plus il n'y a pas de haut-parleur installé mais plutôt une sortie phono RCA (blanc) pour l'audio.
 
+## Mise à jours
+
+### 2024-02-16, V1.5R0
+
+J'ai effectué 2 modficications au circuit ainsi que les modifications logicielles requises par ces changements.
+
+1. La résistance de **150 ohm** à la sortie vidéo a été remplacée par une résistance de **100 ohm** pour augmenter la luminosité.
+1. Le cristal de **16Mhz** a été remplacé par un cristal de **24Mhz**. Ceci a 3 conséquences.
+    * le rapport largeur/hauteur de l'image qui étirait les pixels en largeur est maintenant très proche ce l'unité donc la routine **circle** n'a plus besoin de faire une correction et le bitmap du chien qui s'affiche au démarrage a un aspect plus normal.
+    * l'image n'occupe plus que les 2/3 de la largeur de l'écran. Ça implique que du temps est libéré (environ 17µSec/scan line) donnant plus temps d'exécution au cpu pour les autres tâche.
+    * La vitesse d'exécution est augmenter.
+

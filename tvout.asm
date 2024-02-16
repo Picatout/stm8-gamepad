@@ -26,12 +26,12 @@ BYTES_PER_LINE=25
 ; values based on 16 Mhz crystal
 
 FR_HORZ=15734
-HLINE=(FMSTR/FR_HORZ); horizontal line duration 
+HLINE=1525 ; (FMSTR/FR_HORZ); horizontal line duration 
 HALF_LINE=HLINE/2 ; half-line during sync. 
-EPULSE=37 ; pulse width during pre and post equalization
-VPULSE=436 ; pulse width during vertical sync. 
-HPULSE=75 ; 4.7µSec horizontal line sync pulse width. 
-LINE_DELAY=(130) 
+EPULSE=60 ; 2,5µS pulse width during pre and post equalization
+VPULSE=656 ; pulse width during vertical sync. 
+HPULSE=113 ; 4.7µSec horizontal line sync pulse width. 
+LINE_DELAY=(400) 
 
 ; ntsc synchro phases 
 PH_VSYNC=0 
@@ -133,6 +133,7 @@ ntsc_sync_interrupt:
     jrne test_pre_video 
     cpw x,#1 
     jrne  1$ 
+; pre equalization    
     mov TIM1_ARRH,#HALF_LINE>>8 
     mov TIM1_ARRL,#HALF_LINE & 0xff 
     mov TIM1_CCR3H,#EPULSE>>8 
@@ -140,12 +141,14 @@ ntsc_sync_interrupt:
     jp sync_exit 
 1$: cpw x,#7 
     jrne 2$ 
+; vertical synchronisation    
     mov TIM1_CCR3H,#VPULSE>>8 
     mov TIM1_CCR3L,#VPULSE&0xff 
     jp sync_exit 
 2$:
     cpw x,#13 
     jrne 3$ 
+; post equalization    
     mov TIM1_CCR3H,#EPULSE>>8 
     mov TIM1_CCR3L,#EPULSE&0xff 
     jp sync_exit 

@@ -853,7 +853,7 @@ sqrt:
     RAD_SQR=RAD+1
     PREV_Y=RAD_SQR+2 
     VAR_SIZE=PREV_Y 
-cercle:
+circle:
     _vars VAR_SIZE 
     ld (RAD,sp),a 
     clr (PREV_Y,sp)
@@ -869,6 +869,7 @@ cercle:
     ldw x,(RAD_SQR,sp)
     subw x,acc16 ; Y^2=R^2-X^2
     call sqrt 
+.if 0
     ld a,#ASPECT_MULT 
     mul x,a 
     ld a,#ASPECT_DIV
@@ -876,6 +877,7 @@ cercle:
     cp a,#18 
     jrmi 2$ 
     incw x 
+.endif
 2$: 
     ld a,xl 
     sub a,(PREV_Y,sp)

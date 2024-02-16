@@ -1924,8 +1924,8 @@
   (symbol (lib_id "Device:Crystal") (at 127.635 86.995 180) (unit 1)
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid 9bb99e72-c974-40c5-91f5-ac09e1f9fa5f)
-    (property "Reference" "Y1" (id 0) (at 127.635 79.375 0))
-    (property "Value" "16Mhz" (id 1) (at 127.635 81.915 0))
+    (property "Reference" "Y1" (id 0) (at 127.635 78.74 0))
+    (property "Value" "24Mhz" (id 1) (at 127.635 81.28 0))
     (property "Footprint" "" (id 2) (at 127.635 86.995 0)
       (effects (font (size 1.27 1.27)) hide)
     )
@@ -2062,7 +2062,7 @@
     (in_bom yes) (on_board yes)
     (uuid b9ea2e14-051a-4aab-9599-98e5d45fd736)
     (property "Reference" "R2" (id 0) (at 194.31 102.235 90))
-    (property "Value" "150" (id 1) (at 194.31 107.315 90))
+    (property "Value" "100" (id 1) (at 194.31 107.315 90))
     (property "Footprint" "" (id 2) (at 194.31 106.553 90)
       (effects (font (size 1.27 1.27)) hide)
     )
@@ -2375,7 +2375,7 @@
       (reference "R1") (unit 1) (value "10K") (footprint "")
     )
     (path "/b9ea2e14-051a-4aab-9599-98e5d45fd736"
-      (reference "R2") (unit 1) (value "150") (footprint "")
+      (reference "R2") (unit 1) (value "100") (footprint "")
     )
     (path "/ab47d6f0-bde7-4f5d-959c-98201f237641"
       (reference "R3") (unit 1) (value "270") (footprint "")
@@ -2384,7 +2384,7 @@
       (reference "R4") (unit 1) (value "150") (footprint "")
     )
     (path "/3f423e78-9a93-4158-a149-1324034fba40/bd271d0a-0fc9-4de7-9bab-bcd5b8309c19"
-      (reference "R5") (unit 1) (value "150") (footprint "")
+      (reference "R5") (unit 1) (value "100") (footprint "")
     )
     (path "/3f423e78-9a93-4158-a149-1324034fba40/8c0e7c92-1019-4049-a7b9-7ecd7fce3bde"
       (reference "R6") (unit 1) (value "270") (footprint "")
@@ -2441,10 +2441,10 @@
       (reference "U1") (unit 1) (value "STM8S207K8T6") (footprint "")
     )
     (path "/9bb99e72-c974-40c5-91f5-ac09e1f9fa5f"
-      (reference "Y1") (unit 1) (value "16Mhz") (footprint "")
+      (reference "Y1") (unit 1) (value "24Mhz") (footprint "")
     )
     (path "/3f423e78-9a93-4158-a149-1324034fba40/9495883e-4eeb-49b6-8648-2df4d6aa01d1"
-      (reference "Y2") (unit 1) (value "16Mhz") (footprint "")
+      (reference "Y2") (unit 1) (value "24Mhz") (footprint "")
     )
   )
 )

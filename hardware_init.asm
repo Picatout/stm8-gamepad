@@ -72,15 +72,11 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int18 UART1 RX full  
 	int NonHandledInterrupt ;int19 I2C 
 	int NonHandledInterrupt ;int20 UART3 TX completed
-.if DEBUG 
-.if NUCLEO
+.if HAS_UART 
 	int UartRxHandler       ; int21 UART3 RX full 
 .else 
 	int NonHandledInterrupt ;int21 UART3 RX full
-.endif ;; NUCLEO
-.else 
-	int NonHandledInterrupt ;int21 UART3 RX full
-.endif ;; DEBUG 	
+.endif ;; HAS_UART
 	int NonHandledInterrupt ;int22 ADC2 end of conversion
 	int NonHandledInterrupt ;int23 TIM4 update$overflow 
 	int NonHandledInterrupt ;int24 flash writing EOP/WR_PG_DIS
@@ -123,14 +119,12 @@ cx: .blkb 1 ; text cursor y coord {0..15}
 ; keypad variables 
 keyin: .blkb 1 ; keypad value read within KeypadIntHandler 
 
-.if NUCLEO 
-.if DEBUG 
+.if HAS_UART 
 RX_QUEUE_SIZE=8 
 rx1_head: .blkb 1 
 rx1_tail: .blkb 1 
 rx1_queue: .blkb 8 
-.endif ;; DEBUG 
-.endif ;; NUCLEO 
+.endif ;; HAS_UART 
 
 	.area CODE 
 
@@ -165,16 +159,46 @@ KeypadIntHandler:
 ;    peripherals initialization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;----------------------------
+; FMSTR=20Mhz 
+; program 1 wait state in OPT7 
+;----------------------------
+wait_state:
+	tnz FLASH_WS ; OPT7  
+	jrne opt_done ; already set  
+	ld a,#1 
+	call unlock_eeprom 
+	ld FLASH_WS,a 
+	cpl a 
+	ld FLASH_WS+1,a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
+	_swreset 
+opt_done:
+	ret  
+
+unlock_eeprom:
+	btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,9$
+	mov FLASH_CR2,#0 
+	mov FLASH_NCR2,#0xFF 
+	mov FLASH_DUKR,#FLASH_DUKR_KEY1
+    mov FLASH_DUKR,#FLASH_DUKR_KEY2
+	btjf FLASH_IAPSR,#FLASH_IAPSR_DUL,.
+9$:	
+    bset FLASH_CR2,#FLASH_CR2_OPT
+    bres FLASH_NCR2,#FLASH_CR2_OPT 
+	ret
+
 ;----------------------------------------
 ; inialize MCU clock 
 ; select HSE 
 ; no CPU divisor 
 ;----------------------------------------
 clock_init:	
-	bres CLK_SWCR,#CLK_SWCR_SWIF 
-	mov CLK_SWR,#CLK_SWR_HSE  
-	btjf CLK_SWCR,#CLK_SWCR_SWIF,. 
+	bres CLK_SWCR,#CLK_SWCR_SWIF
+	mov CLK_SWR,#CLK_SWR_HSE 
 	bset CLK_SWCR,#CLK_SWCR_SWEN
+	btjf CLK_SWCR,#CLK_SWCR_SWIF,. 
 2$: 
 	clr CLK_CKDIVR   	
 	ret
@@ -369,19 +393,19 @@ cold_start:
 	ld PG_CR1,a 
 	ld PH_CR1,a 
 	ld PI_CR1,a 
-	call clock_init	
+; set USER LED as output 
+	BSET LED_PORT+GPIO_DDR,#LED_BIT 
+	call wait_state 
+	call clock_init
+.if HAS_UART 
+	call uart_init 
+.endif 
 	call keypad_init 
 	call timer3_init
-.if DEBUG 
-.if NUCLEO
-	call uart_init
-	call uart_cls 
-.endif ;; NUCLEO  
-.endif ;; DEBUG 
 	call ntsc_init ;
 	rim ; enable interrupts 
 	clrw x 
 	call set_seed
-4$:
 	jp main ; in tv_term.asm 
+
 

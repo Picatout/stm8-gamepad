@@ -25,23 +25,24 @@
 ;  information 
 ;-----------------------
 	MAJOR=1
-	MINOR=4
+	MINOR=5
 	REV=0
 
+FMSTR=24000000 ; 24Mhz 
+
+.if 0
 ; display aspect ratio 
 ; these numbers are used in 
 ; circle drawing 
-ASPECT_MULT=59
-ASPECT_DIV=36
+ASPECT_MULT=1
+ASPECT_DIV=1
+.endif 
 
 ; set to 1 to add dbg_print code 
 DEBUG=0
 
 ; set to 1 when using NUCLEO-8S207K8 
-NUCLEO=0
-
-; master clock frequency in hz 
-	FMSTR=16000000 
+NUCLEO=1
 
 SOUND_PORT=PD_BASE 
 SOUND_BIT=(0)
@@ -68,6 +69,9 @@ BTN_UP=(1<<BIT_UP)
 
 	.include "inc/ascii.inc"
 	.include "inc/stm8s207.inc"
+.if NUCLEO
+	.include "inc/nucleo_8s207.inc"
+.endif 	
 	.include "inc/gen_macros.inc" 
 	.include "app_macros.inc" 
 

@@ -17,8 +17,6 @@
 ;;
 
 
-.if DEBUG 
-.if NUCLEO 
 ;-------------------------------
 	.area CODE 
 
@@ -50,8 +48,10 @@ UartRxHandler: ; console receive char
 	ld rx1_tail,a 
 5$:	iret 
 
-; values for 16Mhz Fmaster 
-B115200=0x8B   
+; values for 115200 BAUD with 24Mhz Fmaster 
+B115200=0xD0   
+BRR1_VAL=0xD ; BRR1= bits (bits 11:4) >> 4
+BRR2_VAL=0x0 ; BRR2= bits  3:0 || (bits 15:12)>>8
 
 ;---------------------------------------------
 ; initialize UART, read external swtiches SW4,SW5 
@@ -63,29 +63,10 @@ B115200=0x8B
 ;   none
 ;---------------------------------------------
 uart_init:
-; enable UART clock
-	bset CLK_PCKENR1,#UART_PCKEN 	
+	bset CLK_PCKENR1,#UART_PCKEN 
 	bres UART,#UART_CR1_PIEN
-; read external swtiches baud rate option.  
-	clr a 
-	rcf 
-	btjf OPT_BR1_PORT,#OPT_BR1_BIT, 2$ 
-	scf 
-2$:	rlc a 
-    rcf 
-	btjf OPT_BR0_PORT,#OPT_BR0_BIT,3$ 
-	scf 
-3$: rlc a 
-;  BRR value for 115200 BAUD  
-	ldw x,#B115200
-; a little complicated because 
-; BRR1= bits (bits 4:11) >> 4
-; BRR2= bits  0:3 || (bits 12:15)>>8 
-; why do simple when you can do it complicated?  
-	ld a,#(B115200&0xf)+((B115200>>8)&0XF0)
-	ld UART_BRR2,a  
-	ld a,#(B115200>>4)&0XFF 
-	ld UART_BRR1,a
+	mov UART_BRR2,#BRR2_VAL 
+	mov UART_BRR1,#BRR1_VAL 
     clr UART_DR
 	mov UART_CR2,#((1<<UART_CR2_TEN)|(1<<UART_CR2_REN)|(1<<UART_CR2_RIEN));
 	bset UART_CR2,#UART_CR2_SBK
@@ -265,5 +246,4 @@ hex_digit:
 	jrmi 9$ 
 	add a,#7 
 9$: ret 
-.endif ;; NUCLEO 
-.endif ;; DEBUG  
+

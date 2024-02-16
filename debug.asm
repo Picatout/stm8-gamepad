@@ -19,7 +19,8 @@
     .area CODE 
 
 .if NUCLEO 
-    .include "inc/nucleo_8s207.inc" 
+HAS_UART=1
+
     .include "uart.asm"
 
 ;-----------------------
@@ -113,5 +114,5 @@ hex_digit:
 .endif  ;; DEBUG 
 	ret 
 
-.endif ;; NUCLEO 
+.endif ;; HAS_UART  
 

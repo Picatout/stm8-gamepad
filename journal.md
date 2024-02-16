@@ -1,3 +1,8 @@
+### 2024-02-15
+
+* Modfication matérielle, remplacé le cristal de 16 Mhz par un cristal de 20Mhz.
+* Remplacé résistance de 150 ohm par 100 ohm à la sortie video pour augmenter la brillance.
+
 ### 2024-01-28
 
 * Nouveau tag V1.4R0 

@@ -188,14 +188,12 @@ SCROLL_DLY=2
 ; application entry point 
 ;--------------------------
 main:
-.if DEBUG 
-.if NUCLEO
+.if DEBUG  
 	call uart_cls 
 	ldw x,#version_str 
 	call uart_puts
 	ld a,#CR 
 	call uart_putc
-.endif ;; NUCLEO 
 .endif ;; DEBUG 
 	call beep
 	call tv_cls

@@ -294,7 +294,7 @@ courante du curseur texte. Avance le curseur à la position suivante.
 
 <hr>
 
-* **cercle**  Dessine un cercle avec correction *ASPECT_RATIO* 
+* **circle**  Dessine un cercle avec correction *ASPECT_RATIO* 
     * **A**   rayon 
     * **XL**  xcoord 
     * **XH**  ycooord 
